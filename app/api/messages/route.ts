@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MessageService } from '../../../Backend/services/collections/MessageService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { MessageService } from '../../Backend/services/collections/MessageService';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const messageService = new MessageService();
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LaalaService } from '../../../Backend/services/collections/LaalaService';
-import { UserService } from '../../../Backend/services/collections/UserService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { LaalaService } from '../../Backend/services/collections/LaalaService';
+import { UserService } from '../../Backend/services/collections/UserService';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const laalaService = new LaalaService();
 const userService = new UserService();

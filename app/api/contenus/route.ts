@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ContenuService } from '../../../Backend/services/collections/ContenuService';
-import { UserService } from '../../../Backend/services/collections/UserService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { ContenuService } from '../../Backend/services/collections/ContenuService';
+import { UserService } from '../../Backend/services/collections/UserService';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const contenuService = new ContenuService();
 const userService = new UserService();

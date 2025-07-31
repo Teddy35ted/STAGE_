@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { UserService } from '../../../Backend/services/collections/UserService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { UserService } from '../../Backend/services/collections/UserService';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const userService = new UserService();
 

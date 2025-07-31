@@ -1,7 +1,7 @@
 import { BaseService } from '../base/BaseService';
 import { UserDashboard, UserCore, generateUserAutoFields } from '../../../models/user';
 import { COLLECTIONS } from '../../config/database';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 export class UserService extends BaseService<UserDashboard> {
   constructor() {

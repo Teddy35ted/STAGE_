@@ -5,7 +5,7 @@ export * from './config/database';
 
 // Services principaux
 export { AnimatorsService } from './services/collections/AnimatorsService';
-export { EventsService } from './services/collections/EventsService';
+// export { EventsService } from './services/collections/EventsService';
 
 // Configuration
 export { adminDb, adminAuth } from './config/firebase-admin';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RetraitService } from '../../../Backend/services/collections/RetraitService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { RetraitService } from '../../Backend/services/collections/RetraitService';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const retraitService = new RetraitService();
 

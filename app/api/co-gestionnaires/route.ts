@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CoGestionnaireService } from '../../../Backend/services/collections/CoGestionnaireService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { CoGestionnaireService } from '../../Backend/services/collections/CoGestionnaireService';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const coGestionnaireService = new CoGestionnaireService();
 

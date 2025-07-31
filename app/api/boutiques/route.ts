@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BoutiqueService } from '../../../Backend/services/collections/BoutiqueService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { BoutiqueService } from '../../Backend/services/collections/BoutiqueService';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const boutiqueService = new BoutiqueService();
 
