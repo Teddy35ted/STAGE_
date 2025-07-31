@@ -26,18 +26,39 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
 
   // CREATE
   async create(data: Partial<T>): Promise<string> {
-    try {
-      const docData = {
-        ...data,
-        createdAt: dbUtils.timestamp(),
-        updatedAt: dbUtils.timestamp(),
-      };
-      
-      const docRef = await this.collection.add(docData);
-      return docRef.id;
-    } catch (error) {
-      throw new ServiceError(`Erreur lors de la création dans ${this.collectionName}`, error);
-    }
+    const { CrudRecoveryService } = await import('../../utils/recovery');
+    
+    return CrudRecoveryService.safeCreate(
+      {
+        create: async (data: Partial<T>) => {
+          try {
+            console.log(`📝 Création dans ${this.collectionName}:`, data);
+            
+            const docData = {
+              ...data,
+              createdAt: dbUtils.timestamp(),
+              updatedAt: dbUtils.timestamp(),
+            };
+            
+            const docRef = await this.collection.add(docData);
+            console.log(`✅ Document créé dans ${this.collectionName} avec ID:`, docRef.id);
+            
+            return docRef.id;
+          } catch (error) {
+            console.error(`❌ Erreur création ${this.collectionName}:`, error);
+            throw new ServiceError(`Erreur lors de la création dans ${this.collectionName}`, error);
+          }
+        }
+      },
+      data,
+      {
+        maxRetries: 3,
+        retryDelay: 1000,
+        onRetry: (attempt, error) => {
+          console.warn(`🔄 Retry création ${this.collectionName} (tentative ${attempt}):`, error.message);
+        }
+      }
+    );
   }
 
   // READ

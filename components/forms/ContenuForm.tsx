@@ -37,29 +37,68 @@ export function ContenuForm({ contenu, onSuccess }: ContenuFormProps) {
     setError(null);
 
     try {
+      // Validation côté client
+      if (!nom.trim()) {
+        setError('Le nom est requis');
+        return;
+      }
+      
+      if (!idLaala.trim()) {
+        setError('L\'ID Laala est requis');
+        return;
+      }
+
       const method = contenu ? 'PUT' : 'POST';
       const url = contenu ? `/api/contenus/${(contenu as any).id}` : '/api/contenus';
       
       // Préparer les données avec tous les champs requis
       const contenuData = {
-        nom,
+        nom: nom.trim(),
         type,
-        src,
-        idLaala,
+        src: src.trim(),
+        idLaala: idLaala.trim(),
         allowComment,
         htags: htags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
         personnes: [], // Vide par défaut
-        // idCreateur sera ajouté automatiquement par l'API via l'auth
+        // Données supplémentaires pour aider à la création d'utilisateur si nécessaire
+        nomCreateur: 'Utilisateur Dashboard',
+        emailCreateur: 'user@dashboard.com'
       };
       
-      await apiFetch(url, {
+      console.log('📝 Envoi des données contenu:', contenuData);
+      
+      const result = await apiFetch(url, {
         method,
         body: JSON.stringify(contenuData),
       });
+      
+      console.log('✅ Contenu sauvegardé:', result);
+      
+      // Réinitialiser le formulaire après création
+      if (!contenu) {
+        setNom('');
+        setSrc('');
+        setHtags('');
+        setIdLaala('');
+      }
+      
       onSuccess();
+      
     } catch (err) {
-      setError('Failed to save contenu');
-      console.error('Erreur lors de la sauvegarde:', err);
+      console.error('❌ Erreur lors de la sauvegarde:', err);
+      
+      // Gestion d'erreurs plus détaillée
+      if (err instanceof Error) {
+        if (err.message.includes('Unauthorized')) {
+          setError('Vous devez être connecté pour effectuer cette action');
+        } else if (err.message.includes('Creator not found')) {
+          setError('Profil utilisateur non trouvé. Veuillez vous reconnecter.');
+        } else {
+          setError(`Erreur: ${err.message}`);
+        }
+      } else {
+        setError('Erreur inconnue lors de la sauvegarde');
+      }
     } finally {
       setLoading(false);
     }
