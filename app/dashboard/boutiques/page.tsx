@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Boutique } from '../../models/boutiques';
-import { apiFetch } from '../../../lib/api';
+import { useApi } from '../../../lib/api';
 import { DataTable } from '../../../components/ui/data-table';
 import { getColumns } from './columns';
 import { BoutiqueForm } from '../../../components/forms/BoutiqueForm';
@@ -11,6 +11,8 @@ export default function BoutiquesPage() {
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const fetchBoutiques = async () => {
     try {

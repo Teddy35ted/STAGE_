@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { CoGestionnaire } from '../../../models/co_gestionnaire';
-import { apiFetch } from '../../../../lib/api';
+import { useApi } from '../../../../lib/api';
 import { DataTable } from '../../../../components/ui/data-table';
 import { getColumns } from './columns';
 import { CoGestionnaireForm } from '../../../../components/forms/CoGestionnaireForm';
@@ -11,6 +11,8 @@ export default function ManagersPage() {
   const [managers, setManagers] = useState<CoGestionnaire[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const fetchManagers = async () => {
     try {

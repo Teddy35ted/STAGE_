@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { LaalaDashboard } from '../../models/laala';
-import { apiFetch } from '../../../lib/api';
+import { useApi } from '../../../lib/api';
 import { DataTable } from '../../../components/ui/data-table';
 import { getColumns } from './columns';
 import { LaalaForm } from '../../../components/forms/LaalaForm';
@@ -11,6 +11,8 @@ export default function LaalasPage() {
   const [laalas, setLaalas] = useState<LaalaDashboard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const fetchLaalas = async () => {
     try {

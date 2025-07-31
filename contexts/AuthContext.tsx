@@ -21,6 +21,7 @@ interface AuthContextType {
   signInWithPhone: (phoneNumber: string) => Promise<ConfirmationResult>;
   logout: () => Promise<void>;
   setupRecaptcha: (containerId: string) => RecaptchaVerifier;
+  getAuthToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -154,6 +155,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const getAuthToken = async (): Promise<string | null> => {
+    if (auth.currentUser) {
+      return auth.currentUser.getIdToken();
+    }
+    return null;
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -162,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithPhone,
     logout,
     setupRecaptcha,
+    getAuthToken,
   };
 
   return (

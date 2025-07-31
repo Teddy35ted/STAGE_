@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ContenuDashboard } from '../../../models/contenu';
-import { apiFetch } from '../../../../lib/api';
+import { useApi } from '../../../../lib/api';
 import { DataTable } from '../../../../components/ui/data-table';
 import { getColumns } from './columns';
 import { ContenuForm } from '../../../../components/forms/ContenuForm';
@@ -11,6 +11,8 @@ export default function ContentPage() {
   const [contents, setContents] = useState<ContenuDashboard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const fetchContents = async () => {
     try {

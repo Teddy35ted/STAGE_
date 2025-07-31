@@ -7,7 +7,7 @@ import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave } from 'react-icons
 
 import { useAuth } from '../../../contexts/AuthContext';
 import { UserDashboard } from '../../models/user';
-import { apiFetch } from '../../../lib/api';
+import { useApi } from '../../../lib/api';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -15,6 +15,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   useEffect(() => {
     const fetchProfile = async () => {

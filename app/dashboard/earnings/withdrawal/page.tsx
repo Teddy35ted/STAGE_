@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Retrait } from '../../../models/retrait';
-import { apiFetch } from '../../../../lib/api';
+import { useApi } from '../../../../lib/api';
 import { DataTable } from '../../../../components/ui/data-table';
 import { getColumns } from './columns';
 import { RetraitForm } from '../../../../components/forms/RetraitForm';
@@ -11,6 +11,8 @@ export default function WithdrawalPage() {
   const [withdrawals, setWithdrawals] = useState<Retrait[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const fetchWithdrawals = async () => {
     try {
