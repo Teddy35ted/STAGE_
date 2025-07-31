@@ -2,11 +2,13 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { Retrait } from '../../../models/retrait';
-import { apiFetch } from '../../../../lib/api';
 import { Button } from '../../../../components/ui/button';
 import { FiTrash2 } from 'react-icons/fi';
 
-export const getColumns = (refreshData: () => void): ColumnDef<Retrait>[] => [
+export const getColumns = (
+  refreshData: () => void,
+  apiFetch: (url: string, options?: RequestInit) => Promise<any>
+): ColumnDef<Retrait>[] => [
   {
     accessorKey: 'operation',
     header: 'Opération',

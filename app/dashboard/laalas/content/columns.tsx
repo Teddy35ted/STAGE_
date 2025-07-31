@@ -2,11 +2,13 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { ContenuDashboard } from '../../../models/contenu';
-import { apiFetch } from '../../../../lib/api';
 import { Button } from '../../../../components/ui/button';
 import { FiEdit3, FiTrash2 } from 'react-icons/fi';
 
-export const getColumns = (refreshData: () => void): ColumnDef<ContenuDashboard>[] => [
+export const getColumns = (
+  refreshData: () => void,
+  apiFetch: (url: string, options?: RequestInit) => Promise<any>
+): ColumnDef<ContenuDashboard>[] => [
   {
     accessorKey: 'nom',
     header: 'Nom',

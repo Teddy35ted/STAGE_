@@ -39,7 +39,7 @@ export default function WithdrawalPage() {
         <h1 className="text-2xl font-bold">Gestion des Retraits</h1>
         <RetraitForm onSuccess={fetchWithdrawals} />
       </div>
-      <DataTable columns={getColumns(fetchWithdrawals)} data={withdrawals} />
+      <DataTable columns={getColumns(fetchWithdrawals, apiFetch)} data={withdrawals} />
     </div>
   );
 }

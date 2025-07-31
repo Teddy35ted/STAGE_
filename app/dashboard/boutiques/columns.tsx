@@ -2,11 +2,13 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { Boutique } from '../../models/boutiques';
-import { apiFetch } from '../../../lib/api';
 import { BoutiqueForm } from '../../../components/forms/BoutiqueForm';
 import { Button } from '../../../components/ui/button';
 
-export const getColumns = (refreshData: () => void): ColumnDef<Boutique>[] => [
+export const getColumns = (
+  refreshData: () => void,
+  apiFetch: (url: string, options?: RequestInit) => Promise<any>
+): ColumnDef<Boutique>[] => [
   {
     accessorKey: 'nom',
     header: 'Nom',

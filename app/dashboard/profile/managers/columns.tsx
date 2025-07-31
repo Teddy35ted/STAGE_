@@ -2,11 +2,13 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { CoGestionnaire } from '../../../models/co_gestionnaire';
-import { apiFetch } from '../../../../lib/api';
 import { CoGestionnaireForm } from '../../../../components/forms/CoGestionnaireForm';
 import { Button } from '../../../../components/ui/button';
 
-export const getColumns = (refreshData: () => void): ColumnDef<CoGestionnaire>[] => [
+export const getColumns = (
+  refreshData: () => void,
+  apiFetch: (url: string, options?: RequestInit) => Promise<any>
+): ColumnDef<CoGestionnaire>[] => [
   {
     accessorKey: 'nom',
     header: 'Nom',

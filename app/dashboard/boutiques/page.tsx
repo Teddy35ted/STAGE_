@@ -39,7 +39,7 @@ export default function BoutiquesPage() {
         <h1 className="text-2xl font-bold">Gestion des Boutiques</h1>
         <BoutiqueForm onSuccess={fetchBoutiques} />
       </div>
-      <DataTable columns={getColumns(fetchBoutiques)} data={boutiques} />
+      <DataTable columns={getColumns(fetchBoutiques, apiFetch)} data={boutiques} />
     </div>
   );
 }

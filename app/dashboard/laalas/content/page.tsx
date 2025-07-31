@@ -39,7 +39,7 @@ export default function ContentPage() {
         <h1 className="text-2xl font-bold">Gestion des Contenus</h1>
         <ContenuForm onSuccess={fetchContents} />
       </div>
-      <DataTable columns={getColumns(fetchContents)} data={contents} />
+      <DataTable columns={getColumns(fetchContents, apiFetch)} data={contents} />
     </div>
   );
 }

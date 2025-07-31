@@ -39,7 +39,7 @@ export default function LaalasPage() {
         <h1 className="text-2xl font-bold">Gestion des Laalas</h1>
         <LaalaForm onSuccess={fetchLaalas} />
       </div>
-      <DataTable columns={getColumns(fetchLaalas)} data={laalas} />
+      <DataTable columns={getColumns(fetchLaalas, apiFetch)} data={laalas} />
     </div>
   );
 }

@@ -2,11 +2,13 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { LaalaDashboard } from '../../models/laala';
-import { apiFetch } from '../../../lib/api';
 import { Button } from '../../../components/ui/button';
 import { FiEdit3, FiTrash2 } from 'react-icons/fi';
 
-export const getColumns = (refreshData: () => void): ColumnDef<LaalaDashboard>[] => [
+export const getColumns = (
+  refreshData: () => void,
+  apiFetch: (url: string, options?: RequestInit) => Promise<any>
+): ColumnDef<LaalaDashboard>[] => [
   {
     accessorKey: 'nom',
     header: 'Nom',

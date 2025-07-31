@@ -39,7 +39,7 @@ export default function ManagersPage() {
         <h1 className="text-2xl font-bold">Gestion des Co-gestionnaires</h1>
         <CoGestionnaireForm onSuccess={fetchManagers} />
       </div>
-      <DataTable columns={getColumns(fetchManagers)} data={managers} />
+      <DataTable columns={getColumns(fetchManagers, apiFetch)} data={managers} />
     </div>
   );
 }
