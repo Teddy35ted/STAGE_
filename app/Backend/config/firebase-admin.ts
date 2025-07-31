@@ -11,42 +11,61 @@ class FirebaseAdmin {
   private _storage: Storage;
 
   private constructor() {
-    // Vérification des variables d'environnement
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    try {
+      // Vérification des variables d'environnement
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-    if (!projectId || !clientEmail || !privateKey) {
-      throw new Error('Variables d\'environnement Firebase Admin manquantes');
+      if (!projectId || !clientEmail || !privateKey) {
+        throw new Error('Variables d\'environnement Firebase Admin manquantes');
+      }
+
+      console.log('🔧 Initialisation Firebase Admin...');
+      console.log('📋 Project ID:', projectId);
+      console.log('📧 Client Email:', clientEmail ? '✅' : '❌');
+      console.log('🔑 Private Key:', privateKey ? '✅' : '❌');
+
+      // Configuration complète Firebase Admin
+      const firebaseAdminConfig = {
+        type: "service_account",
+        project_id: projectId,
+        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+        private_key: privateKey,
+        client_email: clientEmail,
+        client_id: process.env.FIREBASE_CLIENT_ID,
+        auth_uri: process.env.FIREBASE_AUTH_URI,
+        token_uri: process.env.FIREBASE_TOKEN_URI,
+        auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+        client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+        universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN
+      };
+
+      // Vérifier si une app existe déjà
+      const existingApp = getApps().find(app => app?.name === 'admin');
+      
+      if (existingApp) {
+        console.log('♻️ Utilisation de l\'app Firebase existante');
+        this._app = existingApp;
+      } else {
+        console.log('🆕 Création d\'une nouvelle app Firebase');
+        this._app = initializeApp({
+          credential: cert(firebaseAdminConfig as any),
+          projectId,
+          storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+          databaseURL: process.env.FIREBASE_DATABASE_URL
+        }, 'admin');
+      }
+
+      this._db = getFirestore(this._app);
+      this._auth = getAuth(this._app);
+      this._storage = getStorage(this._app);
+      
+      console.log('✅ Firebase Admin initialisé avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'initialisation Firebase Admin:', error);
+      throw error;
     }
-
-    // Configuration complète Firebase Admin
-    const firebaseAdminConfig = {
-      type: "service_account",
-      project_id: projectId,
-      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-      private_key: privateKey,
-      client_email: clientEmail,
-      client_id: process.env.FIREBASE_CLIENT_ID,
-      auth_uri: process.env.FIREBASE_AUTH_URI,
-      token_uri: process.env.FIREBASE_TOKEN_URI,
-      auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-      client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
-      universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN
-    };
-
-    // Initialisation avec certificat complet
-    this._app = getApps().find(app => app?.name === 'admin') || 
-      initializeApp({
-        credential: cert(firebaseAdminConfig as any),
-        projectId,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-        databaseURL: process.env.FIREBASE_DATABASE_URL
-      }, 'admin');
-
-    this._db = getFirestore(this._app);
-    this._auth = getAuth(this._app);
-    this._storage = getStorage(this._app);
   }
 
   public static getInstance(): FirebaseAdmin {

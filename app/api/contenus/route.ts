@@ -31,6 +31,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Vérifier l'authentification pour toutes les opérations de lecture
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -51,6 +57,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(contenus);
     }
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch contenus' }, { status: 500 });
+    console.error('Erreur lors de la récupération des contenus:', error);
+    return NextResponse.json({ 
+      error: 'Failed to fetch contenus',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

@@ -24,6 +24,8 @@ export function ContenuForm({ contenu, onSuccess }: ContenuFormProps) {
   const [type, setType] = useState(contenu?.type || 'image');
   const [src, setSrc] = useState(contenu?.src || '');
   const [idLaala, setIdLaala] = useState(contenu?.idLaala || '');
+  const [allowComment, setAllowComment] = useState(contenu?.allowComment ?? true);
+  const [htags, setHtags] = useState(contenu?.htags?.join(', ') || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,13 +39,27 @@ export function ContenuForm({ contenu, onSuccess }: ContenuFormProps) {
     try {
       const method = contenu ? 'PUT' : 'POST';
       const url = contenu ? `/api/contenus/${(contenu as any).id}` : '/api/contenus';
+      
+      // Préparer les données avec tous les champs requis
+      const contenuData = {
+        nom,
+        type,
+        src,
+        idLaala,
+        allowComment,
+        htags: htags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+        personnes: [], // Vide par défaut
+        // idCreateur sera ajouté automatiquement par l'API via l'auth
+      };
+      
       await apiFetch(url, {
         method,
-        body: JSON.stringify({ nom, type, src, idLaala }),
+        body: JSON.stringify(contenuData),
       });
       onSuccess();
     } catch (err) {
       setError('Failed to save contenu');
+      console.error('Erreur lors de la sauvegarde:', err);
     } finally {
       setLoading(false);
     }
@@ -79,6 +95,24 @@ export function ContenuForm({ contenu, onSuccess }: ContenuFormProps) {
           <div>
             <label htmlFor="idLaala">ID Laala</label>
             <Input id="idLaala" value={idLaala} onChange={(e) => setIdLaala(e.target.value)} required />
+          </div>
+          <div>
+            <label htmlFor="htags">Hashtags (séparés par des virgules)</label>
+            <Input 
+              id="htags" 
+              value={htags} 
+              onChange={(e) => setHtags(e.target.value)} 
+              placeholder="#exemple, #contenu, #laala"
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <input 
+              type="checkbox" 
+              id="allowComment" 
+              checked={allowComment} 
+              onChange={(e) => setAllowComment(e.target.checked)} 
+            />
+            <label htmlFor="allowComment">Autoriser les commentaires</label>
           </div>
           <Button type="submit" disabled={loading}>
             {loading ? 'Sauvegarde...' : 'Sauvegarder'}
