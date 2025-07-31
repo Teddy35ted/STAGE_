@@ -1,34 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { CoGestionnaireService } from '../../../Backend/services/collections/CoGestionnaireService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { createQuickCrudHandlers } from '../../../Backend/utils/apiTemplate';
 
 const coGestionnaireService = new CoGestionnaireService();
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await verifyAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+// Utilisation du template générique avec permissions permissives
+const handlers = createQuickCrudHandlers(
+  'CoGestionnaireService',
+  'co-gestionnaire',
+  coGestionnaireService,
+  {
+    checkOwnership: false, // Permissions permissives par défaut
+    ownershipField: 'idProprietaire',
+    allowedOperations: ['GET', 'PUT', 'DELETE']
   }
+);
 
-  try {
-    const data = await request.json();
-    await coGestionnaireService.update(params.id, data);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update co-gestionnaire' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await verifyAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    await coGestionnaireService.delete(params.id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete co-gestionnaire' }, { status: 500 });
-  }
-}
+export const GET = handlers.GET;
+export const PUT = handlers.PUT;
+export const DELETE = handlers.DELETE;

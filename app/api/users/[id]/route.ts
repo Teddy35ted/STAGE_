@@ -1,34 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '../../../Backend/services/collections/UserService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { createQuickCrudHandlers } from '../../../Backend/utils/apiTemplate';
 
 const userService = new UserService();
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await verifyAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+// Utilisation du template générique avec permissions permissives
+const handlers = createQuickCrudHandlers(
+  'UserService',
+  'user',
+  userService,
+  {
+    checkOwnership: false, // Permissions permissives par défaut
+    ownershipField: 'id',
+    allowedOperations: ['GET', 'PUT'] // Pas de DELETE pour les utilisateurs
   }
+);
 
-  try {
-    const data = await request.json();
-    await userService.update(params.id, data);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await verifyAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    await userService.delete(params.id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
-  }
-}
+export const GET = handlers.GET;
+export const PUT = handlers.PUT;
+// Pas d'export DELETE pour les utilisateurs

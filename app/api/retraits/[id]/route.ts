@@ -1,34 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { RetraitService } from '../../../Backend/services/collections/RetraitService';
-import { verifyAuth } from '../../../Backend/utils/authVerifier';
+import { createQuickCrudHandlers } from '../../../Backend/utils/apiTemplate';
 
 const retraitService = new RetraitService();
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await verifyAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+// Utilisation du template générique avec permissions permissives
+const handlers = createQuickCrudHandlers(
+  'RetraitService',
+  'retrait',
+  retraitService,
+  {
+    checkOwnership: false, // Permissions permissives par défaut
+    ownershipField: 'idUtilisateur',
+    allowedOperations: ['GET', 'PUT', 'DELETE']
   }
+);
 
-  try {
-    const data = await request.json();
-    await retraitService.update(params.id, data);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update retrait' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await verifyAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    await retraitService.delete(params.id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete retrait' }, { status: 500 });
-  }
-}
+export const GET = handlers.GET;
+export const PUT = handlers.PUT;
+export const DELETE = handlers.DELETE;
