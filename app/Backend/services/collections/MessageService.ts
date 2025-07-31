@@ -65,7 +65,7 @@ export class MessageService extends BaseService<ValidationMessageT> {
         id: doc.id // Utiliser l'ID Firestore
       } as ValidationMessageT;
       
-      console.log(`✅ Message récupéré:`, result.contenu || 'Message', 'ID:', result.id);
+      console.log(`✅ Message récupéré:`, 'Message', 'ID:', result.id);
       
       return result;
       
