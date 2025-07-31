@@ -38,7 +38,7 @@ export default function MessagesPage() {
         <h1 className="text-2xl font-bold">Gestion des Messages</h1>
         <MessageForm onSuccess={fetchMessages} />
       </div>
-      <DataTable columns={getColumns(fetchMessages)} data={messages} />
+      <DataTable columns={getColumns(fetchMessages, apiFetch)} data={messages} />
     </div>
   );
 }
