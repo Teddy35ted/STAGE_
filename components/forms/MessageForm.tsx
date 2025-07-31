@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ValidationMessageT } from '../../models/message';
+import { ValidationMessageT } from '../../app/models/message';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

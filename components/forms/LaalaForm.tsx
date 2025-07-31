@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LaalaCore } from '../../models/laala';
+import { LaalaCore } from '../../app/models/laala';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -24,8 +24,8 @@ export function LaalaForm({ laala, onSuccess }: LaalaFormProps) {
   const [description, setDescription] = useState(laala?.description || '');
   const [type, setType] = useState(laala?.type || 'Laala freestyle');
   const [categorie, setCategorie] = useState(laala?.categorie || '');
-  const [isLaalaPublic, setIsLaalaPublic] = useState(laala?.isLaalaPublic || true);
-  const [ismonetise, setIsMonetise] = useState(laala?.ismonetise || false);
+  const [isLaalaPublic, setIsLaalaPublic] = useState<boolean>(laala?.isLaalaPublic || true);
+  const [ismonetise, setIsMonetise] = useState<boolean>(laala?.ismonetise || false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

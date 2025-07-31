@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { Boutique } from '../../../models/boutiques';
+import { Boutique } from '../../models/boutiques';
 import { apiFetch } from '../../../lib/api';
 import { BoutiqueForm } from '../../../components/forms/BoutiqueForm';
 import { Button } from '../../../components/ui/button';

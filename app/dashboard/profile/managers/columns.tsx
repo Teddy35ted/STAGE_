@@ -2,9 +2,9 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { CoGestionnaire } from '../../../models/co_gestionnaire';
-import { apiFetch } from '../../../lib/api';
-import { CoGestionnaireForm } from '../../../components/forms/CoGestionnaireForm';
-import { Button } from '../../../components/ui/button';
+import { apiFetch } from '../../../../lib/api';
+import { CoGestionnaireForm } from '../../../../components/forms/CoGestionnaireForm';
+import { Button } from '../../../../components/ui/button';
 
 export const getColumns = (refreshData: () => void): ColumnDef<CoGestionnaire>[] => [
   {

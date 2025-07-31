@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { ValidationMessageT } from '../../../models/message';
+import { ValidationMessageT } from '../../models/message';
 import { apiFetch } from '../../../lib/api';
 import { Button } from '../../../components/ui/button';
 import { FiTrash2 } from 'react-icons/fi';

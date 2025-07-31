@@ -6,7 +6,7 @@ import { Input } from '../../../../components/ui/input';
 import { 
   FiPlay, 
   FiPause, 
-  FiStop, 
+  FiSquare, 
   FiEye,
   FiBarChart,
   FiCalendar,

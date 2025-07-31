@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CoGestionnaire } from '../../models/co_gestionnaire';
+import { CoGestionnaire } from '../../app/models/co_gestionnaire';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

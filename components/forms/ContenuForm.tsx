@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ContenuCore } from '../../models/contenu';
+import { ContenuCore } from '../../app/models/contenu';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

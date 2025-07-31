@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave } from 'react-icons/fi';
 
 import { useAuth } from '../../../contexts/AuthContext';
-import { UserDashboard } from '../../../models/user';
+import { UserDashboard } from '../../models/user';
 import { apiFetch } from '../../../lib/api';
 
 export default function ProfilePage() {
@@ -106,12 +106,12 @@ export default function ProfilePage() {
               </label>
               {isEditing ? (
                 <Input
-                  value={profile.firstName}
-                  onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                  value={profile.prenom}
+                  onChange={(e) => setProfile({ ...profile, prenom: e.target.value })}
                   className="w-full"
                 />
               ) : (
-                <p className="text-gray-900 py-2">{profile.firstName}</p>
+                <p className="text-gray-900 py-2">{profile.prenom}</p>
               )}
             </div>
 
@@ -121,12 +121,12 @@ export default function ProfilePage() {
               </label>
               {isEditing ? (
                 <Input
-                  value={profile.lastName}
-                  onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                  value={profile.nom}
+                  onChange={(e) => setProfile({ ...profile, nom: e.target.value })}
                   className="w-full"
                 />
               ) : (
-                <p className="text-gray-900 py-2">{profile.lastName}</p>
+                <p className="text-gray-900 py-2">{profile.nom}</p>
               )}
             </div>
 
@@ -158,12 +158,12 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <Input
                     type="tel"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    value={profile.tel}
+                    onChange={(e) => setProfile({ ...profile, tel: e.target.value })}
                     className="flex-1"
                   />
                 ) : (
-                  <p className="text-gray-900 py-2">{profile.phone}</p>
+                  <p className="text-gray-900 py-2">{profile.tel}</p>
                 )}
               </div>
             </div>
@@ -176,12 +176,20 @@ export default function ProfilePage() {
                 <FiMapPin className="w-4 h-4 text-gray-400" />
                 {isEditing ? (
                   <Input
-                    value={profile.address}
-                    onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                    value={`${profile.quartier || ''} ${profile.ville} ${profile.pays}`.trim()}
+                    onChange={(e) => {
+                      const parts = e.target.value.split(' ');
+                      setProfile({ 
+                        ...profile, 
+                        quartier: parts[0] || '',
+                        ville: parts[1] || profile.ville,
+                        pays: parts[2] || profile.pays
+                      });
+                    }}
                     className="flex-1"
                   />
                 ) : (
-                  <p className="text-gray-900 py-2">{profile.address}</p>
+                  <p className="text-gray-900 py-2">{`${profile.quartier || ''} ${profile.ville} ${profile.pays}`.trim()}</p>
                 )}
               </div>
             </div>

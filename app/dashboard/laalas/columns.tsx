@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { LaalaDashboard } from '../../../models/laala';
+import { LaalaDashboard } from '../../models/laala';
 import { apiFetch } from '../../../lib/api';
 import { Button } from '../../../components/ui/button';
 import { FiEdit3, FiTrash2 } from 'react-icons/fi';

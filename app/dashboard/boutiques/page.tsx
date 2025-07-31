@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Boutique } from '../../../models/boutiques';
+import { Boutique } from '../../models/boutiques';
 import { apiFetch } from '../../../lib/api';
 import { DataTable } from '../../../components/ui/data-table';
 import { getColumns } from './columns';

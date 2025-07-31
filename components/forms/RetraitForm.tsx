@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Retrait } from '../../models/retrait';
+import { Retrait } from '../../app/models/retrait';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

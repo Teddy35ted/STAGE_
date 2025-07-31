@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Boutique } from '../../models/boutiques';
+import { Boutique } from '../../app/models/boutiques';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

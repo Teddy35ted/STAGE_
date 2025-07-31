@@ -8,7 +8,7 @@ import {
   FiTrash2, 
   FiPause, 
   FiPlay,
-  FiStop,
+  FiSquare,
   FiSettings,
   FiDollarSign,
   FiCalendar,
