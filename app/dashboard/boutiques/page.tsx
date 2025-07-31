@@ -19,13 +19,24 @@ import {
   FiRefreshCw,
   FiStar,
   FiClock,
-  FiTrendingUp
+  FiTrendingUp,
+  FiCheck
 } from 'react-icons/fi';
 
 interface BoutiqueExtended extends Boutique {
   displayName?: string;
   displayDescription?: string;
   displayStatus?: 'open' | 'closed' | 'pending';
+}
+
+interface DaySchedule {
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
+interface WeekSchedule {
+  [key: string]: DaySchedule;
 }
 
 const categories = [
@@ -38,40 +49,29 @@ const categories = [
   { id: 'autre', name: 'Autre', color: 'bg-gray-100 text-gray-800' }
 ];
 
-const templates = [
-  {
-    id: '1',
-    name: 'Boutique Restaurant',
-    type: 'restaurant',
-    description: 'Template pour restaurants',
-    usage: 45
-  },
-  {
-    id: '2',
-    name: 'Boutique Mode',
-    type: 'mode',
-    description: 'Template pour boutiques de mode',
-    usage: 32
-  },
-  {
-    id: '3',
-    name: 'Boutique Électronique',
-    type: 'electronique',
-    description: 'Template pour magasins d\'électronique',
-    usage: 28
-  },
-  {
-    id: '4',
-    name: 'Boutique Services',
-    type: 'service',
-    description: 'Template pour services',
-    usage: 19
-  }
+const daysOfWeek = [
+  { id: 'lundi', name: 'Lundi', short: 'Lun' },
+  { id: 'mardi', name: 'Mardi', short: 'Mar' },
+  { id: 'mercredi', name: 'Mercredi', short: 'Mer' },
+  { id: 'jeudi', name: 'Jeudi', short: 'Jeu' },
+  { id: 'vendredi', name: 'Vendredi', short: 'Ven' },
+  { id: 'samedi', name: 'Samedi', short: 'Sam' },
+  { id: 'dimanche', name: 'Dimanche', short: 'Dim' }
 ];
+
+const defaultSchedule: WeekSchedule = {
+  lundi: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  mardi: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  mercredi: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  jeudi: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  vendredi: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  samedi: { isOpen: true, openTime: '09:00', closeTime: '17:00' },
+  dimanche: { isOpen: false, openTime: '09:00', closeTime: '17:00' }
+};
 
 export default function BoutiquesPage() {
   const [boutiques, setBoutiques] = useState<BoutiqueExtended[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'boutiques' | 'templates'>('boutiques');
+  const [selectedTab, setSelectedTab] = useState<'boutiques'>('boutiques');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -86,11 +86,80 @@ export default function BoutiquesPage() {
     adresse: '',
     telephone: '',
     email: '',
-    horaires: ''
+    horaires: { ...defaultSchedule } as WeekSchedule
   });
 
   const { apiFetch } = useApi();
   const { user } = useAuth();
+
+  // Fonction pour formater les horaires en string
+  const formatScheduleToString = (schedule: WeekSchedule): string => {
+    const openDays = Object.entries(schedule)
+      .filter(([_, daySchedule]) => daySchedule.isOpen)
+      .map(([day, daySchedule]) => {
+        const dayName = daysOfWeek.find(d => d.id === day)?.short || day;
+        return `${dayName}: ${daySchedule.openTime}-${daySchedule.closeTime}`;
+      });
+    
+    return openDays.length > 0 ? openDays.join(', ') : 'Fermé';
+  };
+
+  // Fonction pour parser les horaires depuis string (pour compatibilité)
+  const parseScheduleFromString = (horaireString: string): WeekSchedule => {
+    // Si c'est déjà un objet, le retourner tel quel
+    if (typeof horaireString === 'object') {
+      return horaireString as WeekSchedule;
+    }
+    
+    // Sinon, retourner le planning par défaut
+    return { ...defaultSchedule };
+  };
+
+  // Gestion des changements d'horaires
+  const updateDaySchedule = (dayId: string, field: keyof DaySchedule, value: boolean | string) => {
+    setNewBoutique(prev => ({
+      ...prev,
+      horaires: {
+        ...prev.horaires,
+        [dayId]: {
+          ...prev.horaires[dayId],
+          [field]: value
+        }
+      }
+    }));
+  };
+
+  // Fonction pour appliquer les mêmes horaires à tous les jours
+  const applyToAllDays = () => {
+    const mondaySchedule = newBoutique.horaires.lundi;
+    const newSchedule: WeekSchedule = {};
+    
+    daysOfWeek.forEach(day => {
+      newSchedule[day.id] = { ...mondaySchedule };
+    });
+    
+    setNewBoutique(prev => ({
+      ...prev,
+      horaires: newSchedule
+    }));
+  };
+
+  // Fonction pour appliquer aux jours de semaine seulement
+  const applyToWeekdays = () => {
+    const mondaySchedule = newBoutique.horaires.lundi;
+    const weekdays = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'];
+    
+    setNewBoutique(prev => ({
+      ...prev,
+      horaires: {
+        ...prev.horaires,
+        ...weekdays.reduce((acc, day) => ({
+          ...acc,
+          [day]: { ...mondaySchedule }
+        }), {})
+      }
+    }));
+  };
 
   // Récupération des boutiques depuis l'API
   const fetchBoutiques = async () => {
@@ -151,7 +220,7 @@ export default function BoutiquesPage() {
         adresse: newBoutique.adresse,
         telephone: newBoutique.telephone,
         email: newBoutique.email,
-        horaires: newBoutique.horaires,
+        horaires: formatScheduleToString(newBoutique.horaires),
         idProprietaire: user?.uid || 'anonymous',
         dateCreation: new Date().toISOString(),
         statut: 'actif',
@@ -174,7 +243,7 @@ export default function BoutiquesPage() {
         adresse: '',
         telephone: '',
         email: '',
-        horaires: ''
+        horaires: { ...defaultSchedule }
       });
       
       setShowCreateModal(false);
@@ -277,32 +346,45 @@ export default function BoutiquesPage() {
         </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-        <button
-          onClick={() => setSelectedTab('boutiques')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-            selectedTab === 'boutiques'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Mes Boutiques ({boutiques.length})
-        </button>
-        <button
-          onClick={() => setSelectedTab('templates')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-            selectedTab === 'templates'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Templates ({templates.length})
-        </button>
+      {/* Actions CRUD */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions disponibles</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <FiPlus className="w-4 h-4 mr-2" />
+            Créer
+          </Button>
+          <Button 
+            onClick={fetchBoutiques}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={loading}
+          >
+            <FiShoppingBag className="w-4 h-4 mr-2" />
+            Lire
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-orange-300 text-orange-600 hover:bg-orange-50"
+            disabled={filteredBoutiques.length === 0}
+          >
+            <FiEdit3 className="w-4 h-4 mr-2" />
+            Modifier
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-red-300 text-red-600 hover:bg-red-50"
+            disabled={filteredBoutiques.length === 0}
+          >
+            <FiTrash2 className="w-4 h-4 mr-2" />
+            Supprimer
+          </Button>
+        </div>
       </div>
 
-      {selectedTab === 'boutiques' ? (
-        <>
+      <>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -527,46 +609,11 @@ export default function BoutiquesPage() {
             </div>
           )}
         </>
-      ) : (
-        /* Templates Tab */
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {templates.map((template) => (
-              <div key={template.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(template.type)}`}>
-                    {getCategoryName(template.type)}
-                  </span>
-                  <span className="text-xs text-gray-500">{template.usage} utilisations</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{template.name}</h3>
-                <p className="text-sm text-gray-600 mb-4">{template.description}</p>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" className="flex-1">
-                    <FiShoppingBag className="w-4 h-4 mr-1" />
-                    Aperçu
-                  </Button>
-                  <Button size="sm" className="flex-1 bg-[#f01919] hover:bg-[#d01515] text-white">
-                    Utiliser
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center py-8">
-            <Button className="bg-[#f01919] hover:bg-[#d01515] text-white">
-              <FiPlus className="w-4 h-4 mr-2" />
-              Créer un nouveau template
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Modal de création */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Nouvelle Boutique</h2>
               <Button 
@@ -584,19 +631,37 @@ export default function BoutiquesPage() {
               </div>
             )}
 
-            <form onSubmit={(e) => { e.preventDefault(); createBoutique(); }} className="space-y-4">
-              <div>
-                <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom de la boutique
-                </label>
-                <Input
-                  id="nom"
-                  type="text"
-                  value={newBoutique.nom}
-                  onChange={(e) => setNewBoutique(prev => ({ ...prev, nom: e.target.value }))}
-                  placeholder="Ex: Ma Boutique"
-                  required
-                />
+            <form onSubmit={(e) => { e.preventDefault(); createBoutique(); }} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom de la boutique
+                  </label>
+                  <Input
+                    id="nom"
+                    type="text"
+                    value={newBoutique.nom}
+                    onChange={(e) => setNewBoutique(prev => ({ ...prev, nom: e.target.value }))}
+                    placeholder="Ex: Ma Boutique"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="categorie" className="block text-sm font-medium text-gray-700 mb-1">
+                    Catégorie
+                  </label>
+                  <select
+                    id="categorie"
+                    value={newBoutique.categorie}
+                    onChange={(e) => setNewBoutique(prev => ({ ...prev, categorie: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -614,22 +679,6 @@ export default function BoutiquesPage() {
               </div>
 
               <div>
-                <label htmlFor="categorie" className="block text-sm font-medium text-gray-700 mb-1">
-                  Catégorie
-                </label>
-                <select
-                  id="categorie"
-                  value={newBoutique.categorie}
-                  onChange={(e) => setNewBoutique(prev => ({ ...prev, categorie: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                >
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <label htmlFor="adresse" className="block text-sm font-medium text-gray-700 mb-1">
                   Adresse
                 </label>
@@ -642,7 +691,7 @@ export default function BoutiquesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
                     Téléphone
@@ -669,23 +718,98 @@ export default function BoutiquesPage() {
                 </div>
               </div>
 
+              {/* Section Horaires Moderne */}
               <div>
-                <label htmlFor="horaires" className="block text-sm font-medium text-gray-700 mb-1">
-                  Horaires
-                </label>
-                <Input
-                  id="horaires"
-                  type="text"
-                  value={newBoutique.horaires}
-                  onChange={(e) => setNewBoutique(prev => ({ ...prev, horaires: e.target.value }))}
-                  placeholder="Lun-Ven: 9h-18h, Sam: 9h-17h"
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <FiClock className="w-4 h-4 inline mr-2" />
+                    Horaires d'ouverture
+                  </label>
+                  <div className="flex space-x-2">
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={applyToWeekdays}
+                      className="text-xs"
+                    >
+                      Appliquer aux jours ouvrables
+                    </Button>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={applyToAllDays}
+                      className="text-xs"
+                    >
+                      Appliquer à tous les jours
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  {daysOfWeek.map((day) => {
+                    const daySchedule = newBoutique.horaires[day.id];
+                    return (
+                      <div key={day.id} className="flex items-center space-x-4 bg-white rounded-lg p-3 shadow-sm">
+                        <div className="flex items-center space-x-3 min-w-[120px]">
+                          <input
+                            type="checkbox"
+                            id={`${day.id}-open`}
+                            checked={daySchedule.isOpen}
+                            onChange={(e) => updateDaySchedule(day.id, 'isOpen', e.target.checked)}
+                            className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
+                          />
+                          <label htmlFor={`${day.id}-open`} className="text-sm font-medium text-gray-700 min-w-[70px]">
+                            {day.name}
+                          </label>
+                        </div>
+
+                        {daySchedule.isOpen ? (
+                          <div className="flex items-center space-x-3 flex-1">
+                            <div className="flex items-center space-x-2">
+                              <label className="text-xs text-gray-500">Ouverture</label>
+                              <input
+                                type="time"
+                                value={daySchedule.openTime}
+                                onChange={(e) => updateDaySchedule(day.id, 'openTime', e.target.value)}
+                                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#f01919]"
+                              />
+                            </div>
+                            <span className="text-gray-400">-</span>
+                            <div className="flex items-center space-x-2">
+                              <label className="text-xs text-gray-500">Fermeture</label>
+                              <input
+                                type="time"
+                                value={daySchedule.closeTime}
+                                onChange={(e) => updateDaySchedule(day.id, 'closeTime', e.target.value)}
+                                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#f01919]"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex-1 text-sm text-gray-500 italic">
+                            Fermé
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Aperçu des horaires */}
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium mb-1">Aperçu des horaires :</p>
+                  <p className="text-sm text-blue-700">
+                    {formatScheduleToString(newBoutique.horaires)}
+                  </p>
+                </div>
               </div>
 
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-sm text-blue-800">
                   <FiShoppingBag className="w-4 h-4 inline mr-1" />
-                  Votre boutique sera visible publiquement et pourra recevoir des avis clients.
+                  Votre boutique sera visible publiquement avec les horaires définis et pourra recevoir des avis clients.
                 </p>
               </div>
 

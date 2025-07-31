@@ -20,13 +20,15 @@ import {
   FiEye,
   FiHeart,
   FiShare2,
-  FiCalendar
+  FiCalendar,
+  FiAlertTriangle
 } from 'react-icons/fi';
 
 interface ContenuExtended extends ContenuDashboard {
   displayTitle?: string;
   displayDescription?: string;
   displayStatus?: 'published' | 'draft' | 'scheduled';
+  laalaName?: string;
 }
 
 const contentTypes = [
@@ -36,44 +38,15 @@ const contentTypes = [
   { id: 'audio', name: 'Audio', icon: FiMusic, color: 'bg-purple-100 text-purple-800' }
 ];
 
-const templates = [
-  {
-    id: '1',
-    name: 'Article Blog',
-    type: 'texte',
-    description: 'Template pour articles de blog',
-    usage: 67
-  },
-  {
-    id: '2',
-    name: 'Post Image',
-    type: 'image',
-    description: 'Template pour posts avec images',
-    usage: 89
-  },
-  {
-    id: '3',
-    name: 'Vidéo Tutoriel',
-    type: 'video',
-    description: 'Template pour vidéos éducatives',
-    usage: 45
-  },
-  {
-    id: '4',
-    name: 'Podcast',
-    type: 'audio',
-    description: 'Template pour contenus audio',
-    usage: 23
-  }
-];
-
 export default function ContentPage() {
   const [contents, setContents] = useState<ContenuExtended[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'contents' | 'templates'>('contents');
+  const [laalas, setLaalas] = useState<any[]>([]);
+  const [selectedTab, setSelectedTab] = useState<'contents'>('contents');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingLaalas, setLoadingLaalas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Formulaire de création
@@ -90,6 +63,42 @@ export default function ContentPage() {
 
   const { apiFetch } = useApi();
   const { user } = useAuth();
+
+  // Récupération des laalas depuis l'API
+  const fetchLaalas = async () => {
+    try {
+      setLoadingLaalas(true);
+      
+      if (!user) {
+        console.log('👤 Utilisateur non connecté, arrêt du chargement des laalas');
+        setLoadingLaalas(false);
+        return;
+      }
+      
+      console.log('🔍 Récupération des laalas pour utilisateur:', user.uid);
+      const laalasData = await apiFetch('/api/laalas');
+      
+      if (!Array.isArray(laalasData)) {
+        console.warn('⚠️ Réponse API inattendue pour laalas:', laalasData);
+        setLaalas([]);
+        return;
+      }
+      
+      setLaalas(laalasData);
+      console.log('✅ Laalas récupérés:', laalasData.length);
+      
+      // Sélectionner automatiquement le premier laala s'il y en a un
+      if (laalasData.length > 0 && !newContent.idLaala) {
+        setNewContent(prev => ({ ...prev, idLaala: laalasData[0].id }));
+      }
+      
+    } catch (err) {
+      console.error('❌ Erreur récupération laalas:', err);
+      setLaalas([]);
+    } finally {
+      setLoadingLaalas(false);
+    }
+  };
 
   // Récupération des contenus depuis l'API
   const fetchContents = async () => {
@@ -113,12 +122,16 @@ export default function ContentPage() {
       }
       
       // Transformer les contenus pour l'affichage
-      const transformedContents: ContenuExtended[] = contentsData.map((content: ContenuDashboard) => ({
-        ...content,
-        displayTitle: content.nom || 'Contenu sans titre',
-        displayDescription: content.description || 'Aucune description',
-        displayStatus: content.statut === 'publié' ? 'published' : 'draft'
-      }));
+      const transformedContents: ContenuExtended[] = contentsData.map((content: ContenuDashboard) => {
+        const laala = laalas.find(l => l.id === content.idLaala);
+        return {
+          ...content,
+          displayTitle: content.nom || 'Contenu sans titre',
+          displayDescription: content.description || 'Aucune description',
+          displayStatus: content.statut === 'publié' ? 'published' : 'draft',
+          laalaName: laala?.nom || 'Laala inconnu'
+        };
+      });
       
       setContents(transformedContents);
       console.log('✅ Contenus récupérés:', transformedContents.length);
@@ -142,13 +155,18 @@ export default function ContentPage() {
         setError('Le nom du contenu est requis');
         return;
       }
+
+      if (!newContent.idLaala) {
+        setError('Vous devez sélectionner un laala pour ce contenu');
+        return;
+      }
       
       const contentData = {
         nom: newContent.nom,
         description: newContent.description,
         type: newContent.type,
         src: newContent.src,
-        idLaala: newContent.idLaala || 'default-laala',
+        idLaala: newContent.idLaala,
         allowComment: newContent.allowComment,
         htags: newContent.htags,
         personnes: [],
@@ -173,7 +191,7 @@ export default function ContentPage() {
         description: '',
         type: 'texte',
         src: '',
-        idLaala: '',
+        idLaala: laalas.length > 0 ? laalas[0].id : '',
         allowComment: true,
         htags: [],
         newTag: ''
@@ -229,10 +247,22 @@ export default function ContentPage() {
     }));
   };
 
+  // Ouverture du modal avec vérification des laalas
+  const handleOpenCreateModal = async () => {
+    await fetchLaalas();
+    if (laalas.length === 0) {
+      setError('Vous devez d\'abord créer un laala avant de pouvoir créer du contenu');
+      return;
+    }
+    setShowCreateModal(true);
+  };
+
   // Chargement initial
   useEffect(() => {
     if (user) {
-      fetchContents();
+      fetchLaalas().then(() => {
+        fetchContents();
+      });
     }
   }, [user]);
 
@@ -282,40 +312,71 @@ export default function ContentPage() {
           </p>
         </div>
         <Button 
-          onClick={() => setShowCreateModal(true)}
+          onClick={handleOpenCreateModal}
           className="bg-[#f01919] hover:bg-[#d01515] text-white"
+          disabled={laalas.length === 0}
         >
           <FiPlus className="w-4 h-4 mr-2" />
           Nouveau Contenu
         </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-        <button
-          onClick={() => setSelectedTab('contents')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-            selectedTab === 'contents'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Mes Contenus ({contents.length})
-        </button>
-        <button
-          onClick={() => setSelectedTab('templates')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-            selectedTab === 'templates'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Templates ({templates.length})
-        </button>
+      {/* Alerte si aucun laala */}
+      {laalas.length === 0 && !loadingLaalas && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <FiAlertTriangle className="w-5 h-5 text-yellow-400 mr-2" />
+            <div>
+              <p className="text-yellow-800 font-medium">Aucun laala disponible</p>
+              <p className="text-yellow-700 text-sm mt-1">
+                Vous devez d'abord créer un laala avant de pouvoir créer du contenu. 
+                <a href="/dashboard/laalas" className="underline ml-1">Créer un laala</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Actions CRUD */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions disponibles</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Button 
+            onClick={handleOpenCreateModal}
+            className="bg-green-600 hover:bg-green-700 text-white"
+            disabled={laalas.length === 0}
+          >
+            <FiPlus className="w-4 h-4 mr-2" />
+            Créer
+          </Button>
+          <Button 
+            onClick={fetchContents}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={loading}
+          >
+            <FiFileText className="w-4 h-4 mr-2" />
+            Lire
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-orange-300 text-orange-600 hover:bg-orange-50"
+            disabled={filteredContents.length === 0}
+          >
+            <FiEdit3 className="w-4 h-4 mr-2" />
+            Modifier
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-red-300 text-red-600 hover:bg-red-50"
+            disabled={filteredContents.length === 0}
+          >
+            <FiTrash2 className="w-4 h-4 mr-2" />
+            Supprimer
+          </Button>
+        </div>
       </div>
 
-      {selectedTab === 'contents' ? (
-        <>
+      <>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -406,8 +467,9 @@ export default function ContentPage() {
               </div>
               <div>
                 <Button 
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={handleOpenCreateModal}
                   className="w-full bg-[#f01919] hover:bg-[#d01515] text-white"
+                  disabled={laalas.length === 0}
                 >
                   <FiPlus className="w-4 h-4 mr-2" />
                   Nouveau
@@ -454,8 +516,11 @@ export default function ContentPage() {
                             {getStatusLabel(content.displayStatus || 'draft')}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-sm text-gray-600 mb-2">
                           {content.displayDescription}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-3">
+                          📍 Laala: {content.laalaName}
                         </p>
                         <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                           <span className="flex items-center">
@@ -524,62 +589,32 @@ export default function ContentPage() {
               <p className="text-gray-600 mb-4">
                 {searchTerm || filterType !== 'all'
                   ? 'Aucun contenu ne correspond à vos critères de recherche.'
-                  : 'Vous n\'avez pas encore créé de contenus. Créez votre première publication.'
+                  : laalas.length === 0 
+                    ? 'Vous devez d\'abord créer un laala avant de pouvoir créer du contenu.'
+                    : 'Vous n\'avez pas encore créé de contenus. Créez votre première publication.'
                 }
               </p>
-              {!searchTerm && filterType === 'all' && (
+              {!searchTerm && filterType === 'all' && laalas.length > 0 && (
                 <Button 
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={handleOpenCreateModal}
                   className="bg-[#f01919] hover:bg-[#d01515] text-white"
                 >
                   <FiPlus className="w-4 h-4 mr-2" />
                   Créer votre premier contenu
                 </Button>
               )}
+              {laalas.length === 0 && (
+                <Button 
+                  onClick={() => window.location.href = '/dashboard/laalas'}
+                  className="bg-[#f01919] hover:bg-[#d01515] text-white"
+                >
+                  <FiPlus className="w-4 h-4 mr-2" />
+                  Créer votre premier laala
+                </Button>
+              )}
             </div>
           )}
         </>
-      ) : (
-        /* Templates Tab */
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {templates.map((template) => {
-              const typeInfo = getTypeInfo(template.type);
-              const IconComponent = typeInfo.icon;
-              
-              return (
-                <div key={template.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${typeInfo.color}`}>
-                      <IconComponent className="w-3 h-3 mr-1" />
-                      {typeInfo.name}
-                    </span>
-                    <span className="text-xs text-gray-500">{template.usage} utilisations</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{template.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{template.description}</p>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <FiEye className="w-4 h-4 mr-1" />
-                      Aperçu
-                    </Button>
-                    <Button size="sm" className="flex-1 bg-[#f01919] hover:bg-[#d01515] text-white">
-                      Utiliser
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="text-center py-8">
-            <Button className="bg-[#f01919] hover:bg-[#d01515] text-white">
-              <FiPlus className="w-4 h-4 mr-2" />
-              Créer un nouveau template
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Modal de création */}
       {showCreateModal && (
@@ -604,8 +639,31 @@ export default function ContentPage() {
 
             <form onSubmit={(e) => { e.preventDefault(); createContent(); }} className="space-y-4">
               <div>
+                <label htmlFor="idLaala" className="block text-sm font-medium text-gray-700 mb-1">
+                  Laala associé <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="idLaala"
+                  value={newContent.idLaala}
+                  onChange={(e) => setNewContent(prev => ({ ...prev, idLaala: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
+                  required
+                >
+                  <option value="">Sélectionner un laala</option>
+                  {laalas.map(laala => (
+                    <option key={laala.id} value={laala.id}>
+                      {laala.nom} ({laala.categorie})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Le contenu sera publié dans ce laala
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
-                  Titre du contenu
+                  Titre du contenu <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="nom"
@@ -708,7 +766,7 @@ export default function ContentPage() {
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-sm text-blue-800">
                   <FiFileText className="w-4 h-4 inline mr-1" />
-                  Votre contenu sera publié et visible par votre communauté.
+                  Votre contenu sera publié dans le laala sélectionné et visible par votre communauté.
                 </p>
               </div>
 
@@ -724,7 +782,7 @@ export default function ContentPage() {
                 <Button 
                   type="submit"
                   className="bg-[#f01919] hover:bg-[#d01515] text-white"
-                  disabled={loading || !newContent.nom.trim()}
+                  disabled={loading || !newContent.nom.trim() || !newContent.idLaala}
                 >
                   {loading ? (
                     <>

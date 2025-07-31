@@ -19,7 +19,8 @@ import {
   FiRefreshCw,
   FiPlay,
   FiPause,
-  FiSettings
+  FiSettings,
+  FiAlertTriangle
 } from 'react-icons/fi';
 
 interface LaalaExtended extends LaalaDashboard {
@@ -28,40 +29,8 @@ interface LaalaExtended extends LaalaDashboard {
   displayStatus?: 'active' | 'inactive' | 'draft';
 }
 
-const templates = [
-  {
-    id: '1',
-    name: 'Laala Éducatif',
-    type: 'education',
-    description: 'Template pour contenu éducatif',
-    usage: 32
-  },
-  {
-    id: '2',
-    name: 'Laala Divertissement',
-    type: 'entertainment',
-    description: 'Template pour divertissement',
-    usage: 28
-  },
-  {
-    id: '3',
-    name: 'Laala Business',
-    type: 'business',
-    description: 'Template professionnel',
-    usage: 15
-  },
-  {
-    id: '4',
-    name: 'Laala Personnel',
-    type: 'personal',
-    description: 'Template personnel',
-    usage: 41
-  }
-];
-
 export default function LaalasPage() {
   const [laalas, setLaalas] = useState<LaalaExtended[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'laalas' | 'templates'>('laalas');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -170,23 +139,64 @@ export default function LaalasPage() {
     }
   };
 
-  // Suppression d'un laala
-  const deleteLaala = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce laala ?')) {
-      return;
-    }
-    
+  // Suppression d'un laala avec suppression en cascade des contenus
+  const deleteLaala = async (id: string, laalaName: string) => {
+    // Vérifier d'abord s'il y a des contenus liés
     try {
+      const contentsData = await apiFetch('/api/contenus');
+      const linkedContents = Array.isArray(contentsData) 
+        ? contentsData.filter((content: any) => content.idLaala === id)
+        : [];
+      
+      let confirmMessage = `Êtes-vous sûr de vouloir supprimer le laala "${laalaName}" ?`;
+      
+      if (linkedContents.length > 0) {
+        confirmMessage += `\n\n⚠️ ATTENTION: Cette action supprimera également ${linkedContents.length} contenu(s) associé(s) à ce laala.\n\nCette action est irréversible.`;
+      }
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+      
+      setLoading(true);
+      setError(null);
+      
+      // Supprimer d'abord tous les contenus liés
+      if (linkedContents.length > 0) {
+        console.log(`🗑️ Suppression de ${linkedContents.length} contenus liés au laala ${id}`);
+        
+        for (const content of linkedContents) {
+          try {
+            await apiFetch(`/api/contenus/${content.id}`, {
+              method: 'DELETE'
+            });
+            console.log(`✅ Contenu supprimé: ${content.id}`);
+          } catch (contentErr) {
+            console.error(`❌ Erreur suppression contenu ${content.id}:`, contentErr);
+          }
+        }
+      }
+      
+      // Ensuite supprimer le laala
       await apiFetch(`/api/laalas/${id}`, {
         method: 'DELETE'
       });
       
       console.log('✅ Laala supprimé:', id);
+      
+      if (linkedContents.length > 0) {
+        // Message de succès avec info sur les contenus supprimés
+        const successMessage = `Laala "${laalaName}" et ${linkedContents.length} contenu(s) associé(s) supprimés avec succès.`;
+        console.log('✅', successMessage);
+      }
+      
       await fetchLaalas();
       
     } catch (err) {
       console.error('❌ Erreur suppression laala:', err);
-      setError('Erreur lors de la suppression');
+      setError('Erreur lors de la suppression du laala');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -277,32 +287,45 @@ export default function LaalasPage() {
         </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-        <button
-          onClick={() => setSelectedTab('laalas')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-            selectedTab === 'laalas'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Mes Laalas ({laalas.length})
-        </button>
-        <button
-          onClick={() => setSelectedTab('templates')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-            selectedTab === 'templates'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Templates ({templates.length})
-        </button>
+      {/* Actions CRUD */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions disponibles</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <FiPlus className="w-4 h-4 mr-2" />
+            Créer
+          </Button>
+          <Button 
+            onClick={fetchLaalas}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={loading}
+          >
+            <FiEye className="w-4 h-4 mr-2" />
+            Lire
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-orange-300 text-orange-600 hover:bg-orange-50"
+            disabled={filteredLaalas.length === 0}
+          >
+            <FiEdit3 className="w-4 h-4 mr-2" />
+            Modifier
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-red-300 text-red-600 hover:bg-red-50"
+            disabled={filteredLaalas.length === 0}
+          >
+            <FiTrash2 className="w-4 h-4 mr-2" />
+            Supprimer
+          </Button>
+        </div>
       </div>
 
-      {selectedTab === 'laalas' ? (
-        <>
+      <>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -483,7 +506,7 @@ export default function LaalasPage() {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => deleteLaala(laala.id!)}
+                        onClick={() => deleteLaala(laala.id!, laala.displayTitle!)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <FiTrash2 className="w-4 h-4" />
@@ -523,41 +546,6 @@ export default function LaalasPage() {
             </div>
           )}
         </>
-      ) : (
-        /* Templates Tab */
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {templates.map((template) => (
-              <div key={template.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(template.type)}`}>
-                    {template.type}
-                  </span>
-                  <span className="text-xs text-gray-500">{template.usage} utilisations</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{template.name}</h3>
-                <p className="text-sm text-gray-600 mb-4">{template.description}</p>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" className="flex-1">
-                    <FiEye className="w-4 h-4 mr-1" />
-                    Aperçu
-                  </Button>
-                  <Button size="sm" className="flex-1 bg-[#f01919] hover:bg-[#d01515] text-white">
-                    Utiliser
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center py-8">
-            <Button className="bg-[#f01919] hover:bg-[#d01515] text-white">
-              <FiPlus className="w-4 h-4 mr-2" />
-              Créer un nouveau template
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Modal de création */}
       {showCreateModal && (
@@ -661,6 +649,13 @@ export default function LaalasPage() {
                 <p className="text-sm text-blue-800">
                   <FiUsers className="w-4 h-4 inline mr-1" />
                   Votre laala sera visible selon le type choisi et pourra accueillir du contenu et des abonnés.
+                </p>
+              </div>
+
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <FiAlertTriangle className="w-4 h-4 inline mr-1" />
+                  <strong>Important:</strong> La suppression d'un laala entraînera automatiquement la suppression de tous les contenus qui y sont associés.
                 </p>
               </div>
 
