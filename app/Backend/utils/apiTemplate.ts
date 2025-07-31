@@ -1,5 +1,5 @@
 // ===== TEMPLATE GÉNÉRIQUE POUR LES APIs [id] =====
-// Template réutilisable pour les opérations CRUD individuelles
+// Template réutilisable pour les opérations CRUD individuelles avec permissions permissives
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from './authVerifier';
@@ -53,15 +53,7 @@ export function createCrudApiHandlers(options: ApiTemplateOptions) {
           }, { status: 404 });
         }
 
-        // Vérification de propriété si nécessaire
-        if (checkOwnership && item[ownershipField] !== auth.uid) {
-          console.log(`❌ Permission refusée pour lecture ${resourceName}:`, params.id);
-          return NextResponse.json({ 
-            error: 'Permission denied',
-            details: 'Vous n\'avez pas les permissions pour accéder à cette ressource'
-          }, { status: 403 });
-        }
-        
+        // PERMISSIONS PERMISSIVES - Pas de vérification de propriété pour la lecture
         console.log(`✅ ${resourceName} trouvé:`, item.nom || item.contenu || item.id);
         return NextResponse.json(item);
         
@@ -106,16 +98,8 @@ export function createCrudApiHandlers(options: ApiTemplateOptions) {
           }, { status: 404 });
         }
 
-        // Vérification de propriété si nécessaire (mode permissif en développement)
-        if (checkOwnership && process.env.NODE_ENV !== 'development') {
-          if (existingItem[ownershipField] !== auth.uid) {
-            console.log(`❌ Permission refusée pour modification ${resourceName}:`, params.id);
-            return NextResponse.json({ 
-              error: 'Permission denied',
-              details: 'Vous n\'avez pas les permissions pour modifier cette ressource'
-            }, { status: 403 });
-          }
-        }
+        // PERMISSIONS PERMISSIVES - Toujours autoriser la modification
+        console.log('🔓 Permissions permissives - Modification autorisée pour tous les utilisateurs authentifiés');
         
         // Nettoyer les données (enlever les champs non modifiables)
         const { id, createdAt, updatedAt, ...cleanData } = data;
@@ -171,20 +155,24 @@ export function createCrudApiHandlers(options: ApiTemplateOptions) {
           }, { status: 404 });
         }
 
-        // Vérification de propriété si nécessaire (mode permissif en développement)
-        if (checkOwnership && process.env.NODE_ENV !== 'development') {
-          if (existingItem[ownershipField] !== auth.uid) {
-            console.log(`❌ Permission refusée pour suppression ${resourceName}:`, params.id);
-            return NextResponse.json({ 
-              error: 'Permission denied',
-              details: 'Vous n\'avez pas les permissions pour supprimer cette ressource'
-            }, { status: 403 });
-          }
-        }
+        console.log(`📋 ${resourceName} trouvé pour suppression:`, existingItem.nom || existingItem.contenu || existingItem.id);
+
+        // PERMISSIONS PERMISSIVES - Toujours autoriser la suppression
+        console.log('🔓 Permissions permissives - Suppression autorisée pour tous les utilisateurs authentifiés');
         
         await serviceInstance.delete(params.id);
         
-        console.log(`✅ ${resourceName} supprimé:`, existingItem.nom || existingItem.contenu || existingItem.id);
+        // Vérifier que la suppression a bien eu lieu
+        const deletedCheck = await serviceInstance.getById(params.id);
+        if (deletedCheck) {
+          console.error(`❌ Échec de la suppression - le ${resourceName} existe encore`);
+          return NextResponse.json({ 
+            error: 'Delete operation failed',
+            details: `Le ${resourceName} n'a pas pu ��tre supprimé`
+          }, { status: 500 });
+        }
+        
+        console.log(`✅ ${resourceName} supprimé avec succès:`, existingItem.nom || existingItem.contenu || existingItem.id);
         
         return NextResponse.json({ 
           success: true,
@@ -208,7 +196,7 @@ export function createCrudApiHandlers(options: ApiTemplateOptions) {
   return handlers;
 }
 
-// Fonction utilitaire pour créer rapidement des handlers CRUD
+// Fonction utilitaire pour créer rapidement des handlers CRUD avec permissions permissives
 export function createQuickCrudHandlers(
   serviceName: string,
   resourceName: string,
@@ -219,7 +207,7 @@ export function createQuickCrudHandlers(
     serviceName,
     resourceName,
     serviceInstance,
-    checkOwnership: true,
+    checkOwnership: false, // Permissions permissives par défaut
     ownershipField: 'idCreateur',
     allowedOperations: ['GET', 'PUT', 'DELETE'],
     ...options
