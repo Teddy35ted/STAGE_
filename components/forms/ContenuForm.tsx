@@ -17,9 +17,10 @@ import {
 interface ContenuFormProps {
   contenu?: ContenuCore;
   onSuccess: () => void;
+  trigger?: React.ReactNode;
 }
 
-export function ContenuForm({ contenu, onSuccess }: ContenuFormProps) {
+export function ContenuForm({ contenu, onSuccess, trigger }: ContenuFormProps) {
   const [nom, setNom] = useState(contenu?.nom || '');
   const [type, setType] = useState(contenu?.type || 'image');
   const [src, setSrc] = useState(contenu?.src || '');
@@ -107,7 +108,7 @@ export function ContenuForm({ contenu, onSuccess }: ContenuFormProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>{contenu ? 'Modifier' : 'Ajouter un contenu'}</Button>
+        {trigger || <Button>{contenu ? 'Modifier' : 'Ajouter un contenu'}</Button>}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

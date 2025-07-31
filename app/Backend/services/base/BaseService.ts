@@ -64,14 +64,32 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
   // READ
   async getById(id: string): Promise<T | null> {
     try {
+      console.log(`📖 Lecture ${this.collectionName} ID:`, id);
+      
+      if (!id || id.trim() === '') {
+        console.warn(`⚠️ ID vide pour ${this.collectionName}`);
+        return null;
+      }
+      
       const doc = await this.collection.doc(id).get();
-      if (!doc.exists) return null;
+      
+      if (!doc.exists) {
+        console.log(`❌ Document ${id} non trouvé dans ${this.collectionName}`);
+        return null;
+      }
       
       const data = doc.data();
-      if (!data) return null;
+      if (!data) {
+        console.log(`❌ Données vides pour ${id} dans ${this.collectionName}`);
+        return null;
+      }
       
-      return { id: doc.id, ...data } as unknown as T;
+      const result = { id: doc.id, ...data } as unknown as T;
+      console.log(`✅ Document ${id} trouvé dans ${this.collectionName}:`, result.id);
+      
+      return result;
     } catch (error) {
+      console.error(`❌ Erreur lecture ${id} dans ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la lecture de ${id} dans ${this.collectionName}`, error);
     }
   }
@@ -133,13 +151,32 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
   // UPDATE
   async update(id: string, data: Partial<T>): Promise<void> {
     try {
+      console.log(`✏️ Mise à jour ${this.collectionName} ID:`, id);
+      console.log(`📝 Données de mise à jour:`, data);
+      
+      if (!id || id.trim() === '') {
+        throw new ServiceError(`ID vide pour mise à jour dans ${this.collectionName}`);
+      }
+      
+      // Vérifier que le document existe avant mise à jour
+      const doc = await this.collection.doc(id).get();
+      if (!doc.exists) {
+        throw new ServiceError(`Document ${id} non trouvé dans ${this.collectionName} pour mise à jour`);
+      }
+      
+      // Nettoyer les données (enlever les champs non modifiables)
+      const { id: _, createdAt, ...cleanData } = data as any;
+      
       const updateData = {
-        ...data,
+        ...cleanData,
         updatedAt: dbUtils.timestamp(),
       };
       
       await this.collection.doc(id).update(updateData);
+      console.log(`✅ Mise à jour réussie pour ${id} dans ${this.collectionName}`);
+      
     } catch (error) {
+      console.error(`❌ Erreur mise à jour ${id} dans ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la mise à jour de ${id} dans ${this.collectionName}`, error);
     }
   }
@@ -147,8 +184,30 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
   // DELETE
   async delete(id: string): Promise<void> {
     try {
+      console.log(`🗑️ Suppression ${this.collectionName} ID:`, id);
+      
+      if (!id || id.trim() === '') {
+        throw new ServiceError(`ID vide pour suppression dans ${this.collectionName}`);
+      }
+      
+      // Vérifier que le document existe avant suppression
+      const doc = await this.collection.doc(id).get();
+      if (!doc.exists) {
+        console.warn(`⚠️ Document ${id} déjà supprimé ou inexistant dans ${this.collectionName}`);
+        return; // Ne pas lever d'erreur si déjà supprimé
+      }
+      
       await this.collection.doc(id).delete();
+      console.log(`✅ Suppression réussie pour ${id} dans ${this.collectionName}`);
+      
+      // Vérifier que la suppression a bien eu lieu
+      const deletedDoc = await this.collection.doc(id).get();
+      if (deletedDoc.exists) {
+        throw new ServiceError(`Échec de la suppression de ${id} dans ${this.collectionName}`);
+      }
+      
     } catch (error) {
+      console.error(`❌ Erreur suppression ${id} dans ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la suppression de ${id} dans ${this.collectionName}`, error);
     }
   }
