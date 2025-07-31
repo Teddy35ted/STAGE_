@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import LaalaCreateForm from '../../../components/forms/LaalaCreateForm';
 import { 
   FiEdit3, 
   FiPlus, 
@@ -14,6 +15,7 @@ import {
   FiMoreVertical,
   FiTrendingUp
 } from 'react-icons/fi';
+import { LaalaCore, LaalaDashboard, generateLaalaAutoFields } from '../../models/laala';
 
 interface Laala {
   id: string;
@@ -84,6 +86,54 @@ export default function LaalasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Informations du créateur simulées - à remplacer par les vraies données utilisateur
+  const creatorInfo = {
+    id: '92227616TG',
+    nom: 'Sophie Martin',
+    avatar: 'https://firebasestorage.googleapis.com/v0/b/la-a-la.appspot.com/o/assets%2Fprofil.png?alt=media',
+    iscert: false
+  };
+
+  const handleCreateLaala = (laalaData: LaalaCore) => {
+    try {
+      // Générer les données automatiques
+      const autoFields = generateLaalaAutoFields(laalaData, creatorInfo);
+      
+      // Créer le Laala complet
+      const newLaala: LaalaDashboard = {
+        ...laalaData,
+        ...autoFields
+      };
+
+      // Convertir vers le format d'affichage local
+      const displayLaala: Laala = {
+        id: newLaala.id,
+        name: newLaala.nom,
+        description: newLaala.description,
+        category: newLaala.categorie,
+        followers: 0,
+        posts: 0,
+        engagement: 0,
+        status: 'active',
+        createdAt: newLaala.date,
+        lastActivity: newLaala.date
+      };
+
+      // Ajouter à la liste
+      setLaalas(prev => [displayLaala, ...prev]);
+
+      // Ici vous pourriez sauvegarder en base de données
+      console.log('Nouveau Laala créé:', newLaala);
+      
+      // Afficher un message de succès
+      alert('Laala créé avec succès !');
+      
+    } catch (error) {
+      console.error('Erreur lors de la création du Laala:', error);
+      alert('Erreur lors de la création du Laala');
+    }
+  };
 
   const filteredLaalas = laalas.filter(laala => {
     const matchesSearch = laala.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -305,25 +355,13 @@ export default function LaalasPage() {
         </div>
       )}
 
-      {/* Create Modal Placeholder */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Créer un nouveau Laala</h2>
-            <p className="text-gray-600 mb-4">
-              Cette fonctionnalité sera bientôt disponible.
-            </p>
-            <div className="flex justify-end space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowCreateModal(false)}
-              >
-                Fermer
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create Laala Form */}
+      <LaalaCreateForm
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateLaala}
+        creatorId={creatorInfo.id}
+      />
     </div>
   );
 }

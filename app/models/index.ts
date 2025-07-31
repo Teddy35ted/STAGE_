@@ -33,6 +33,16 @@ export type {
 // === PRIORITÉ 4: MESSAGES (En attente) ===
 export * from './message';
 
+// === SERVICES ===
+export * from './services';
+export {
+  UserService,
+  LaalaService,
+  ContenuService,
+  DashboardService,
+  ModelUtils
+} from './services';
+
 // ===== INTERFACES GLOBALES DASHBOARD =====
 
 // Interface principale pour les statistiques du dashboard

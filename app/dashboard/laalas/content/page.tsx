@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
+import ContenuCreateForm from '../../../../components/forms/ContenuCreateForm';
 import { 
   FiEdit3, 
   FiPlus, 
@@ -17,6 +18,7 @@ import {
   FiMoreVertical,
   FiFilter
 } from 'react-icons/fi';
+import { ContenuCore, ContenuDashboard, generateContenuAutoFields } from '../../../models/contenu';
 
 interface Content {
   id: string;
@@ -102,8 +104,68 @@ export default function ContentPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterLaala, setFilterLaala] = useState<string>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const laalas = Array.from(new Set(contents.map(c => c.laala)));
+
+  // Informations du créateur simulées - à remplacer par les vraies données utilisateur
+  const creatorInfo = {
+    id: '92227616TG',
+    nom: 'Sophie Martin',
+    avatar: 'https://firebasestorage.googleapis.com/v0/b/la-a-la.appspot.com/o/assets%2Fprofil.png?alt=media',
+    iscert: false
+  };
+
+  // Laalas disponibles pour la création de contenu
+  const availableLaalas = [
+    { id: '1', name: 'Mon Laala Lifestyle' },
+    { id: '2', name: 'Tech & Innovation' },
+    { id: '3', name: 'Cuisine du Monde' },
+    { id: '4', name: 'Fitness & Santé' }
+  ];
+
+  const handleCreateContenu = (contenuData: ContenuCore) => {
+    try {
+      // Générer les données automatiques
+      const autoFields = generateContenuAutoFields(contenuData, creatorInfo, contents.length + 1);
+      
+      // Créer le contenu complet
+      const newContenu: ContenuDashboard = {
+        ...contenuData,
+        ...autoFields
+      };
+
+      // Trouver le nom du Laala
+      const laalaName = availableLaalas.find(l => l.id === contenuData.idLaala)?.name || 'Laala inconnu';
+
+      // Convertir vers le format d'affichage local
+      const displayContent: Content = {
+        id: newContenu.id,
+        title: newContenu.nom,
+        type: newContenu.type as 'image' | 'video' | 'text',
+        laala: laalaName,
+        status: 'published',
+        views: 0,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        publishedAt: new Date().toISOString()
+      };
+
+      // Ajouter à la liste
+      setContents(prev => [displayContent, ...prev]);
+
+      // Ici vous pourriez sauvegarder en base de données
+      console.log('Nouveau contenu créé:', newContenu);
+      
+      // Afficher un message de succès
+      alert('Contenu créé avec succès !');
+      
+    } catch (error) {
+      console.error('Erreur lors de la création du contenu:', error);
+      alert('Erreur lors de la création du contenu');
+    }
+  };
 
   const filteredContents = contents.filter(content => {
     const matchesSearch = content.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -169,7 +231,10 @@ export default function ContentPage() {
             Gérez tout votre contenu publié sur vos Laalas
           </p>
         </div>
-        <Button className="bg-[#f01919] hover:bg-[#d01515] text-white">
+        <Button 
+          onClick={() => setShowCreateModal(true)}
+          className="bg-[#f01919] hover:bg-[#d01515] text-white"
+        >
           <FiPlus className="w-4 h-4 mr-2" />
           Nouveau contenu
         </Button>
@@ -362,7 +427,7 @@ export default function ContentPage() {
                       <div className="text-sm text-gray-900">
                         {content.status === 'scheduled' && content.scheduledFor ? (
                           <div>
-                            <p className="text-xs text-gray-500">Programm�� pour:</p>
+                            <p className="text-xs text-gray-500">Programmé pour:</p>
                             <p>{formatDate(content.scheduledFor)}</p>
                           </div>
                         ) : (
@@ -401,12 +466,24 @@ export default function ContentPage() {
               : 'Vous n\'avez pas encore créé de contenu.'
             }
           </p>
-          <Button className="bg-[#f01919] hover:bg-[#d01515] text-white">
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-[#f01919] hover:bg-[#d01515] text-white"
+          >
             <FiPlus className="w-4 h-4 mr-2" />
             Créer votre premier contenu
           </Button>
         </div>
       )}
+
+      {/* Create Content Form */}
+      <ContenuCreateForm
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateContenu}
+        creatorId={creatorInfo.id}
+        availableLaalas={availableLaalas}
+      />
     </div>
   );
 }

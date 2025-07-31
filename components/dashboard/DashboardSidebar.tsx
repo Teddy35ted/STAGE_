@@ -45,7 +45,7 @@ const menuItems = [
     href: '/dashboard/profile',
     submenu: [
       { title: 'Mon Profil', href: '/dashboard/profile' },
-      { title: 'Mes Boutiques', href: '/dashboard/profile/shops' },
+      { title: 'Mes Boutiques', href: '/dashboard/boutiques' },
       { title: 'Contribution', href: '/dashboard/profile/contribution' },
       { title: 'Cogestionnaires', href: '/dashboard/profile/managers' },
     ],
