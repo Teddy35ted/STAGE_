@@ -204,27 +204,75 @@ export class MessageService extends BaseService<ValidationMessageT> {
     try {
       console.log('📋 Récupération messages pour utilisateur:', userId);
       
-      const query = this.collection
-        .where('idExpediteur', '==', userId)
-        .orderBy('createdAt', 'desc');
+      // Essayer plusieurs champs possibles pour l'expéditeur
+      const queries = [
+        // Requête 1: par idsender (nouveau format)
+        this.collection.where('idsender', '==', userId),
+        // Requête 2: par idExpediteur (ancien format)
+        this.collection.where('idExpediteur', '==', userId)
+      ];
       
-      const snapshot = await query.get();
+      let allMessages: ValidationMessageT[] = [];
+      
+      for (const query of queries) {
+        try {
+          const snapshot = await query.get();
+          const messages = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              ...data,
+              id: doc.id
+            } as ValidationMessageT;
+          });
+          allMessages = allMessages.concat(messages);
+        } catch (queryError) {
+          console.warn(`⚠️ Erreur sur une requête:`, queryError);
+          // Continuer avec les autres requêtes
+        }
+      }
+      
+      // Supprimer les doublons basés sur l'ID
+      const uniqueMessages = allMessages.filter((message, index, self) => 
+        index === self.findIndex(m => m.id === message.id)
+      );
+      
+      // Trier par date de création (plus récent en premier)
+
+      
+      console.log(`✅ ${uniqueMessages.length} messages uniques trouvés pour utilisateur ${userId}`);
+      
+      return uniqueMessages;
+      
+    } catch (error) {
+      console.error(`❌ Erreur récupération messages utilisateur ${userId}:`, error);
+      throw new ServiceError(`Erreur lors de la récupération des messages de l'utilisateur ${userId}`, error);
+    }
+  }
+
+  // Nouvelle méthode pour récupérer tous les messages (pour les admins ou tests)
+  async getAllMessages(): Promise<ValidationMessageT[]> {
+    try {
+      console.log('📋 Récupération de TOUS les messages...');
+      
+      const snapshot = await this.collection
+        .orderBy('createdAt', 'desc')
+        .get();
       
       const messages = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           ...data,
-          id: doc.id // S'assurer que l'ID Firestore est utilisé
+          id: doc.id
         } as ValidationMessageT;
       });
       
-      console.log(`✅ ${messages.length} messages trouvés pour utilisateur ${userId}`);
+      console.log(`✅ ${messages.length} messages totaux récupérés`);
       
       return messages;
       
     } catch (error) {
-      console.error(`❌ Erreur récupération messages utilisateur ${userId}:`, error);
-      throw new ServiceError(`Erreur lors de la récupération des messages de l'utilisateur ${userId}`, error);
+      console.error('❌ Erreur récupération tous messages:', error);
+      throw new ServiceError('Erreur lors de la récupération de tous les messages', error);
     }
   }
 }
