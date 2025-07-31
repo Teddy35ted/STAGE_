@@ -5,22 +5,51 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave } from 'react-icons/fi';
 
-export default function ProfilePage() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    firstName: 'Jean',
-    lastName: 'Dupont',
-    email: 'jean.dupont@example.com',
-    phone: '+33 6 12 34 56 78',
-    address: '123 Rue de la Paix, 75001 Paris',
-    bio: 'Animateur professionnel passionné par la création de contenu engageant.',
-    avatar: null,
-  });
+import { useAuth } from '../../../contexts/AuthContext';
+import { UserDashboard } from '../../../models/user';
+import { apiFetch } from '../../../lib/api';
 
-  const handleSave = () => {
-    // Ici, vous ajouteriez la logique pour sauvegarder le profil
-    setIsEditing(false);
+export default function ProfilePage() {
+  const { user } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
+  const [profile, setProfile] = useState<UserDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        try {
+          const data = await apiFetch(`/api/users?id=${user.uid}`);
+          setProfile(data);
+        } catch (err) {
+          setError('Failed to fetch profile');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  const handleSave = async () => {
+    if (profile) {
+      try {
+        await apiFetch(`/api/users/${profile.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(profile),
+        });
+        setIsEditing(false);
+      } catch (err) {
+        setError('Failed to save profile');
+      }
+    }
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!profile) return <div>No profile found.</div>;
 
   return (
     <div className="space-y-6">

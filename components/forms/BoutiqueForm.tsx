@@ -5,7 +5,7 @@ import { Boutique } from '../../models/boutiques';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
+// import { Textarea } from '../ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -63,7 +63,13 @@ export function BoutiqueForm({ boutique, onSuccess }: BoutiqueFormProps) {
           </div>
           <div>
             <label htmlFor="desc">Description</label>
-            <Textarea id="desc" value={desc} onChange={(e) => setDesc(e.target.value)} required />
+            <textarea
+              id="desc"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              required
+              className="w-full border rounded px-3 py-2"
+            />
           </div>
           <div>
             <label htmlFor="type">Type</label>

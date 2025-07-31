@@ -1,31 +1,32 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LaalaDashboard } from '../../models/laala';
+import { ValidationMessageT } from '../../../models/message';
 import { apiFetch } from '../../../lib/api';
 import { DataTable } from '../../../components/ui/data-table';
 import { getColumns } from './columns';
-import { LaalaForm } from '../../../components/forms/LaalaForm';
+import { MessageForm } from '../../../components/forms/MessageForm';
 
-export default function LaalasPage() {
-  const [laalas, setLaalas] = useState<LaalaDashboard[]>([]);
+export default function MessagesPage() {
+  const [messages, setMessages] = useState<ValidationMessageT[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLaalas = async () => {
+  const fetchMessages = async () => {
     try {
       setLoading(true);
-      const data = await apiFetch('/api/laalas');
-      setLaalas(data);
+      // Vous devez implémenter une route pour récupérer toutes les conversations
+      const data = await apiFetch('/api/messages');
+      setMessages(data);
     } catch (err) {
-      setError('Failed to fetch laalas');
+      setError('Failed to fetch messages');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLaalas();
+    fetchMessages();
   }, []);
 
   if (loading) return <div>Loading...</div>;
@@ -34,10 +35,10 @@ export default function LaalasPage() {
   return (
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Gestion des Laalas</h1>
-        <LaalaForm onSuccess={fetchLaalas} />
+        <h1 className="text-2xl font-bold">Gestion des Messages</h1>
+        <MessageForm onSuccess={fetchMessages} />
       </div>
-      <DataTable columns={getColumns(fetchLaalas)} data={laalas} />
+      <DataTable columns={getColumns(fetchMessages)} data={messages} />
     </div>
   );
 }
