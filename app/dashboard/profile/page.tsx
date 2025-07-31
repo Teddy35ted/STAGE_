@@ -22,10 +22,13 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       if (user) {
         try {
-          const data = await apiFetch(`/api/users?id=${user.uid}`);
+          console.log('📖 Récupération profil pour UID:', user.uid);
+          const data = await apiFetch(`/api/users/${user.uid}`);
+          console.log('✅ Profil récupéré:', data);
           setProfile(data);
         } catch (err) {
-          setError('Failed to fetch profile');
+          console.error('❌ Erreur récupération profil:', err);
+          setError('Impossible de charger le profil');
         } finally {
           setLoading(false);
         }

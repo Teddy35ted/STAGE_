@@ -26,39 +26,26 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
 
   // CREATE
   async create(data: Partial<T>): Promise<string> {
-    const { CrudRecoveryService } = await import('../../utils/recovery');
-    
-    return CrudRecoveryService.safeCreate(
-      {
-        create: async (data: Partial<T>) => {
-          try {
-            console.log(`📝 Création dans ${this.collectionName}:`, data);
-            
-            const docData = {
-              ...data,
-              createdAt: dbUtils.timestamp(),
-              updatedAt: dbUtils.timestamp(),
-            };
-            
-            const docRef = await this.collection.add(docData);
-            console.log(`✅ Document créé dans ${this.collectionName} avec ID:`, docRef.id);
-            
-            return docRef.id;
-          } catch (error) {
-            console.error(`❌ Erreur création ${this.collectionName}:`, error);
-            throw new ServiceError(`Erreur lors de la création dans ${this.collectionName}`, error);
-          }
-        }
-      },
-      data,
-      {
-        maxRetries: 3,
-        retryDelay: 1000,
-        onRetry: (attempt, error) => {
-          console.warn(`🔄 Retry création ${this.collectionName} (tentative ${attempt}):`, error.message);
-        }
-      }
-    );
+    try {
+      console.log(`📝 Création dans ${this.collectionName}:`, data);
+      
+      // Enlever l'ID s'il existe dans les données (Firestore le générera)
+      const { id: _, ...cleanData } = data as any;
+      
+      const docData = {
+        ...cleanData,
+        createdAt: dbUtils.timestamp(),
+        updatedAt: dbUtils.timestamp(),
+      };
+      
+      const docRef = await this.collection.add(docData);
+      console.log(`✅ Document créé dans ${this.collectionName} avec ID Firestore:`, docRef.id);
+      
+      return docRef.id;
+    } catch (error) {
+      console.error(`❌ Erreur création ${this.collectionName}:`, error);
+      throw new ServiceError(`Erreur lors de la création dans ${this.collectionName}`, error);
+    }
   }
 
   // READ
@@ -84,7 +71,12 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
         return null;
       }
       
-      const result = { id: doc.id, ...data } as unknown as T;
+      // CORRECTION CRITIQUE : S'assurer que l'ID Firestore est toujours utilisé
+      const result = { 
+        ...data,
+        id: doc.id // Forcer l'utilisation de l'ID Firestore
+      } as unknown as T;
+      
       console.log(`✅ Document ${id} trouvé dans ${this.collectionName}:`, result.id);
       
       return result;
@@ -96,6 +88,8 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
 
   async getAll(options: PaginationOptions = {}): Promise<T[]> {
     try {
+      console.log(`📋 Récupération tous ${this.collectionName}...`);
+      
       let query: Query = this.collection;
       
       if (options.orderBy) {
@@ -111,17 +105,35 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
       }
 
       const snapshot = await query.get();
-      return snapshot.docs.map(doc => {
+      
+      const results = snapshot.docs.map(doc => {
         const data = doc.data();
-        return { id: doc.id, ...data } as unknown as T;
+        // CORRECTION CRITIQUE : S'assurer que l'ID Firestore est toujours utilisé
+        return { 
+          ...data,
+          id: doc.id // Forcer l'utilisation de l'ID Firestore
+        } as unknown as T;
       });
+      
+      console.log(`✅ ${results.length} documents récupérés dans ${this.collectionName}`);
+      
+      // Vérifier que tous les éléments ont un ID
+      const elementsWithIds = results.filter(r => r.id && r.id.trim() !== '');
+      if (elementsWithIds.length !== results.length) {
+        console.warn(`⚠️ ${results.length - elementsWithIds.length} éléments sans ID dans ${this.collectionName}`);
+      }
+      
+      return results;
     } catch (error) {
+      console.error(`❌ Erreur lecture tous ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la lecture de ${this.collectionName}`, error);
     }
   }
 
   async query(filters: QueryFilter[], options: PaginationOptions = {}): Promise<T[]> {
     try {
+      console.log(`🔍 Requête ${this.collectionName} avec filtres:`, filters);
+      
       let query: Query = this.collection;
       
       // Appliquer les filtres
@@ -139,11 +151,21 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
       }
 
       const snapshot = await query.get();
-      return snapshot.docs.map(doc => {
+      
+      const results = snapshot.docs.map(doc => {
         const data = doc.data();
-        return { id: doc.id, ...data } as unknown as T;
+        // CORRECTION CRITIQUE : S'assurer que l'ID Firestore est toujours utilisé
+        return { 
+          ...data,
+          id: doc.id // Forcer l'utilisation de l'ID Firestore
+        } as unknown as T;
       });
+      
+      console.log(`✅ ${results.length} documents trouvés avec requête dans ${this.collectionName}`);
+      
+      return results;
     } catch (error) {
+      console.error(`❌ Erreur requête ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la requête dans ${this.collectionName}`, error);
     }
   }
@@ -197,6 +219,9 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
         return; // Ne pas lever d'erreur si déjà supprimé
       }
       
+      const existingData = doc.data();
+      console.log(`📋 Document à supprimer dans ${this.collectionName}:`, existingData?.nom || existingData?.contenu || 'Sans nom');
+      
       await this.collection.doc(id).delete();
       console.log(`✅ Suppression réussie pour ${id} dans ${this.collectionName}`);
       
@@ -215,13 +240,18 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
   // BATCH OPERATIONS
   async batchCreate(items: Partial<T>[]): Promise<string[]> {
     try {
+      console.log(`📦 Création en lot dans ${this.collectionName}:`, items.length, 'éléments');
+      
       const batch = adminDb.batch();
       const ids: string[] = [];
       
       items.forEach(item => {
+        // Enlever l'ID s'il existe dans les données
+        const { id: _, ...cleanItem } = item as any;
+        
         const docRef = this.collection.doc();
         const docData = {
-          ...item,
+          ...cleanItem,
           createdAt: dbUtils.timestamp(),
           updatedAt: dbUtils.timestamp(),
         };
@@ -230,14 +260,19 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
       });
       
       await batch.commit();
+      console.log(`✅ ${ids.length} documents créés en lot dans ${this.collectionName}`);
+      
       return ids;
     } catch (error) {
+      console.error(`❌ Erreur création en lot ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la création en lot dans ${this.collectionName}`, error);
     }
   }
 
   async batchDelete(ids: string[]): Promise<void> {
     try {
+      console.log(`🗑️ Suppression en lot dans ${this.collectionName}:`, ids.length, 'éléments');
+      
       const batch = adminDb.batch();
       
       ids.forEach(id => {
@@ -245,7 +280,10 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
       });
       
       await batch.commit();
+      console.log(`✅ ${ids.length} documents supprimés en lot dans ${this.collectionName}`);
+      
     } catch (error) {
+      console.error(`❌ Erreur suppression en lot ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la suppression en lot dans ${this.collectionName}`, error);
     }
   }
@@ -253,9 +291,14 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
   // UTILITIES
   async exists(id: string): Promise<boolean> {
     try {
+      if (!id || id.trim() === '') {
+        return false;
+      }
+      
       const doc = await this.collection.doc(id).get();
       return doc.exists;
     } catch (error) {
+      console.error(`❌ Erreur vérification existence ${id} dans ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors de la vérification d'existence de ${id}`, error);
     }
   }
@@ -271,9 +314,56 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
       }
       
       const snapshot = await query.count().get();
-      return snapshot.data().count;
+      const count = snapshot.data().count;
+      
+      console.log(`📊 Comptage ${this.collectionName}:`, count, 'éléments');
+      
+      return count;
     } catch (error) {
+      console.error(`❌ Erreur comptage ${this.collectionName}:`, error);
       throw new ServiceError(`Erreur lors du comptage dans ${this.collectionName}`, error);
+    }
+  }
+
+  // Méthode utilitaire pour vérifier l'intégrité des données
+  async checkDataIntegrity(): Promise<{
+    collectionName: string;
+    totalItems: number;
+    itemsWithIds: number;
+    itemsWithoutIds: number;
+    sampleIds: string[];
+    healthStatus: 'Excellent' | 'Bon' | 'Problématique' | 'Critique';
+  }> {
+    try {
+      console.log(`🔍 Vérification intégrité ${this.collectionName}...`);
+      
+      const allItems = await this.getAll({ limit: 100 }); // Limiter pour la performance
+      const itemsWithIds = allItems.filter(item => item.id && item.id.trim() !== '');
+      const itemsWithoutIds = allItems.filter(item => !item.id || item.id.trim() === '');
+      
+      const healthScore = itemsWithIds.length / allItems.length;
+      let healthStatus: 'Excellent' | 'Bon' | 'Problématique' | 'Critique';
+      
+      if (healthScore === 1) healthStatus = 'Excellent';
+      else if (healthScore >= 0.9) healthStatus = 'Bon';
+      else if (healthScore >= 0.7) healthStatus = 'Problématique';
+      else healthStatus = 'Critique';
+      
+      const result = {
+        collectionName: this.collectionName,
+        totalItems: allItems.length,
+        itemsWithIds: itemsWithIds.length,
+        itemsWithoutIds: itemsWithoutIds.length,
+        sampleIds: itemsWithIds.slice(0, 5).map(item => item.id),
+        healthStatus
+      };
+      
+      console.log(`📊 Intégrité ${this.collectionName}:`, result);
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Erreur vérification intégrité ${this.collectionName}:`, error);
+      throw new ServiceError(`Erreur lors de la vérification de l'intégrité de ${this.collectionName}`, error);
     }
   }
 }
