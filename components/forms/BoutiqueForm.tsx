@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Boutique } from '../../app/models/boutiques';
-import { apiFetch } from '../../lib/api';
+import { useApi } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 // import { Textarea } from '../ui/textarea';
@@ -25,6 +25,8 @@ export function BoutiqueForm({ boutique, onSuccess }: BoutiqueFormProps) {
   const [type, setType] = useState(boutique?.type || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

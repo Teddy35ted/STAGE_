@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { CoGestionnaire } from '../../app/models/co_gestionnaire';
-import { apiFetch } from '../../lib/api';
+import { useApi } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
@@ -27,6 +27,8 @@ export function CoGestionnaireForm({ coGestionnaire, onSuccess }: CoGestionnaire
   const [ACCES, setACCES] = useState(coGestionnaire?.ACCES || 'consulter');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ValidationMessageT } from '../../app/models/message';
-import { apiFetch } from '../../lib/api';
+import { useApi } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -23,6 +23,8 @@ export function MessageForm({ onSuccess }: MessageFormProps) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

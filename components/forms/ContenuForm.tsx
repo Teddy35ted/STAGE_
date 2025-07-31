@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ContenuCore } from '../../app/models/contenu';
-import { apiFetch } from '../../lib/api';
+import { useApi } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -26,6 +26,8 @@ export function ContenuForm({ contenu, onSuccess }: ContenuFormProps) {
   const [idLaala, setIdLaala] = useState(contenu?.idLaala || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { apiFetch } = useApi();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
