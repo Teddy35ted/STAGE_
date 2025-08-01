@@ -1,0 +1,16 @@
+{
+  "name": "La-à-La Dashboard Animateur Pro",
+  "short_name": "La-à-La",
+  "description": "Dashboard pour les animateurs professionnels de La-à-La",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f01919",
+  "icons": [
+    {
+      "src": "/laala.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
