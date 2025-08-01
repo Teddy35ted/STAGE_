@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
+import { useApi } from '../../../../lib/api';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { Laala } from '../../../models/laala';
 import { 
   FiTrendingUp, 
   FiEye, 
@@ -16,7 +19,8 @@ import {
   FiActivity,
   FiTarget,
   FiFilter,
-  FiDownload
+  FiDownload,
+  FiRefreshCw
 } from 'react-icons/fi';
 
 interface LaalaStats {
@@ -294,12 +298,148 @@ const laalaStatsData: LaalaStats[] = [
 ];
 
 export default function LaalaStatsPage() {
-  const [stats, setStats] = useState<LaalaStats[]>(laalaStatsData);
+  const [stats, setStats] = useState<LaalaStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'followers' | 'engagement' | 'revenue' | 'growth'>('followers');
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+
+  const { apiFetch } = useApi();
+  const { user } = useAuth();
+
+  // Fonction pour générer des statistiques aléatoires
+  const generateRandomStats = (laala: Laala): LaalaStats => {
+    const baseFollowers = Math.floor(Math.random() * 50000) + 500;
+    const baseViews = Math.floor(Math.random() * 1000000) + 10000;
+    const engagementRate = Math.random() * 12 + 3; // 3-15%
+    const totalLikes = Math.floor(baseViews * (engagementRate / 100) * (Math.random() * 0.6 + 0.4));
+    const totalComments = Math.floor(totalLikes * (Math.random() * 0.2 + 0.1));
+    const totalShares = Math.floor(totalLikes * (Math.random() * 0.15 + 0.05));
+
+    const categories = [
+      'Lifestyle & Bien-être', 'Technologie', 'Cuisine & Gastronomie', 
+      'Sport & Fitness', 'Mode & Beauté', 'Voyage & Culture', 
+      'Business & Entrepreneuriat', 'Art & Créativité'
+    ];
+    
+    const ageGroups = ['18-24 ans', '25-34 ans', '30-45 ans', '35-50 ans', '45-60 ans'];
+    const genders = ['Femmes (68%)', 'Hommes (62%)', 'Femmes (74%)', 'Hommes (58%)', 'Mixte (50%)'];
+    const locations = ['France (72%)', 'France (68%)', 'Europe (65%)', 'Francophonie (70%)'];
+    const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+    const times = ['07h-09h', '09h-11h', '11h-13h', '14h-16h', '17h-19h', '19h-21h', '20h-22h'];
+
+    const totalPosts = Math.floor(Math.random() * 200) + 20;
+    const postsThisMonth = Math.floor(Math.random() * 20) + 1;
+    const monthlyEarnings = Math.random() * 3000 + 200;
+    const totalEarnings = monthlyEarnings * (Math.random() * 12 + 6);
+    const followerGrowth = Math.floor((Math.random() - 0.2) * 500); // -100 à +400
+    const followerGrowthRate = (followerGrowth / baseFollowers) * 100;
+
+    return {
+      id: laala.id || '',
+      name: laala.nom || 'Laala sans nom',
+      category: categories[Math.floor(Math.random() * categories.length)],
+      createdAt: laala.dateCreation || new Date().toISOString(),
+      isActive: Math.random() > 0.2, // 80% de chance d'être actif
+      followers: {
+        total: baseFollowers,
+        growth: followerGrowth,
+        growthRate: parseFloat(followerGrowthRate.toFixed(1))
+      },
+      engagement: {
+        totalViews: baseViews,
+        totalLikes,
+        totalComments,
+        totalShares,
+        engagementRate: parseFloat(engagementRate.toFixed(1)),
+        averageTimeSpent: Math.random() * 5 + 1 // 1-6 minutes
+      },
+      content: {
+        totalPosts,
+        postsThisMonth,
+        averagePostsPerWeek: parseFloat((postsThisMonth / 4).toFixed(1)),
+        topPerformingPost: {
+          title: `Contenu populaire de ${laala.nom}`,
+          views: Math.floor(Math.random() * 50000) + 5000,
+          engagement: Math.floor(Math.random() * 2000) + 200
+        }
+      },
+      revenue: {
+        totalEarnings,
+        monthlyEarnings,
+        averageRevenuePerPost: parseFloat((monthlyEarnings / postsThisMonth).toFixed(2)),
+        revenueGrowth: (Math.random() - 0.3) * 50 // -15% à +35%
+      },
+      demographics: {
+        topAgeGroup: ageGroups[Math.floor(Math.random() * ageGroups.length)],
+        topGender: genders[Math.floor(Math.random() * genders.length)],
+        topLocation: locations[Math.floor(Math.random() * locations.length)],
+        audienceQuality: Math.floor(Math.random() * 40 + 60) // 60-100
+      },
+      performance: {
+        bestDay: days[Math.floor(Math.random() * days.length)],
+        bestTime: times[Math.floor(Math.random() * times.length)],
+        peakEngagementHour: Math.floor(Math.random() * 24),
+        consistencyScore: Math.floor(Math.random() * 50 + 50) // 50-100
+      },
+      trends: {
+        viewsTrend: Array.from({length: 7}, () => Math.floor(Math.random() * 20000) + 5000),
+        engagementTrend: Array.from({length: 7}, () => Math.random() * 5 + 3),
+        followersTrend: Array.from({length: 7}, (_, i) => baseFollowers - (6-i) * 50 + Math.floor(Math.random() * 100)),
+        revenueTrend: Array.from({length: 7}, () => Math.random() * 500 + 100)
+      }
+    };
+  };
+
+  // Récupération des laalas depuis l'API
+  const fetchLaalas = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!user) {
+        console.log('👤 Utilisateur non connecté, arrêt du chargement');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🔍 Récupération des laalas pour utilisateur:', user.uid);
+      const laalaData = await apiFetch('/api/laalas');
+      
+      if (!Array.isArray(laalaData)) {
+        console.warn('⚠️ Réponse API inattendue:', laalaData);
+        setStats([]);
+        return;
+      }
+      
+      // Filtrer les laalas de l'utilisateur et générer des statistiques
+      const userLaalas = laalaData.filter((laala: Laala) => 
+        laala.idCreateur === user.uid
+      );
+      
+      const laalasWithStats: LaalaStats[] = userLaalas.map(generateRandomStats);
+      
+      setStats(laalasWithStats);
+      console.log('✅ Laalas avec statistiques générés:', laalasWithStats.length);
+      
+    } catch (err) {
+      console.error('❌ Erreur récupération laalas:', err);
+      setError(`Erreur lors du chargement des laalas: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
+      setStats([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chargement initial
+  useEffect(() => {
+    if (user) {
+      fetchLaalas();
+    }
+  }, [user]);
 
   const filteredStats = stats
     .filter(laala => {
@@ -356,7 +496,7 @@ export default function LaalaStatsPage() {
   const totalFollowers = stats.reduce((sum, s) => sum + s.followers.total, 0);
   const totalViews = stats.reduce((sum, s) => sum + s.engagement.totalViews, 0);
   const totalRevenue = stats.reduce((sum, s) => sum + s.revenue.monthlyEarnings, 0);
-  const averageEngagement = stats.reduce((sum, s) => sum + s.engagement.engagementRate, 0) / stats.length;
+  const averageEngagement = stats.length > 0 ? stats.reduce((sum, s) => sum + s.engagement.engagementRate, 0) / stats.length : 0;
 
   return (
     <div className="space-y-6">
@@ -418,60 +558,80 @@ export default function LaalaStatsPage() {
         </div>
       </div>
 
+      {/* Messages d'erreur */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <FiRefreshCw className="w-5 h-5 text-red-400 mr-2" />
+            <p className="text-red-800">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* État de chargement */}
+      {loading && (
+        <div className="text-center py-8">
+          <FiRefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
+          <p className="text-gray-600">Chargement des statistiques des Laalas...</p>
+        </div>
+      )}
+
       {/* Global Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Followers</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalFollowers)}</p>
-              <p className="text-sm text-blue-600 mt-1">Tous Laalas</p>
-            </div>
-            <div className="p-3 rounded-lg bg-[#f01919]">
-              <FiUsers className="w-6 h-6 text-white" />
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Followers</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalFollowers)}</p>
+                <p className="text-sm text-blue-600 mt-1">Tous Laalas</p>
+              </div>
+              <div className="p-3 rounded-lg bg-[#f01919]">
+                <FiUsers className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Vues Totales</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalViews)}</p>
-              <p className="text-sm text-green-600 mt-1">Portée globale</p>
-            </div>
-            <div className="p-3 rounded-lg bg-green-500">
-              <FiEye className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Vues Totales</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalViews)}</p>
+                <p className="text-sm text-green-600 mt-1">Portée globale</p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-500">
+                <FiEye className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Revenus Mensuels</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
-              <p className="text-sm text-purple-600 mt-1">Ce mois</p>
-            </div>
-            <div className="p-3 rounded-lg bg-purple-500">
-              <FiTrendingUp className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Revenus Mensuels</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
+                <p className="text-sm text-purple-600 mt-1">Ce mois</p>
+              </div>
+              <div className="p-3 rounded-lg bg-purple-500">
+                <FiTrendingUp className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Engagement Moyen</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{averageEngagement.toFixed(1)}%</p>
-              <p className="text-sm text-blue-600 mt-1">Taux global</p>
-            </div>
-            <div className="p-3 rounded-lg bg-blue-500">
-              <FiHeart className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Engagement Moyen</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{averageEngagement.toFixed(1)}%</p>
+                <p className="text-sm text-blue-600 mt-1">Taux global</p>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-500">
+                <FiHeart className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

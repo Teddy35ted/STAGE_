@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
+import { useApi } from '../../../../lib/api';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { Contenu } from '../../../models/contenu';
 import { 
   FiFileText, 
   FiVideo, 
@@ -21,7 +24,8 @@ import {
   FiPieChart,
   FiFilter,
   FiDownload,
-  FiUsers
+  FiUsers,
+  FiRefreshCw
 } from 'react-icons/fi';
 
 interface ContentStats {
@@ -359,12 +363,148 @@ const contentStatsData: ContentStats[] = [
 ];
 
 export default function ContentStatsPage() {
-  const [contents, setContents] = useState<ContentStats[]>(contentStatsData);
+  const [contents, setContents] = useState<ContentStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterLaala, setFilterLaala] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'views' | 'engagement' | 'revenue' | 'performance'>('views');
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+
+  const { apiFetch } = useApi();
+  const { user } = useAuth();
+
+  // Fonction pour générer des statistiques aléatoires
+  const generateRandomStats = (contenu: Contenu): ContentStats => {
+    const baseViews = Math.floor(Math.random() * 50000) + 1000;
+    const engagementRate = Math.random() * 15 + 2; // 2-17%
+    const likes = Math.floor(baseViews * (engagementRate / 100) * (Math.random() * 0.8 + 0.4));
+    const comments = Math.floor(likes * (Math.random() * 0.3 + 0.1));
+    const shares = Math.floor(likes * (Math.random() * 0.2 + 0.05));
+    const saves = Math.floor(likes * (Math.random() * 0.4 + 0.2));
+
+    const ageGroups = ['18-24 ans', '25-34 ans', '30-45 ans', '35-50 ans', '45-60 ans'];
+    const genders = ['Femmes (68%)', 'Hommes (62%)', 'Femmes (74%)', 'Hommes (58%)', 'Mixte (50%)'];
+    const locations = ['France (72%)', 'France (68%)', 'Europe (65%)', 'Francophonie (70%)'];
+    const postingTimes = ['07h-09h', '09h-11h', '11h-13h', '14h-16h', '17h-19h', '19h-21h', '20h-22h'];
+    
+    const hashtagsByType = {
+      video: ['#video', '#contenu', '#créatif', '#viral'],
+      image: ['#photo', '#visual', '#art', '#inspiration'],
+      text: ['#article', '#blog', '#lecture', '#info'],
+      audio: ['#audio', '#podcast', '#son', '#écoute'],
+      carousel: ['#carrousel', '#série', '#collection', '#galerie']
+    };
+
+    const directEarnings = Math.random() * 200 + 10;
+    const indirectEarnings = Math.random() * 100 + 5;
+    const courisEarnings = Math.random() * 150 + 8;
+    const adsEarnings = Math.random() * 80 + 3;
+
+    return {
+      id: contenu.id || '',
+      title: contenu.titre || 'Contenu sans titre',
+      type: (contenu.type as any) || 'text',
+      laala: contenu.idLaala || 'Laala inconnu',
+      publishedAt: contenu.dateCreation || new Date().toISOString(),
+      status: 'published',
+      performance: {
+        views: baseViews,
+        likes,
+        comments,
+        shares,
+        saves,
+        engagementRate: parseFloat(engagementRate.toFixed(1)),
+        reachRate: Math.random() * 30 + 50, // 50-80%
+        clickThroughRate: Math.random() * 8 + 1 // 1-9%
+      },
+      audience: {
+        totalReach: Math.floor(baseViews * (Math.random() * 0.5 + 1.2)),
+        uniqueViewers: Math.floor(baseViews * (Math.random() * 0.2 + 0.8)),
+        returningViewers: Math.floor(baseViews * (Math.random() * 0.1 + 0.05)),
+        newViewers: Math.floor(baseViews * (Math.random() * 0.3 + 0.7)),
+        averageWatchTime: Math.floor(Math.random() * 300 + 30), // 30s-5min
+        completionRate: Math.random() * 40 + 60 // 60-100%
+      },
+      demographics: {
+        topAgeGroup: ageGroups[Math.floor(Math.random() * ageGroups.length)],
+        topGender: genders[Math.floor(Math.random() * genders.length)],
+        topLocation: locations[Math.floor(Math.random() * locations.length)],
+        deviceBreakdown: {
+          mobile: Math.random() * 30 + 60, // 60-90%
+          desktop: Math.random() * 25 + 10, // 10-35%
+          tablet: Math.random() * 10 + 2 // 2-12%
+        }
+      },
+      revenue: {
+        directEarnings,
+        indirectEarnings,
+        courisEarnings,
+        adsEarnings,
+        totalEarnings: directEarnings + indirectEarnings + courisEarnings + adsEarnings
+      },
+      trends: {
+        viewsGrowth: (Math.random() - 0.3) * 50, // -15% à +35%
+        engagementGrowth: (Math.random() - 0.2) * 40, // -8% à +32%
+        reachGrowth: (Math.random() - 0.25) * 35, // -8.75% à +26.25%
+        performanceScore: Math.floor(Math.random() * 40 + 60) // 60-100
+      },
+      optimization: {
+        bestPostingTime: postingTimes[Math.floor(Math.random() * postingTimes.length)],
+        suggestedHashtags: hashtagsByType[contenu.type as keyof typeof hashtagsByType] || hashtagsByType.text,
+        contentScore: Math.floor(Math.random() * 30 + 70), // 70-100
+        viralPotential: Math.floor(Math.random() * 40 + 40) // 40-80
+      }
+    };
+  };
+
+  // Récupération des contenus depuis l'API
+  const fetchContents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!user) {
+        console.log('👤 Utilisateur non connecté, arrêt du chargement');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🔍 Récupération des contenus pour utilisateur:', user.uid);
+      const contenuData = await apiFetch('/api/contenus');
+      
+      if (!Array.isArray(contenuData)) {
+        console.warn('⚠️ Réponse API inattendue:', contenuData);
+        setContents([]);
+        return;
+      }
+      
+      // Filtrer les contenus de l'utilisateur et générer des statistiques
+      const userContents = contenuData.filter((contenu: Contenu) => 
+        contenu.idCreateur === user.uid
+      );
+      
+      const contentsWithStats: ContentStats[] = userContents.map(generateRandomStats);
+      
+      setContents(contentsWithStats);
+      console.log('✅ Contenus avec statistiques générés:', contentsWithStats.length);
+      
+    } catch (err) {
+      console.error('❌ Erreur récupération contenus:', err);
+      setError(`Erreur lors du chargement des contenus: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
+      setContents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chargement initial
+  useEffect(() => {
+    if (user) {
+      fetchContents();
+    }
+  }, [user]);
 
   const filteredContents = contents
     .filter(content => {
@@ -465,7 +605,7 @@ export default function ContentStatsPage() {
   const totalViews = contents.reduce((sum, c) => sum + c.performance.views, 0);
   const totalEngagement = contents.reduce((sum, c) => sum + c.performance.likes + c.performance.comments + c.performance.shares, 0);
   const totalRevenue = contents.reduce((sum, c) => sum + c.revenue.totalEarnings, 0);
-  const averagePerformance = contents.reduce((sum, c) => sum + c.trends.performanceScore, 0) / contents.length;
+  const averagePerformance = contents.length > 0 ? contents.reduce((sum, c) => sum + c.trends.performanceScore, 0) / contents.length : 0;
 
   return (
     <div className="space-y-6">
@@ -527,60 +667,80 @@ export default function ContentStatsPage() {
         </div>
       </div>
 
+      {/* Messages d'erreur */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <FiRefreshCw className="w-5 h-5 text-red-400 mr-2" />
+            <p className="text-red-800">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* État de chargement */}
+      {loading && (
+        <div className="text-center py-8">
+          <FiRefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
+          <p className="text-gray-600">Chargement des statistiques de contenu...</p>
+        </div>
+      )}
+
       {/* Global Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Vues Totales</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalViews)}</p>
-              <p className="text-sm text-blue-600 mt-1">Tous contenus</p>
-            </div>
-            <div className="p-3 rounded-lg bg-[#f01919]">
-              <FiEye className="w-6 h-6 text-white" />
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Vues Totales</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalViews)}</p>
+                <p className="text-sm text-blue-600 mt-1">Tous contenus</p>
+              </div>
+              <div className="p-3 rounded-lg bg-[#f01919]">
+                <FiEye className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Interactions Totales</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalEngagement)}</p>
-              <p className="text-sm text-green-600 mt-1">Engagement global</p>
-            </div>
-            <div className="p-3 rounded-lg bg-green-500">
-              <FiHeart className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Interactions Totales</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalEngagement)}</p>
+                <p className="text-sm text-green-600 mt-1">Engagement global</p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-500">
+                <FiHeart className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Revenus Générés</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
-              <p className="text-sm text-purple-600 mt-1">Total contenu</p>
-            </div>
-            <div className="p-3 rounded-lg bg-purple-500">
-              <FiTrendingUp className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Revenus Générés</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
+                <p className="text-sm text-purple-600 mt-1">Total contenu</p>
+              </div>
+              <div className="p-3 rounded-lg bg-purple-500">
+                <FiTrendingUp className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Performance Moyenne</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{averagePerformance.toFixed(0)}/100</p>
-              <p className="text-sm text-blue-600 mt-1">Score global</p>
-            </div>
-            <div className="p-3 rounded-lg bg-blue-500">
-              <FiTarget className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Performance Moyenne</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{averagePerformance.toFixed(0)}/100</p>
+                <p className="text-sm text-blue-600 mt-1">Score global</p>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-500">
+                <FiTarget className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Content Type Distribution */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

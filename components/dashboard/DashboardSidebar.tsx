@@ -112,11 +112,6 @@ const menuItems = [
       { title: 'Publicité', href: '/dashboard/stats/ads' },
     ],
   },
-  {
-    title: 'Contacter Laala',
-    icon: FiMessageSquare,
-    href: '/dashboard/contact',
-  },
 ];
 
 export const DashboardSidebar: React.FC = () => {

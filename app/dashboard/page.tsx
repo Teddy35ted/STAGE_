@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   FiDollarSign, 
   FiTrendingUp, 
@@ -9,8 +9,11 @@ import {
   FiTarget, 
   FiEye,
   FiBell,
-  FiCalendar
+  FiCalendar,
+  FiMessageSquare
 } from 'react-icons/fi';
+import { ContactPopup } from '../../components/dashboard/ContactPopup';
+import { NotificationPopup } from '../../components/dashboard/NotificationPopup';
 
 interface MetricCardProps {
   title: string;
@@ -81,6 +84,9 @@ const NotificationItem: React.FC<NotificationProps> = ({ title, message, time, t
 };
 
 export default function DashboardPage() {
+  const [isContactPopupOpen, setIsContactPopupOpen] = useState(false);
+  const [isNotificationPopupOpen, setIsNotificationPopupOpen] = useState(false);
+
   const notifications = [
     {
       title: 'Nouveau fan',
@@ -103,7 +109,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -112,18 +118,34 @@ export default function DashboardPage() {
             Bienvenue sur votre tableau de bord Animateur Pro
           </p>
         </div>
-        <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
-          <FiCalendar className="w-4 h-4 flex-shrink-0" />
-          <span className="hidden sm:inline">{new Date().toLocaleDateString('fr-FR', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</span>
-          <span className="sm:hidden">{new Date().toLocaleDateString('fr-FR', { 
-            day: 'numeric', 
-            month: 'short' 
-          })}</span>
+        <div className="flex items-center space-x-4">
+          {/* Notification Icon in Header */}
+          <button
+            onClick={() => setIsNotificationPopupOpen(true)}
+            className="relative p-2 text-gray-600 hover:text-[#f01919] hover:bg-gray-100 rounded-lg transition-colors"
+            title="Notifications"
+          >
+            <FiBell className="w-5 h-5" />
+            {/* Notification Badge */}
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-xs text-white font-bold">3</span>
+            </div>
+          </button>
+          
+          {/* Date */}
+          <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
+            <FiCalendar className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">{new Date().toLocaleDateString('fr-FR', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</span>
+            <span className="sm:hidden">{new Date().toLocaleDateString('fr-FR', { 
+              day: 'numeric', 
+              month: 'short' 
+            })}</span>
+          </div>
         </div>
       </div>
 
@@ -260,6 +282,49 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col space-y-3 z-40">
+        {/* Notification Button */}
+        <button
+          onClick={() => setIsNotificationPopupOpen(true)}
+          className="relative w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
+          title="Notifications"
+        >
+          <FiBell className="w-6 h-6" />
+          {/* Notification Badge */}
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+            <span className="text-xs text-white font-bold">3</span>
+          </div>
+          {/* Tooltip */}
+          <div className="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+            Notifications
+          </div>
+        </button>
+
+        {/* Contact Button */}
+        <button
+          onClick={() => setIsContactPopupOpen(true)}
+          className="relative w-14 h-14 bg-[#f01919] hover:bg-[#d01515] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
+          title="Contacter Laala"
+        >
+          <FiMessageSquare className="w-6 h-6" />
+          {/* Tooltip */}
+          <div className="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+            Contacter Laala
+          </div>
+        </button>
+      </div>
+
+      {/* Popups */}
+      <ContactPopup 
+        isOpen={isContactPopupOpen} 
+        onClose={() => setIsContactPopupOpen(false)} 
+      />
+      <NotificationPopup 
+        isOpen={isNotificationPopupOpen} 
+        onClose={() => setIsNotificationPopupOpen(false)} 
+      />
     </div>
   );
 }
