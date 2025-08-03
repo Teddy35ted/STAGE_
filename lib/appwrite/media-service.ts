@@ -24,8 +24,8 @@ export interface MediaUploadOptions {
 export type MediaCategory = 'user-avatar' | 'laala-cover' | 'contenu-media' | 'boutique-image';
 
 export class AppwriteMediaService {
-  // Un seul bucket pour tous les médias
-  static readonly BUCKET_ID = 'medias';
+  // Un seul bucket pour tous les médias (ID unique du bucket existant)
+  static readonly BUCKET_ID = '688fa6db0002434c0735';
   
   // Organisation par dossiers dans le bucket
   static readonly FOLDERS = {

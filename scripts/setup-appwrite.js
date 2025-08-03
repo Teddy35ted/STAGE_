@@ -9,7 +9,7 @@ const { Client, Storage, Permission, Role } = require('appwrite');
 
 // Configuration
 const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
-const APPWRITE_PROJECT_ID = '688f85190004fa948692';
+const APPWRITE_PROJECT_ID = '688fa4c00025e643934d';
 const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY; // Clé API admin requise
 
 // Configuration des buckets

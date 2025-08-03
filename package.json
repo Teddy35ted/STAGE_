@@ -15,6 +15,7 @@
     "appwrite:analyze-single": "node scripts/setup-appwrite-single-bucket.js analyze",
     "appwrite:cleanup-single": "node scripts/setup-appwrite-single-bucket.js cleanup",
     "medias:check": "node scripts/setup-medias-bucket.js check",
+    "medias:create": "node scripts/setup-medias-bucket.js create",
     "medias:test": "node scripts/setup-medias-bucket.js test"
   },
   "dependencies": {
