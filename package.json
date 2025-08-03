@@ -6,10 +6,20 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "appwrite:setup": "node scripts/setup-appwrite.js setup",
+    "appwrite:test": "node scripts/setup-appwrite.js test",
+    "appwrite:cleanup": "node scripts/setup-appwrite.js cleanup",
+    "appwrite:setup-single": "node scripts/setup-appwrite-single-bucket.js setup",
+    "appwrite:test-single": "node scripts/setup-appwrite-single-bucket.js test",
+    "appwrite:analyze-single": "node scripts/setup-appwrite-single-bucket.js analyze",
+    "appwrite:cleanup-single": "node scripts/setup-appwrite-single-bucket.js cleanup",
+    "medias:check": "node scripts/setup-medias-bucket.js check",
+    "medias:test": "node scripts/setup-medias-bucket.js test"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.7",

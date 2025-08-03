@@ -3,23 +3,25 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { MediaUpload } from '../ui/media-upload';
 import { FiX, FiUpload, FiImage, FiVideo, FiFileText, FiHash, FiUser } from 'react-icons/fi';
 import { ContenuCore } from '../../app/models/contenu';
+import { MediaUploadResult } from '../../lib/appwrite/media-service';
 
 interface ContenuCreateFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (contenuData: ContenuCore) => void;
+  onSubmit: (contenuData: ContenuCore & { mediaUrl?: string }) => void;
   creatorId: string;
   availableLaalas: { id: string; name: string }[];
 }
 
-export default function ContenuCreateForm({ 
-  isOpen, 
-  onClose, 
-  onSubmit, 
-  creatorId, 
-  availableLaalas 
+export default function ContenuCreateForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  creatorId,
+  availableLaalas
 }: ContenuCreateFormProps) {
   const [formData, setFormData] = useState<ContenuCore>({
     nom: '',
@@ -34,11 +36,10 @@ export default function ContenuCreateForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [hashtagInput, setHashtagInput] = useState('');
-  const [personneInput, setPersonneInput] = useState('');
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mediaUrl, setMediaUrl] = useState<string>('');
+  const [coverUrl, setCoverUrl] = useState<string>('');
+  const [hashtagInput, setHashtagInput] = useState<string>('');
 
   const contentTypes = [
     { value: 'image', label: 'Image', icon: FiImage },
@@ -62,125 +63,11 @@ export default function ContenuCreateForm({
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      // Simulation d'upload - remplacer par votre logique d'upload réelle
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Simulation de progression
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      // Ici vous feriez l'upload réel vers votre service (Firebase, AWS S3, etc.)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      clearInterval(interval);
-      setUploadProgress(100);
-      
-      // URL simulée - remplacer par l'URL réelle retournée par votre service
-      const uploadedUrl = `https://example.com/uploads/${file.name}`;
-      
-      setFormData(prev => ({
-        ...prev,
-        src: uploadedUrl
-      }));
-
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }, 500);
-
-    } catch (error) {
-      console.error('Erreur lors de l\'upload:', error);
-      setIsUploading(false);
-      setUploadProgress(0);
-      setErrors(prev => ({
-        ...prev,
-        src: 'Erreur lors de l\'upload du fichier'
-      }));
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validation du type de fichier
-      const allowedTypes = {
-        image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-        video: ['video/mp4', 'video/avi', 'video/mov', 'video/webm'],
-        album: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-      };
-
-      const currentAllowedTypes = allowedTypes[formData.type as keyof typeof allowedTypes] || [];
-      
-      if (formData.type !== 'texte' && !currentAllowedTypes.includes(file.type)) {
-        setErrors(prev => ({
-          ...prev,
-          src: `Type de fichier non supporté pour ${formData.type}`
-        }));
-        return;
-      }
-
-      // Validation de la taille (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        setErrors(prev => ({
-          ...prev,
-          src: 'Le fichier ne doit pas dépasser 50MB'
-        }));
-        return;
-      }
-
-      handleFileUpload(file);
-    }
-  };
-
-  const addHashtag = () => {
-    if (hashtagInput.trim() && !formData.htags.includes(hashtagInput.trim())) {
-      const newTag = hashtagInput.trim().startsWith('#') 
-        ? hashtagInput.trim() 
-        : `#${hashtagInput.trim()}`;
-      
-      setFormData(prev => ({
-        ...prev,
-        htags: [...prev.htags, newTag]
-      }));
-      setHashtagInput('');
-    }
-  };
-
-  const removeHashtag = (tag: string) => {
-    setFormData(prev => ({
-      ...prev,
-      htags: prev.htags.filter(t => t !== tag)
-    }));
-  };
-
-  const addPersonne = () => {
-    if (personneInput.trim() && !formData.personnes.includes(personneInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        personnes: [...prev.personnes, personneInput.trim()]
-      }));
-      setPersonneInput('');
-    }
-  };
-
-  const removePersonne = (personne: string) => {
-    setFormData(prev => ({
-      ...prev,
-      personnes: prev.personnes.filter(p => p !== personne)
-    }));
+  const handleHashtagChange = (value: string) => {
+    setHashtagInput(value);
+    // Convertir la chaîne en tableau de hashtags
+    const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+    handleInputChange('htags', tags);
   };
 
   const validateForm = (): boolean => {
@@ -197,7 +84,7 @@ export default function ContenuCreateForm({
     }
 
     // Validation selon le type de contenu
-    if (formData.type !== 'texte' && !formData.src) {
+    if (formData.type !== 'texte' && !formData.src && !mediaUrl) {
       newErrors.src = 'Un fichier est requis pour ce type de contenu';
     }
 
@@ -209,7 +96,16 @@ export default function ContenuCreateForm({
     e.preventDefault();
     
     if (validateForm()) {
-      onSubmit(formData);
+      // Inclure l'URL du média uploadé
+      const finalData = {
+        ...formData,
+        src: mediaUrl || formData.src,
+        cover: coverUrl || formData.cover,
+        mediaUrl
+      };
+      
+      onSubmit(finalData);
+      
       // Reset form
       setFormData({
         nom: '',
@@ -222,11 +118,66 @@ export default function ContenuCreateForm({
         htags: [],
         personnes: []
       });
-      setErrors({});
+      setMediaUrl('');
+      setCoverUrl('');
       setHashtagInput('');
-      setPersonneInput('');
+      setErrors({});
       onClose();
     }
+  };
+
+  const renderMediaUpload = () => {
+    if (formData.type === 'texte') {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Contenu texte *
+          </label>
+          <textarea
+            value={formData.src}
+            onChange={(e) => handleInputChange('src', e.target.value)}
+            placeholder="Écrivez votre contenu ici..."
+            rows={6}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] ${
+              errors.src ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.src && (
+            <p className="text-red-500 text-sm mt-1">{errors.src}</p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {formData.type === 'image' ? 'Image' : formData.type === 'video' ? 'Vidéo' : 'Fichiers'} *
+        </label>
+        <MediaUpload
+          category="contenu-media"
+          userId={creatorId}
+          entityId={formData.idLaala}
+          acceptedTypes={formData.type === 'image' ? 'image/*' : formData.type === 'video' ? 'video/*' : 'image/*,video/*'}
+          maxSize={formData.type === 'image' ? 10 * 1024 * 1024 : 100 * 1024 * 1024}
+          label={`Sélectionner ${formData.type === 'image' ? 'une image' : formData.type === 'video' ? 'une vidéo' : 'des fichiers'}`}
+          description={`Fichier ${formData.type} pour votre contenu`}
+          onUploadSuccess={(result: MediaUploadResult) => {
+            setMediaUrl(result.url);
+            handleInputChange('src', result.url);
+            console.log('Média uploadé:', result);
+          }}
+          onUploadError={(error: string) => {
+            console.error('Erreur upload média:', error);
+            setErrors(prev => ({ ...prev, src: error }));
+          }}
+          preview={true}
+        />
+        {errors.src && (
+          <p className="text-red-500 text-sm mt-1">{errors.src}</p>
+        )}
+      </div>
+    );
   };
 
   if (!isOpen) return null;
@@ -255,7 +206,7 @@ export default function ContenuCreateForm({
             <Input
               value={formData.nom}
               onChange={(e) => handleInputChange('nom', e.target.value)}
-              placeholder="Ex: Les 5 habitudes matinales qui changent la vie"
+              placeholder="Ex: Ma nouvelle création"
               className={errors.nom ? 'border-red-500' : ''}
             />
             {errors.nom && (
@@ -302,79 +253,33 @@ export default function ContenuCreateForm({
             </div>
           </div>
 
-          {/* Upload de fichier */}
-          {formData.type !== 'texte' && (
+          {/* Upload de média ou saisie de texte */}
+          {renderMediaUpload()}
+
+          {/* Couverture pour vidéos */}
+          {formData.type === 'video' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fichier {formData.type === 'album' ? '(images)' : `(${formData.type})`} *
+                Image de couverture (optionnel)
               </label>
-              
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#f01919] transition-colors">
-                {isUploading ? (
-                  <div className="space-y-2">
-                    <FiUpload className="w-8 h-8 text-[#f01919] mx-auto animate-pulse" />
-                    <p className="text-sm text-gray-600">Upload en cours...</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-[#f01919] h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500">{uploadProgress}%</p>
-                  </div>
-                ) : formData.src ? (
-                  <div className="space-y-2">
-                    <div className="text-green-600">
-                      <FiUpload className="w-8 h-8 mx-auto" />
-                    </div>
-                    <p className="text-sm text-green-600">Fichier uploadé avec succès</p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Changer le fichier
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <FiUpload className="w-8 h-8 text-gray-400 mx-auto" />
-                    <p className="text-sm text-gray-600">
-                      Cliquez pour sélectionner ou glissez votre fichier ici
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formData.type === 'image' && 'JPG, PNG, GIF, WebP - Max 50MB'}
-                      {formData.type === 'video' && 'MP4, AVI, MOV, WebM - Max 50MB'}
-                      {formData.type === 'album' && 'Images JPG, PNG, GIF, WebP - Max 50MB par image'}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Sélectionner un fichier
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileSelect}
-                accept={
-                  formData.type === 'image' ? 'image/*' :
-                  formData.type === 'video' ? 'video/*' :
-                  formData.type === 'album' ? 'image/*' : '*/*'
-                }
-                multiple={formData.type === 'album'}
-                className="hidden"
+              <MediaUpload
+                category="contenu-media"
+                userId={creatorId}
+                entityId={formData.idLaala}
+                acceptedTypes="image/*"
+                maxSize={5 * 1024 * 1024}
+                label="Sélectionner une image de couverture"
+                description="Image qui s'affichera avant la lecture de la vidéo"
+                onUploadSuccess={(result: MediaUploadResult) => {
+                  setCoverUrl(result.url);
+                  handleInputChange('cover', result.url);
+                  console.log('Couverture uploadée:', result);
+                }}
+                onUploadError={(error: string) => {
+                  console.error('Erreur upload couverture:', error);
+                }}
+                preview={true}
               />
-
-              {errors.src && (
-                <p className="text-red-500 text-sm mt-1">{errors.src}</p>
-              )}
             </div>
           )}
 
@@ -383,111 +288,38 @@ export default function ContenuCreateForm({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Hashtags
             </label>
-            <div className="flex space-x-2 mb-2">
-              <div className="flex-1 relative">
-                <FiHash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  value={hashtagInput}
-                  onChange={(e) => setHashtagInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addHashtag())}
-                  placeholder="Ajouter un hashtag"
-                  className="pl-10"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={addHashtag}
-                variant="outline"
-                size="sm"
-              >
-                Ajouter
-              </Button>
+            <div className="relative">
+              <FiHash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                value={hashtagInput}
+                onChange={(e) => handleHashtagChange(e.target.value)}
+                placeholder="#exemple, #contenu, #laala"
+                className="pl-10"
+              />
             </div>
-            
-            {formData.htags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.htags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-[#f01919] text-white"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeHashtag(tag)}
-                      className="ml-1 hover:text-gray-200"
-                    >
-                      <FiX className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Personnes taguées */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Personnes taguées
-            </label>
-            <div className="flex space-x-2 mb-2">
-              <div className="flex-1 relative">
-                <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  value={personneInput}
-                  onChange={(e) => setPersonneInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPersonne())}
-                  placeholder="ID ou nom d'utilisateur"
-                  className="pl-10"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={addPersonne}
-                variant="outline"
-                size="sm"
-              >
-                Taguer
-              </Button>
-            </div>
-            
-            {formData.personnes.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.personnes.map((personne, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
-                  >
-                    @{personne}
-                    <button
-                      type="button"
-                      onClick={() => removePersonne(personne)}
-                      className="ml-1 hover:text-blue-600"
-                    >
-                      <FiX className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Séparez les hashtags par des virgules
+            </p>
           </div>
 
           {/* Paramètres */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Paramètres</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Paramètres</h3>
             
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.allowComment}
-                onChange={(e) => handleInputChange('allowComment', e.target.checked)}
-                className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
-              />
-              <div>
-                <span className="text-sm font-medium text-gray-700">Autoriser les commentaires</span>
-                <p className="text-xs text-gray-500">Les utilisateurs pourront commenter ce contenu</p>
-              </div>
-            </label>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.allowComment}
+                  onChange={(e) => handleInputChange('allowComment', e.target.checked)}
+                  className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Autoriser les commentaires</span>
+                  <p className="text-xs text-gray-500">Les utilisateurs pourront commenter ce contenu</p>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Actions */}

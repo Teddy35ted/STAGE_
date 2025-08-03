@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { FiX, FiUpload, FiCalendar } from 'react-icons/fi';
+import { MediaUpload } from '../ui/media-upload';
+import { FiX, FiUpload, FiCalendar, FiImage, FiVideo } from 'react-icons/fi';
 import { LaalaCore } from '../../app/models/laala';
+import { MediaUploadResult } from '../../lib/appwrite/media-service';
 
 interface LaalaCreateFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (laalaData: LaalaCore) => void;
+  onSubmit: (laalaData: LaalaCore & { coverUrl?: string; coverType?: 'image' | 'video' }) => void;
   creatorId: string;
 }
 
@@ -33,6 +35,8 @@ export default function LaalaCreateForm({ isOpen, onClose, onSubmit, creatorId }
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [coverMediaType, setCoverMediaType] = useState<'image' | 'video'>('image');
+  const [coverUrl, setCoverUrl] = useState<string>('');
 
   const laalaTypes = [
     'Laala freestyle',
@@ -132,7 +136,13 @@ export default function LaalaCreateForm({ isOpen, onClose, onSubmit, creatorId }
     e.preventDefault();
     
     if (validateForm()) {
-      onSubmit(formData);
+      // Inclure les données de couverture dans la soumission
+      onSubmit({
+        ...formData,
+        coverUrl,
+        coverType: coverMediaType
+      });
+      
       // Reset form
       setFormData({
         nom: '',
@@ -151,6 +161,8 @@ export default function LaalaCreateForm({ isOpen, onClose, onSubmit, creatorId }
         mois_fin: 0,
         annee_fin: 0
       });
+      setCoverUrl('');
+      setCoverMediaType('image');
       setErrors({});
       onClose();
     }
@@ -319,6 +331,69 @@ export default function LaalaCreateForm({ isOpen, onClose, onSubmit, creatorId }
             {errors.content && (
               <p className="text-red-500 text-sm mt-1">{errors.content}</p>
             )}
+          </div>
+
+          {/* Couverture du Laala */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Couverture du Laala</h3>
+            
+            {/* Choix du type de couverture */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Type de couverture
+              </label>
+              <div className="flex space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="coverType"
+                    value="image"
+                    checked={coverMediaType === 'image'}
+                    onChange={(e) => setCoverMediaType('image')}
+                    className="text-[#f01919] focus:ring-[#f01919]"
+                  />
+                  <FiImage className="w-4 h-4" />
+                  <span className="text-sm text-gray-700">Image</span>
+                </label>
+
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="coverType"
+                    value="video"
+                    checked={coverMediaType === 'video'}
+                    onChange={(e) => setCoverMediaType('video')}
+                    className="text-[#f01919] focus:ring-[#f01919]"
+                  />
+                  <FiVideo className="w-4 h-4" />
+                  <span className="text-sm text-gray-700">Vidéo</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Upload de la couverture */}
+            <div>
+              <MediaUpload
+                category="laala-cover"
+                userId={creatorId}
+                acceptedTypes={coverMediaType === 'image' ? 'image/*' : 'video/*'}
+                maxSize={coverMediaType === 'image' ? 10 * 1024 * 1024 : 50 * 1024 * 1024}
+                label={`Sélectionner une ${coverMediaType === 'image' ? 'image' : 'vidéo'} de couverture`}
+                description={`${coverMediaType === 'image' ? 'Image' : 'Vidéo'} qui représentera votre Laala (optionnel)`}
+                onUploadSuccess={(result: MediaUploadResult) => {
+                  setCoverUrl(result.url);
+                  console.log('Couverture uploadée:', result);
+                }}
+                onUploadError={(error: string) => {
+                  console.error('Erreur upload couverture:', error);
+                  setErrors(prev => ({ ...prev, cover: error }));
+                }}
+                preview={true}
+              />
+              {errors.cover && (
+                <p className="text-red-500 text-sm mt-1">{errors.cover}</p>
+              )}
+            </div>
           </div>
 
           {/* Paramètres de visibilité */}
