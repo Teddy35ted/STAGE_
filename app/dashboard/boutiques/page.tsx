@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { MediaUpload } from '../../../components/ui/media-upload';
 import { useApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Boutique } from '../../models/boutiques';
+import { MediaUploadResult } from '../../../lib/appwrite/media-service';
 import { 
   FiShoppingBag, 
   FiDollarSign,
@@ -20,7 +22,11 @@ import {
   FiStar,
   FiClock,
   FiTrendingUp,
-  FiCheck
+  FiCheck,
+  FiImage,
+  FiAlertTriangle,
+  FiSettings,
+  FiMail
 } from 'react-icons/fi';
 
 interface BoutiqueExtended extends Boutique {
@@ -40,13 +46,13 @@ interface WeekSchedule {
 }
 
 const categories = [
-  { id: 'restaurant', name: 'Restaurant', color: 'bg-orange-100 text-orange-800' },
-  { id: 'mode', name: 'Mode', color: 'bg-pink-100 text-pink-800' },
-  { id: 'electronique', name: 'Électronique', color: 'bg-blue-100 text-blue-800' },
-  { id: 'beaute', name: 'Beauté', color: 'bg-purple-100 text-purple-800' },
-  { id: 'sport', name: 'Sport', color: 'bg-green-100 text-green-800' },
-  { id: 'maison', name: 'Maison', color: 'bg-yellow-100 text-yellow-800' },
-  { id: 'autre', name: 'Autre', color: 'bg-gray-100 text-gray-800' }
+  { id: 'restaurant', name: 'Restaurant', color: 'bg-orange-100 text-orange-800', emoji: '🍽️' },
+  { id: 'mode', name: 'Mode', color: 'bg-pink-100 text-pink-800', emoji: '👗' },
+  { id: 'electronique', name: 'Électronique', color: 'bg-blue-100 text-blue-800', emoji: '📱' },
+  { id: 'beaute', name: 'Beauté', color: 'bg-purple-100 text-purple-800', emoji: '💄' },
+  { id: 'sport', name: 'Sport', color: 'bg-green-100 text-green-800', emoji: '⚽' },
+  { id: 'maison', name: 'Maison', color: 'bg-yellow-100 text-yellow-800', emoji: '🏠' },
+  { id: 'autre', name: 'Autre', color: 'bg-gray-100 text-gray-800', emoji: '🏪' }
 ];
 
 const daysOfWeek = [
@@ -88,6 +94,10 @@ export default function BoutiquesPage() {
     email: '',
     horaires: { ...defaultSchedule } as WeekSchedule
   });
+
+  // États pour les médias
+  const [coverImage, setCoverImage] = useState<string>('');
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   const { apiFetch } = useApi();
   const { user } = useAuth();
@@ -202,6 +212,21 @@ export default function BoutiquesPage() {
     }
   };
 
+  // Gestion des uploads de médias
+  const handleImageUpload = (result: MediaUploadResult) => {
+    setUploadedImages(prev => [...prev, result.url]);
+    console.log('Image ajoutée:', result);
+  };
+
+  const handleCoverUpload = (result: MediaUploadResult) => {
+    setCoverImage(result.url);
+    console.log('Image de couverture définie:', result);
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setUploadedImages(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
   // Création d'une nouvelle boutique
   const createBoutique = async () => {
     try {
@@ -221,6 +246,8 @@ export default function BoutiquesPage() {
         telephone: newBoutique.telephone,
         email: newBoutique.email,
         horaires: formatScheduleToString(newBoutique.horaires),
+        cover: coverImage,
+        images: uploadedImages,
         idProprietaire: user?.uid || 'anonymous',
         dateCreation: new Date().toISOString(),
         statut: 'actif',
@@ -245,6 +272,8 @@ export default function BoutiquesPage() {
         email: '',
         horaires: { ...defaultSchedule }
       });
+      setCoverImage('');
+      setUploadedImages([]);
       
       setShowCreateModal(false);
       await fetchBoutiques();
@@ -458,7 +487,7 @@ export default function BoutiquesPage() {
                 >
                   <option value="all">Toutes les catégories</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    <option key={cat.id} value={cat.id}>{cat.emoji} {cat.name}</option>
                   ))}
                 </select>
               </div>
@@ -610,237 +639,378 @@ export default function BoutiquesPage() {
           )}
         </>
 
-      {/* Modal de création */}
+      {/* Modal de création moderne */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Nouvelle Boutique</h2>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-              >
-                <FiX className="w-4 h-4" />
-              </Button>
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Header moderne */}
+            <div className="bg-gradient-to-r from-[#f01919] to-[#d01515] px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiShoppingBag className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Nouvelle Boutique</h2>
+                    <p className="text-red-100 text-sm">Créez votre point de vente</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <p className="text-red-800 text-sm">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={(e) => { e.preventDefault(); createBoutique(); }} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nom de la boutique
-                  </label>
-                  <Input
-                    id="nom"
-                    type="text"
-                    value={newBoutique.nom}
-                    onChange={(e) => setNewBoutique(prev => ({ ...prev, nom: e.target.value }))}
-                    placeholder="Ex: Ma Boutique"
-                    required
-                  />
+            {/* Contenu du formulaire */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
+                  <FiAlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-red-800 font-medium">Erreur</h4>
+                    <p className="text-red-700 text-sm mt-1">{error}</p>
+                  </div>
                 </div>
+              )}
 
-                <div>
-                  <label htmlFor="categorie" className="block text-sm font-medium text-gray-700 mb-1">
-                    Catégorie
-                  </label>
-                  <select
-                    id="categorie"
-                    value={newBoutique.categorie}
-                    onChange={(e) => setNewBoutique(prev => ({ ...prev, categorie: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <form onSubmit={(e) => { e.preventDefault(); createBoutique(); }} className="space-y-6">
+                {/* Informations de base */}
+                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiSettings className="w-5 h-5 mr-2 text-[#f01919]" />
+                    Informations de base
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom de la boutique *
+                      </label>
+                      <Input
+                        id="nom"
+                        type="text"
+                        value={newBoutique.nom}
+                        onChange={(e) => setNewBoutique(prev => ({ ...prev, nom: e.target.value }))}
+                        placeholder="Ex: Ma Boutique"
+                        className="transition-all duration-200 focus:ring-2 focus:ring-[#f01919] focus:border-[#f01919]"
+                        required
+                      />
+                    </div>
 
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <Textarea
-                  id="description"
-                  value={newBoutique.description}
-                  onChange={(e) => setNewBoutique(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Décrivez votre boutique..."
-                  rows={3}
-                  required
-                />
-              </div>
+                    <div>
+                      <label htmlFor="categorie" className="block text-sm font-medium text-gray-700 mb-2">
+                        Catégorie
+                      </label>
+                      <select
+                        id="categorie"
+                        value={newBoutique.categorie}
+                        onChange={(e) => setNewBoutique(prev => ({ ...prev, categorie: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:border-[#f01919] transition-all duration-200"
+                      >
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.emoji} {cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-              <div>
-                <label htmlFor="adresse" className="block text-sm font-medium text-gray-700 mb-1">
-                  Adresse
-                </label>
-                <Input
-                  id="adresse"
-                  type="text"
-                  value={newBoutique.adresse}
-                  onChange={(e) => setNewBoutique(prev => ({ ...prev, adresse: e.target.value }))}
-                  placeholder="123 Rue de la Paix, Paris"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Téléphone
-                  </label>
-                  <Input
-                    id="telephone"
-                    type="tel"
-                    value={newBoutique.telephone}
-                    onChange={(e) => setNewBoutique(prev => ({ ...prev, telephone: e.target.value }))}
-                    placeholder="01 23 45 67 89"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newBoutique.email}
-                    onChange={(e) => setNewBoutique(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="contact@boutique.com"
-                  />
-                </div>
-              </div>
-
-              {/* Section Horaires Moderne */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <FiClock className="w-4 h-4 inline mr-2" />
-                    Horaires d'ouverture
-                  </label>
-                  <div className="flex space-x-2">
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline"
-                      onClick={applyToWeekdays}
-                      className="text-xs"
-                    >
-                      Appliquer aux jours ouvrables
-                    </Button>
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline"
-                      onClick={applyToAllDays}
-                      className="text-xs"
-                    >
-                      Appliquer à tous les jours
-                    </Button>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                      Description *
+                    </label>
+                    <Textarea
+                      id="description"
+                      value={newBoutique.description}
+                      onChange={(e) => setNewBoutique(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Décrivez votre boutique, vos produits, votre expertise..."
+                      rows={4}
+                      className="transition-all duration-200 focus:ring-2 focus:ring-[#f01919] focus:border-[#f01919] resize-none"
+                      required
+                    />
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  {daysOfWeek.map((day) => {
-                    const daySchedule = newBoutique.horaires[day.id];
-                    return (
-                      <div key={day.id} className="flex items-center space-x-4 bg-white rounded-lg p-3 shadow-sm">
-                        <div className="flex items-center space-x-3 min-w-[120px]">
-                          <input
-                            type="checkbox"
-                            id={`${day.id}-open`}
-                            checked={daySchedule.isOpen}
-                            onChange={(e) => updateDaySchedule(day.id, 'isOpen', e.target.checked)}
-                            className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
+                {/* Coordonnées */}
+                <div className="bg-blue-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiMapPin className="w-5 h-5 mr-2 text-blue-600" />
+                    Coordonnées
+                  </h3>
+                  
+                  <div>
+                    <label htmlFor="adresse" className="block text-sm font-medium text-gray-700 mb-2">
+                      Adresse
+                    </label>
+                    <Input
+                      id="adresse"
+                      type="text"
+                      value={newBoutique.adresse}
+                      onChange={(e) => setNewBoutique(prev => ({ ...prev, adresse: e.target.value }))}
+                      placeholder="123 Rue de la Paix, 75001 Paris"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-2">
+                        <FiPhone className="w-4 h-4 inline mr-1" />
+                        Téléphone
+                      </label>
+                      <Input
+                        id="telephone"
+                        type="tel"
+                        value={newBoutique.telephone}
+                        onChange={(e) => setNewBoutique(prev => ({ ...prev, telephone: e.target.value }))}
+                        placeholder="01 23 45 67 89"
+                        className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                        <FiMail className="w-4 h-4 inline mr-1" />
+                        Email
+                      </label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newBoutique.email}
+                        onChange={(e) => setNewBoutique(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="contact@boutique.com"
+                        className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Images */}
+                <div className="bg-purple-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiImage className="w-5 h-5 mr-2 text-purple-600" />
+                    Images de la boutique
+                  </h3>
+                  
+                  {/* Image de couverture */}
+                  <div className="bg-white rounded-lg p-4 border border-purple-200">
+                    <h4 className="font-medium text-gray-900 mb-3">Image de couverture</h4>
+                    <MediaUpload
+                      category="boutique-image"
+                      userId={user?.uid || 'anonymous'}
+                      acceptedTypes="image/*"
+                      maxSize={10 * 1024 * 1024}
+                      label="Sélectionner l'image principale"
+                      description="Image qui représentera votre boutique (recommandé)"
+                      onUploadSuccess={handleCoverUpload}
+                      onUploadError={(error: string) => {
+                        console.error('Erreur upload couverture:', error);
+                        setError(error);
+                      }}
+                      preview={true}
+                    />
+                    {coverImage && (
+                      <div className="mt-4 flex items-center space-x-3">
+                        <div className="relative">
+                          <img 
+                            src={coverImage} 
+                            alt="Couverture" 
+                            className="w-16 h-16 object-cover rounded-lg border-2 border-purple-200"
                           />
-                          <label htmlFor={`${day.id}-open`} className="text-sm font-medium text-gray-700 min-w-[70px]">
-                            {day.name}
-                          </label>
+                          <div className="absolute -top-2 -right-2">
+                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                              <FiCheck className="w-3 h-3 text-white" />
+                            </div>
+                          </div>
                         </div>
-
-                        {daySchedule.isOpen ? (
-                          <div className="flex items-center space-x-3 flex-1">
-                            <div className="flex items-center space-x-2">
-                              <label className="text-xs text-gray-500">Ouverture</label>
-                              <input
-                                type="time"
-                                value={daySchedule.openTime}
-                                onChange={(e) => updateDaySchedule(day.id, 'openTime', e.target.value)}
-                                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                              />
-                            </div>
-                            <span className="text-gray-400">-</span>
-                            <div className="flex items-center space-x-2">
-                              <label className="text-xs text-gray-500">Fermeture</label>
-                              <input
-                                type="time"
-                                value={daySchedule.closeTime}
-                                onChange={(e) => updateDaySchedule(day.id, 'closeTime', e.target.value)}
-                                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex-1 text-sm text-gray-500 italic">
-                            Fermé
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Image de couverture ajoutée</p>
+                          <p className="text-xs text-gray-500">Prête à être utilisée</p>
+                        </div>
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+
+                  {/* Images supplémentaires */}
+                  <div className="bg-white rounded-lg p-4 border border-purple-200">
+                    <h4 className="font-medium text-gray-900 mb-3">Images de présentation</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Ajoutez des images pour présenter vos produits, votre espace, votre équipe...
+                    </p>
+                    
+                    <MediaUpload
+                      category="boutique-image"
+                      userId={user?.uid || 'anonymous'}
+                      acceptedTypes="image/*"
+                      maxSize={10 * 1024 * 1024}
+                      label="Ajouter une image"
+                      description="Images JPG, PNG ou GIF de moins de 10MB"
+                      onUploadSuccess={handleImageUpload}
+                      onUploadError={(error: string) => {
+                        console.error('Erreur upload image:', error);
+                      }}
+                      preview={false}
+                    />
+
+                    {/* Galerie des images uploadées */}
+                    {uploadedImages.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                        {uploadedImages.map((imageUrl, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={imageUrl}
+                              alt={`Image ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <FiX className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Aperçu des horaires */}
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800 font-medium mb-1">Aperçu des horaires :</p>
-                  <p className="text-sm text-blue-700">
-                    {formatScheduleToString(newBoutique.horaires)}
-                  </p>
+                {/* Horaires */}
+                <div className="bg-green-50 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <FiClock className="w-5 h-5 mr-2 text-green-600" />
+                      Horaires d'ouverture
+                    </h3>
+                    <div className="flex space-x-2">
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline"
+                        onClick={applyToWeekdays}
+                        className="text-xs border-green-300 text-green-600 hover:bg-green-50"
+                      >
+                        Jours ouvrables
+                      </Button>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline"
+                        onClick={applyToAllDays}
+                        className="text-xs border-green-300 text-green-600 hover:bg-green-50"
+                      >
+                        Tous les jours
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-4 space-y-3 border border-green-200">
+                    {daysOfWeek.map((day) => {
+                      const daySchedule = newBoutique.horaires[day.id];
+                      return (
+                        <div key={day.id} className="flex items-center space-x-4 bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-center space-x-3 min-w-[120px]">
+                            <input
+                              type="checkbox"
+                              id={`${day.id}-open`}
+                              checked={daySchedule.isOpen}
+                              onChange={(e) => updateDaySchedule(day.id, 'isOpen', e.target.checked)}
+                              className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                            />
+                            <label htmlFor={`${day.id}-open`} className="text-sm font-medium text-gray-700 min-w-[70px]">
+                              {day.name}
+                            </label>
+                          </div>
+
+                          {daySchedule.isOpen ? (
+                            <div className="flex items-center space-x-3 flex-1">
+                              <div className="flex items-center space-x-2">
+                                <label className="text-xs text-gray-500">Ouverture</label>
+                                <input
+                                  type="time"
+                                  value={daySchedule.openTime}
+                                  onChange={(e) => updateDaySchedule(day.id, 'openTime', e.target.value)}
+                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                />
+                              </div>
+                              <span className="text-gray-400">-</span>
+                              <div className="flex items-center space-x-2">
+                                <label className="text-xs text-gray-500">Fermeture</label>
+                                <input
+                                  type="time"
+                                  value={daySchedule.closeTime}
+                                  onChange={(e) => updateDaySchedule(day.id, 'closeTime', e.target.value)}
+                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex-1 text-sm text-gray-500 italic">
+                              Fermé
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Aperçu des horaires */}
+                  <div className="bg-white border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800 font-medium mb-1">Aperçu des horaires :</p>
+                    <p className="text-sm text-green-700">
+                      {formatScheduleToString(newBoutique.horaires)}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <FiShoppingBag className="w-4 h-4 inline mr-1" />
-                  Votre boutique sera visible publiquement avec les horaires définis et pourra recevoir des avis clients.
-                </p>
-              </div>
+                {/* Message informatif */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <FiShoppingBag className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-blue-800 font-medium">À propos de votre boutique</h4>
+                      <p className="text-blue-700 text-sm mt-1">
+                        Votre boutique sera visible publiquement avec les horaires d��finis et pourra recevoir des avis clients.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={loading}
-                >
-                  Annuler
-                </Button>
-                <Button 
-                  type="submit"
-                  className="bg-[#f01919] hover:bg-[#d01515] text-white"
-                  disabled={loading || !newBoutique.nom.trim() || !newBoutique.description.trim()}
-                >
-                  {loading ? (
-                    <>
-                      <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Création...
-                    </>
-                  ) : (
-                    <>
-                      <FiPlus className="w-4 h-4 mr-2" />
-                      Créer
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
+                {/* Boutons d'action */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => setShowCreateModal(false)}
+                    disabled={loading}
+                    className="px-6 py-2"
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-gradient-to-r from-[#f01919] to-[#d01515] hover:from-[#d01515] hover:to-[#b01313] text-white px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                    disabled={loading || !newBoutique.nom.trim() || !newBoutique.description.trim()}
+                  >
+                    {loading ? (
+                      <>
+                        <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Création en cours...
+                      </>
+                    ) : (
+                      <>
+                        <FiPlus className="w-4 h-4 mr-2" />
+                        Créer la Boutique
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

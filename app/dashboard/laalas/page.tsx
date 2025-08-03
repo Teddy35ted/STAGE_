@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { MediaUpload } from '../../../components/ui/media-upload';
 import { useApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LaalaDashboard } from '../../models/laala';
+import { MediaUploadResult } from '../../../lib/appwrite/media-service';
 import { 
   FiUsers, 
   FiEye,
@@ -20,7 +22,10 @@ import {
   FiPlay,
   FiPause,
   FiSettings,
-  FiAlertTriangle
+  FiAlertTriangle,
+  FiImage,
+  FiVideo,
+  FiCheck
 } from 'react-icons/fi';
 
 interface LaalaExtended extends LaalaDashboard {
@@ -45,6 +50,10 @@ export default function LaalasPage() {
     htags: [] as string[],
     newTag: ''
   });
+
+  // États pour les médias
+  const [coverMediaType, setCoverMediaType] = useState<'image' | 'video'>('image');
+  const [coverUrl, setCoverUrl] = useState<string>('');
 
   const { apiFetch } = useApi();
   const { user } = useAuth();
@@ -90,6 +99,12 @@ export default function LaalasPage() {
     }
   };
 
+  // Gestion des uploads de médias
+  const handleCoverUpload = (result: MediaUploadResult) => {
+    setCoverUrl(result.url);
+    console.log('Couverture Laala uploadée:', result);
+  };
+
   // Création d'un nouveau laala
   const createLaala = async () => {
     try {
@@ -106,6 +121,8 @@ export default function LaalasPage() {
         description: newLaala.description,
         type: newLaala.type,
         htags: newLaala.htags,
+        coverUrl,
+        coverType: coverMediaType,
         personnes: [],
         idCreateur: user?.uid || 'anonymous',
         dateCreation: new Date().toISOString(),
@@ -127,6 +144,8 @@ export default function LaalasPage() {
         htags: [],
         newTag: ''
       });
+      setCoverUrl('');
+      setCoverMediaType('image');
       
       setShowCreateModal(false);
       await fetchLaalas();
@@ -547,146 +566,300 @@ export default function LaalasPage() {
           )}
         </>
 
-      {/* Modal de création */}
+      {/* Modal de création moderne */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Nouveau Laala</h2>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-              >
-                <FiX className="w-4 h-4" />
-              </Button>
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            {/* Header moderne */}
+            <div className="bg-gradient-to-r from-[#f01919] to-[#d01515] px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiUsers className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Nouveau Laala</h2>
+                    <p className="text-red-100 text-sm">Créez votre espace de contenu</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <p className="text-red-800 text-sm">{error}</p>
-              </div>
-            )}
+            {/* Contenu du formulaire */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
+                  <FiAlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-red-800 font-medium">Erreur</h4>
+                    <p className="text-red-700 text-sm mt-1">{error}</p>
+                  </div>
+                </div>
+              )}
 
-            <form onSubmit={(e) => { e.preventDefault(); createLaala(); }} className="space-y-4">
-              <div>
-                <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom du Laala
-                </label>
-                <Input
-                  id="nom"
-                  type="text"
-                  value={newLaala.nom}
-                  onChange={(e) => setNewLaala(prev => ({ ...prev, nom: e.target.value }))}
-                  placeholder="Ex: Mon Laala Cuisine"
-                  required
-                />
-              </div>
+              <form onSubmit={(e) => { e.preventDefault(); createLaala(); }} className="space-y-6">
+                {/* Informations de base */}
+                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiSettings className="w-5 h-5 mr-2 text-[#f01919]" />
+                    Informations de base
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom du Laala *
+                      </label>
+                      <Input
+                        id="nom"
+                        type="text"
+                        value={newLaala.nom}
+                        onChange={(e) => setNewLaala(prev => ({ ...prev, nom: e.target.value }))}
+                        placeholder="Ex: Mon Laala Cuisine"
+                        className="transition-all duration-200 focus:ring-2 focus:ring-[#f01919] focus:border-[#f01919]"
+                        required
+                      />
+                    </div>
 
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <Textarea
-                  id="description"
-                  value={newLaala.description}
-                  onChange={(e) => setNewLaala(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Décrivez votre laala..."
-                  rows={3}
-                  required
-                />
-              </div>
+                    <div>
+                      <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+                        Type de Laala
+                      </label>
+                      <select
+                        id="type"
+                        value={newLaala.type}
+                        onChange={(e) => setNewLaala(prev => ({ ...prev, type: e.target.value as 'public' | 'private' }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:border-[#f01919] transition-all duration-200"
+                      >
+                        <option value="public">🌍 Public</option>
+                        <option value="private">�� Privé</option>
+                      </select>
+                    </div>
+                  </div>
 
-              <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                  Type de Laala
-                </label>
-                <select
-                  id="type"
-                  value={newLaala.type}
-                  onChange={(e) => setNewLaala(prev => ({ ...prev, type: e.target.value as 'public' | 'private' }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                >
-                  <option value="public">Public</option>
-                  <option value="private">Privé</option>
-                </select>
-              </div>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                      Description *
+                    </label>
+                    <Textarea
+                      id="description"
+                      value={newLaala.description}
+                      onChange={(e) => setNewLaala(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Décrivez votre laala, son objectif, le type de contenu que vous partagerez..."
+                      rows={4}
+                      className="transition-all duration-200 focus:ring-2 focus:ring-[#f01919] focus:border-[#f01919] resize-none"
+                      required
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hashtags
-                </label>
-                <div className="flex space-x-2 mb-2">
-                  <Input
-                    value={newLaala.newTag}
-                    onChange={(e) => setNewLaala(prev => ({ ...prev, newTag: e.target.value }))}
-                    placeholder="Ajouter un hashtag"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addHashtag())}
-                  />
-                  <Button type="button" onClick={addHashtag} variant="outline">
-                    <FiPlus className="w-4 h-4" />
+                {/* Hashtags */}
+                <div className="bg-blue-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <span className="text-blue-600 mr-2">#</span>
+                    Hashtags
+                  </h3>
+                  
+                  <div className="flex space-x-2">
+                    <Input
+                      value={newLaala.newTag}
+                      onChange={(e) => setNewLaala(prev => ({ ...prev, newTag: e.target.value }))}
+                      placeholder="Ajouter un hashtag (ex: cuisine, voyage...)"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addHashtag())}
+                      className="flex-1 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <Button 
+                      type="button" 
+                      onClick={addHashtag} 
+                      variant="outline"
+                      className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400"
+                    >
+                      <FiPlus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {newLaala.htags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {newLaala.htags.map((tag, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full border border-blue-200">
+                          #{tag}
+                          <button
+                            type="button"
+                            onClick={() => removeHashtag(tag)}
+                            className="ml-2 text-blue-600 hover:text-blue-800 transition-colors"
+                          >
+                            <FiX className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Couverture du Laala */}
+                <div className="bg-purple-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiImage className="w-5 h-5 mr-2 text-purple-600" />
+                    Couverture du Laala
+                  </h3>
+                  
+                  {/* Choix du type de couverture moderne */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Type de couverture
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className={`flex items-center justify-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        coverMediaType === 'image' 
+                          ? 'border-purple-500 bg-purple-100 text-purple-700' 
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300 hover:bg-purple-50'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="coverType"
+                          value="image"
+                          checked={coverMediaType === 'image'}
+                          onChange={(e) => setCoverMediaType('image')}
+                          className="sr-only"
+                        />
+                        <FiImage className="w-5 h-5" />
+                        <span className="font-medium">Image</span>
+                      </label>
+
+                      <label className={`flex items-center justify-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        coverMediaType === 'video' 
+                          ? 'border-purple-500 bg-purple-100 text-purple-700' 
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300 hover:bg-purple-50'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="coverType"
+                          value="video"
+                          checked={coverMediaType === 'video'}
+                          onChange={(e) => setCoverMediaType('video')}
+                          className="sr-only"
+                        />
+                        <FiVideo className="w-5 h-5" />
+                        <span className="font-medium">Vidéo</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Upload de la couverture */}
+                  <div className="bg-white rounded-lg p-4 border border-purple-200">
+                    <MediaUpload
+                      category="laala-cover"
+                      userId={user?.uid || 'anonymous'}
+                      acceptedTypes={coverMediaType === 'image' ? 'image/*' : 'video/*'}
+                      maxSize={coverMediaType === 'image' ? 10 * 1024 * 1024 : 50 * 1024 * 1024}
+                      label={`Sélectionner une ${coverMediaType === 'image' ? 'image' : 'vidéo'} de couverture`}
+                      description={`${coverMediaType === 'image' ? 'Image' : 'Vidéo'} qui représentera votre Laala (optionnel)`}
+                      onUploadSuccess={handleCoverUpload}
+                      onUploadError={(error: string) => {
+                        console.error('Erreur upload couverture:', error);
+                        setError(error);
+                      }}
+                      preview={true}
+                    />
+                    {coverUrl && (
+                      <div className="mt-4 flex items-center space-x-3">
+                        <div className="relative">
+                          {coverMediaType === 'image' ? (
+                            <img 
+                              src={coverUrl} 
+                              alt="Couverture" 
+                              className="w-16 h-16 object-cover rounded-lg border-2 border-purple-200"
+                            />
+                          ) : (
+                            <video 
+                              src={coverUrl} 
+                              className="w-16 h-16 object-cover rounded-lg border-2 border-purple-200"
+                              controls
+                            />
+                          )}
+                          <div className="absolute -top-2 -right-2">
+                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                              <FiCheck className="w-3 h-3 text-white" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Couverture ajoutée</p>
+                          <p className="text-xs text-gray-500">
+                            {coverMediaType === 'image' ? 'Image' : 'Vidéo'} prête à être utilisée
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Messages informatifs */}
+                <div className="space-y-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <FiUsers className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="text-blue-800 font-medium">À propos de votre Laala</h4>
+                        <p className="text-blue-700 text-sm mt-1">
+                          Votre laala sera visible selon le type choisi et pourra accueillir du contenu et des abonnés.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <FiAlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="text-amber-800 font-medium">Important</h4>
+                        <p className="text-amber-700 text-sm mt-1">
+                          La suppression d'un laala entraînera automatiquement la suppression de tous les contenus qui y sont associés.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => setShowCreateModal(false)}
+                    disabled={loading}
+                    className="px-6 py-2"
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-gradient-to-r from-[#f01919] to-[#d01515] hover:from-[#d01515] hover:to-[#b01313] text-white px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                    disabled={loading || !newLaala.nom.trim() || !newLaala.description.trim()}
+                  >
+                    {loading ? (
+                      <>
+                        <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Création en cours...
+                      </>
+                    ) : (
+                      <>
+                        <FiPlus className="w-4 h-4 mr-2" />
+                        Créer le Laala
+                      </>
+                    )}
                   </Button>
                 </div>
-                {newLaala.htags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {newLaala.htags.map((tag, index) => (
-                      <span key={index} className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                        #{tag}
-                        <button
-                          type="button"
-                          onClick={() => removeHashtag(tag)}
-                          className="ml-1 text-blue-600 hover:text-blue-800"
-                        >
-                          <FiX className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <FiUsers className="w-4 h-4 inline mr-1" />
-                  Votre laala sera visible selon le type choisi et pourra accueillir du contenu et des abonnés.
-                </p>
-              </div>
-
-              <div className="bg-yellow-50 p-3 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  <FiAlertTriangle className="w-4 h-4 inline mr-1" />
-                  <strong>Important:</strong> La suppression d'un laala entraînera automatiquement la suppression de tous les contenus qui y sont associés.
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={loading}
-                >
-                  Annuler
-                </Button>
-                <Button 
-                  type="submit"
-                  className="bg-[#f01919] hover:bg-[#d01515] text-white"
-                  disabled={loading || !newLaala.nom.trim() || !newLaala.description.trim()}
-                >
-                  {loading ? (
-                    <>
-                      <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Création...
-                    </>
-                  ) : (
-                    <>
-                      <FiPlus className="w-4 h-4 mr-2" />
-                      Créer
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
