@@ -354,7 +354,7 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
         totalItems: allItems.length,
         itemsWithIds: itemsWithIds.length,
         itemsWithoutIds: itemsWithoutIds.length,
-        sampleIds: itemsWithIds.slice(0, 5).map(item => item.id),
+        sampleIds: itemsWithIds.slice(0, 5).map(item => item.id).filter((id): id is string => typeof id === 'string'),
         healthStatus
       };
       
