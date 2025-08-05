@@ -5,7 +5,7 @@ import { CoGestionnaire } from '../../app/models/co_gestionnaire';
 import { useApi } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield } from 'react-icons/fi';
+import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield, FiUserPlus } from 'react-icons/fi';
 
 interface CoGestionnaireFormProps {
   isOpen?: boolean;
@@ -172,17 +172,29 @@ export function CoGestionnaireForm({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">
-            {coGestionnaire ? 'Modifier le co-gestionnaire' : 'Ajouter un co-gestionnaire'}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <FiX className="w-5 h-5 text-gray-500" />
-          </button>
+        {/* Header rouge avec icône */}
+        <div className="bg-[#f01919] text-white p-6 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <FiUserPlus className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">
+                  {coGestionnaire ? 'Modifier le co-gestionnaire' : 'Ajouter un co-gestionnaire'}
+                </h2>
+                <p className="text-red-100 text-sm">
+                  {coGestionnaire ? 'Modifiez les informations du membre' : 'Ajoutez un membre à votre équipe'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+            >
+              <FiX className="w-5 h-5 text-white" />
+            </button>
+          </div>
         </div>
 
         {/* Form */}
@@ -196,7 +208,10 @@ export function CoGestionnaireForm({
 
           {/* Informations personnelles */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Informations personnelles</h3>
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <FiUser className="w-5 h-5 text-[#f01919] mr-2" />
+              Informations personnelles
+            </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -278,7 +293,10 @@ export function CoGestionnaireForm({
 
           {/* Localisation */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Localisation</h3>
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <FiMapPin className="w-5 h-5 text-[#f01919] mr-2" />
+              Localisation
+            </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -321,7 +339,10 @@ export function CoGestionnaireForm({
 
           {/* Niveau d'accès */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Permissions</h3>
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <FiShield className="w-5 h-5 text-[#f01919] mr-2" />
+              Permissions
+            </h3>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

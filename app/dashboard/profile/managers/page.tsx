@@ -10,6 +10,7 @@ import { CoGestionnaire } from '../../../models/co_gestionnaire';
 import { 
   FiUsers, 
   FiUserPlus,
+  FiUser,
   FiMail,
   FiPhone,
   FiX,
@@ -524,150 +525,207 @@ export default function ManagersPage() {
       {/* Modal de création */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Nouveau Co-gestionnaire</h2>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-              >
-                <FiX className="w-4 h-4" />
-              </Button>
+          <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            {/* Header rouge avec icône */}
+            <div className="bg-[#f01919] text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <FiUserPlus className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Nouveau Co-gestionnaire</h2>
+                    <p className="text-red-100 text-sm">Ajoutez un membre à votre équipe</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+                >
+                  <FiX className="w-5 h-5 text-white" />
+                </button>
+              </div>
             </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <p className="text-red-800 text-sm">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={(e) => { e.preventDefault(); createManager(); }} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-1">
-                    Prénom
-                  </label>
-                  <Input
-                    id="prenom"
-                    type="text"
-                    value={newManager.prenom}
-                    onChange={(e) => setNewManager(prev => ({ ...prev, prenom: e.target.value }))}
-                    placeholder="Ex: Jean"
-                    required
-                  />
+            {/* Form */}
+            <form onSubmit={(e) => { e.preventDefault(); createManager(); }} className="p-6 space-y-6">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-600 text-sm">{error}</p>
                 </div>
+              )}
 
-                <div>
-                  <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nom
-                  </label>
-                  <Input
-                    id="nom"
-                    type="text"
-                    value={newManager.nom}
-                    onChange={(e) => setNewManager(prev => ({ ...prev, nom: e.target.value }))}
-                    placeholder="Ex: Dupont"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newManager.email}
-                  onChange={(e) => setNewManager(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="jean.dupont@example.com"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Téléphone
-                  </label>
-                  <Input
-                    id="telephone"
-                    type="tel"
-                    value={newManager.telephone}
-                    onChange={(e) => setNewManager(prev => ({ ...prev, telephone: e.target.value }))}
-                    placeholder="01 23 45 67 89"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                    Rôle
-                  </label>
-                  <select
-                    id="role"
-                    value={newManager.role}
-                    onChange={(e) => setNewManager(prev => ({ ...prev, role: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                  >
-                    {roles.map(role => (
-                      <option key={role.id} value={role.id}>{role.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  <FiShield className="w-4 h-4 inline mr-2" />
-                  Permissions
-                </label>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  {permissions.map((permission) => (
-                    <div key={permission.id} className="flex items-center space-x-3 bg-white rounded-lg p-3 shadow-sm">
-                      <input
-                        type="checkbox"
-                        id={`permission-${permission.id}`}
-                        checked={newManager.permissions.includes(permission.id)}
-                        onChange={() => togglePermission(permission.id)}
-                        className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
+              {/* Informations personnelles */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <FiUser className="w-5 h-5 text-[#f01919] mr-2" />
+                  Informations personnelles
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
+                      Nom *
+                    </label>
+                    <div className="relative">
+                      <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="nom"
+                        type="text"
+                        value={newManager.nom}
+                        onChange={(e) => setNewManager(prev => ({ ...prev, nom: e.target.value }))}
+                        placeholder="Ex: Dupont"
+                        className="pl-10"
+                        required
                       />
-                      <div className="flex-1">
-                        <label htmlFor={`permission-${permission.id}`} className="text-sm font-medium text-gray-700">
-                          {permission.name}
-                        </label>
-                        <p className="text-xs text-gray-500">{permission.description}</p>
-                      </div>
                     </div>
-                  ))}
+                  </div>
+
+                  <div>
+                    <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-2">
+                      Prénom *
+                    </label>
+                    <div className="relative">
+                      <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="prenom"
+                        type="text"
+                        value={newManager.prenom}
+                        onChange={(e) => setNewManager(prev => ({ ...prev, prenom: e.target.value }))}
+                        placeholder="Ex: Jean"
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email *
+                    </label>
+                    <div className="relative">
+                      <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newManager.email}
+                        onChange={(e) => setNewManager(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="Ex: jean.dupont@email.com"
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-2">
+                      Téléphone
+                    </label>
+                    <div className="relative">
+                      <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="telephone"
+                        type="tel"
+                        value={newManager.telephone}
+                        onChange={(e) => setNewManager(prev => ({ ...prev, telephone: e.target.value }))}
+                        placeholder="Ex: +33 1 23 45 67 89"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (optionnel)
-                </label>
-                <Textarea
-                  id="description"
-                  value={newManager.description}
-                  onChange={(e) => setNewManager(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Décrivez le rôle ou les responsabilités..."
-                  rows={3}
-                />
+              {/* Rôle et Permissions */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <FiShield className="w-5 h-5 text-[#f01919] mr-2" />
+                  Rôle et Permissions
+                </h3>
+                
+                <div>
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                    Rôle *
+                  </label>
+                  <div className="relative">
+                    <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <select
+                      id="role"
+                      value={newManager.role}
+                      onChange={(e) => setNewManager(prev => ({ ...prev, role: e.target.value }))}
+                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] appearance-none bg-white"
+                    >
+                      {roles.map(role => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Permissions
+                  </label>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    {permissions.map((permission) => (
+                      <div key={permission.id} className="flex items-center space-x-3 bg-white rounded-lg p-3 shadow-sm">
+                        <input
+                          type="checkbox"
+                          id={`permission-${permission.id}`}
+                          checked={newManager.permissions.includes(permission.id)}
+                          onChange={() => togglePermission(permission.id)}
+                          className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
+                        />
+                        <div className="flex-1">
+                          <label htmlFor={`permission-${permission.id}`} className="text-sm font-medium text-gray-700">
+                            {permission.name}
+                          </label>
+                          <p className="text-xs text-gray-500">{permission.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <FiUserPlus className="w-4 h-4 inline mr-1" />
-                  Une invitation sera envoyée par email au co-gestionnaire avec ses accès et permissions.
-                </p>
+              {/* Description */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <FiEdit3 className="w-5 h-5 text-[#f01919] mr-2" />
+                  Description
+                </h3>
+                
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                    Description (optionnel)
+                  </label>
+                  <Textarea
+                    id="description"
+                    value={newManager.description}
+                    onChange={(e) => setNewManager(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Décrivez le rôle ou les responsabilités..."
+                    rows={3}
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              {/* Informations complémentaires */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">Informations importantes</h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>• Une invitation sera envoyée par email au co-gestionnaire</p>
+                  <p>• Les permissions peuvent être modifiées à tout moment</p>
+                  <p>• L'accès peut être révoqué depuis le tableau de bord</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <Button 
                   type="button"
-                  variant="outline" 
+                  variant="outline"
                   onClick={() => setShowCreateModal(false)}
                   disabled={loading}
                 >

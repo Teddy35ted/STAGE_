@@ -180,15 +180,25 @@ export default function BoutiqueCreateForm({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Créer une nouvelle boutique</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <FiX className="w-5 h-5 text-gray-500" />
-          </button>
+        {/* Header rouge avec icône */}
+        <div className="bg-[#f01919] text-white p-6 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <FiImage className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Nouvelle Boutique</h2>
+                <p className="text-red-100 text-sm">Créez votre point de vente</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+            >
+              <FiX className="w-5 h-5 text-white" />
+            </button>
+          </div>
         </div>
 
         {/* Form */}
