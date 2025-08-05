@@ -6,20 +6,20 @@ import { useApi } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield } from 'react-icons/fi';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../ui/dialog';
 
 interface CoGestionnaireFormProps {
+  isOpen?: boolean;
+  onClose?: () => void;
   coGestionnaire?: CoGestionnaire;
   onSuccess: () => void;
 }
 
-export function CoGestionnaireForm({ coGestionnaire, onSuccess }: CoGestionnaireFormProps) {
+export function CoGestionnaireForm({ 
+  isOpen, 
+  onClose, 
+  coGestionnaire, 
+  onSuccess 
+}: CoGestionnaireFormProps) {
   const [formData, setFormData] = useState({
     nom: coGestionnaire?.nom || '',
     email: coGestionnaire?.email || '',
@@ -31,7 +31,11 @@ export function CoGestionnaireForm({ coGestionnaire, onSuccess }: CoGestionnaire
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use internal state if no external control
+  const modalOpen = isOpen !== undefined ? isOpen : internalOpen;
+  const handleClose = onClose || (() => setInternalOpen(false));
 
   const { apiFetch } = useApi();
 
@@ -107,7 +111,7 @@ export function CoGestionnaireForm({ coGestionnaire, onSuccess }: CoGestionnaire
       });
       
       onSuccess();
-      setIsOpen(false);
+      handleClose();
       
       // Reset form if creating new
       if (!coGestionnaire) {
@@ -128,26 +132,32 @@ export function CoGestionnaireForm({ coGestionnaire, onSuccess }: CoGestionnaire
     }
   };
 
-  const handleClose = () => {
-    setIsOpen(false);
-    setErrors({});
+  if (!modalOpen) return null;
+
+  // If no external control, show trigger button
+  const renderTrigger = () => {
+    if (isOpen !== undefined) return null;
+    
+    return (
+      <Button 
+        className="bg-[#f01919] hover:bg-[#d01515] text-white"
+        onClick={() => setInternalOpen(true)}
+      >
+        {coGestionnaire ? 'Modifier' : 'Ajouter un co-gestionnaire'}
+      </Button>
+    );
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-[#f01919] hover:bg-[#d01515] text-white">
-          {coGestionnaire ? 'Modifier' : 'Ajouter un co-gestionnaire'}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <>
+      {renderTrigger()}
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-900">
-              {coGestionnaire ? 'Modifier le co-gestionnaire' : 'Ajouter un co-gestionnaire'}
-            </DialogTitle>
-          </DialogHeader>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">
+            {coGestionnaire ? 'Modifier le co-gestionnaire' : 'Ajouter un co-gestionnaire'}
+          </h2>
           <button
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -157,7 +167,7 @@ export function CoGestionnaireForm({ coGestionnaire, onSuccess }: CoGestionnaire
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Error message */}
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -331,7 +341,8 @@ export function CoGestionnaireForm({ coGestionnaire, onSuccess }: CoGestionnaire
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
+    </>
   );
 }
