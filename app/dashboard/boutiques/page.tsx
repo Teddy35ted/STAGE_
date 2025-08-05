@@ -33,6 +33,11 @@ interface BoutiqueExtended extends Boutique {
   displayName?: string;
   displayDescription?: string;
   displayStatus?: 'open' | 'closed' | 'pending';
+  telephone?: string;
+  categorie?: string;
+  note?: number;
+  nombreAvis?: number;
+  chiffreAffaires?: number;
 }
 
 interface DaySchedule {
@@ -196,8 +201,13 @@ export default function BoutiquesPage() {
       const transformedBoutiques: BoutiqueExtended[] = boutiquesData.map((boutique: Boutique) => ({
         ...boutique,
         displayName: boutique.nom || 'Boutique sans nom',
-        displayDescription: boutique.description || 'Aucune description',
-        displayStatus: boutique.statut === 'actif' ? 'open' : 'closed'
+        displayDescription: boutique.desc || 'Aucune description', // utiliser desc au lieu de description
+        displayStatus: boutique.isdesactive ? 'closed' : 'open', // utiliser isdesactive au lieu de statut
+        telephone: boutique.adresse || '', // placeholder pour telephone
+        categorie: 'commerce', // valeur par défaut
+        note: boutique.etoile || 0, // utiliser etoile comme note
+        nombreAvis: boutique.lesClients?.length || 0, // utiliser lesClients comme avis
+        chiffreAffaires: boutique.balance || 0 // utiliser balance comme CA
       }));
       
       setBoutiques(transformedBoutiques);
@@ -563,10 +573,10 @@ export default function BoutiquesPage() {
                             {boutique.telephone}
                           </div>
                         )}
-                        {boutique.horaires && (
+                        {boutique.horaires && boutique.horaires.length > 0 && (
                           <div className="flex items-center">
                             <FiClock className="w-4 h-4 mr-2" />
-                            {boutique.horaires}
+                            {boutique.horaires.length} horaire(s) défini(s)
                           </div>
                         )}
                       </div>
@@ -641,7 +651,7 @@ export default function BoutiquesPage() {
 
       {/* Modal de création moderne */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gradient-to-br from-orange-50/90 via-amber-50/90 to-yellow-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-4xl max-h-[90vh] overflow-hidden">
             {/* Header moderne */}
             <div className="bg-gradient-to-r from-[#f01919] to-[#d01515] px-6 py-4">

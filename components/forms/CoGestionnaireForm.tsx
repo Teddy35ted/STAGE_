@@ -170,10 +170,10 @@ export function CoGestionnaireForm({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-red-50/90 via-pink-50/90 to-rose-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white/95 backdrop-blur-md shadow-2xl shadow-red-500/20 rounded-2xl border border-white/20 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* Header rouge avec icône */}
-        <div className="bg-[#f01919] text-white p-6 rounded-t-lg">
+        <div className="bg-[#f01919] text-white p-6 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">

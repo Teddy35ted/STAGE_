@@ -32,6 +32,7 @@ interface LaalaExtended extends LaalaDashboard {
   displayTitle?: string;
   displayDescription?: string;
   displayStatus?: 'active' | 'inactive' | 'draft';
+  participants?: string[]; // Pour remplacer personnes
 }
 
 export default function LaalasPage() {
@@ -84,7 +85,8 @@ export default function LaalasPage() {
         ...laala,
         displayTitle: laala.nom || 'Laala sans nom',
         displayDescription: laala.description || 'Aucune description',
-        displayStatus: laala.type === 'public' ? 'active' : 'inactive'
+        displayStatus: laala.isLaalaPublic ? 'active' : 'inactive',
+        participants: laala.idparticipants || []
       }));
       
       setLaalas(transformedLaalas);
@@ -284,7 +286,7 @@ export default function LaalasPage() {
   // Stats calculations
   const totalActive = laalas.filter(l => l.displayStatus === 'active').length;
   const totalViews = laalas.reduce((sum, l) => sum + (l.vues || 0), 0);
-  const totalFollowers = laalas.reduce((sum, l) => sum + (l.personnes?.length || 0), 0);
+  const totalFollowers = laalas.reduce((sum, l) => sum + (l.participants?.length || 0), 0);
   const totalLikes = laalas.reduce((sum, l) => sum + (l.likes || 0), 0);
 
   return (
@@ -488,7 +490,7 @@ export default function LaalasPage() {
                         </span>
                         <span className="flex items-center">
                           <FiUsers className="w-4 h-4 mr-1" />
-                          {laala.personnes?.length || 0}
+                          {laala.participants?.length || 0}
                         </span>
                         <span className="flex items-center">
                           <FiHeart className="w-4 h-4 mr-1" />
@@ -512,8 +514,8 @@ export default function LaalasPage() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(laala.type || 'public')}`}>
-                      {laala.type === 'public' ? 'Public' : 'Privé'}
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(laala.type || 'Laala freestyle')}`}>
+                      {laala.isLaalaPublic ? 'Public' : 'Privé'}
                     </span>
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline">
@@ -568,7 +570,7 @@ export default function LaalasPage() {
 
       {/* Modal de création moderne */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-50/90 via-indigo-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-2xl max-h-[90vh] overflow-hidden">
             {/* Header moderne */}
             <div className="bg-gradient-to-r from-[#f01919] to-[#d01515] px-6 py-4">

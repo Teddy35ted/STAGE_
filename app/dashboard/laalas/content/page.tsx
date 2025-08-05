@@ -127,8 +127,8 @@ export default function ContentPage() {
         return {
           ...content,
           displayTitle: content.nom || 'Contenu sans titre',
-          displayDescription: content.description || 'Aucune description',
-          displayStatus: content.statut === 'publié' ? 'published' : 'draft',
+          displayDescription: content.nom || 'Aucune description', // utiliser nom comme description
+          displayStatus: content.allowComment ? 'published' : 'draft', // utiliser allowComment comme indicateur de statut
           laalaName: laala?.nom || 'Laala inconnu'
         };
       });
@@ -299,7 +299,7 @@ export default function ContentPage() {
   const totalPublished = contents.filter(c => c.displayStatus === 'published').length;
   const totalViews = contents.reduce((sum, c) => sum + (c.vues || 0), 0);
   const totalLikes = contents.reduce((sum, c) => sum + (c.likes || 0), 0);
-  const totalComments = contents.reduce((sum, c) => sum + (c.commentaires || 0), 0);
+  const totalComments = contents.reduce((sum, c) => sum + (Array.isArray(c.commentaires) ? c.commentaires.length : 0), 0);
 
   return (
     <div className="space-y-6">
@@ -618,7 +618,7 @@ export default function ContentPage() {
 
       {/* Modal de création */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gradient-to-br from-emerald-50/90 via-teal-50/90 to-cyan-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Nouveau Contenu</h2>
