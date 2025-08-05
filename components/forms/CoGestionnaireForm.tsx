@@ -22,6 +22,7 @@ export function CoGestionnaireForm({
 }: CoGestionnaireFormProps) {
   const [formData, setFormData] = useState({
     nom: coGestionnaire?.nom || '',
+    prenom: coGestionnaire?.prenom || '',
     email: coGestionnaire?.email || '',
     tel: coGestionnaire?.tel || '',
     pays: coGestionnaire?.pays || '',
@@ -67,6 +68,12 @@ export function CoGestionnaireForm({
       newErrors.nom = 'Le nom est requis';
     } else if (formData.nom.length < 2) {
       newErrors.nom = 'Le nom doit contenir au moins 2 caractères';
+    }
+
+    if (!formData.prenom.trim()) {
+      newErrors.prenom = 'Le prénom est requis';
+    } else if (formData.prenom.length < 2) {
+      newErrors.prenom = 'Le prénom doit contenir au moins 2 caractères';
     }
 
     if (!formData.email.trim()) {
@@ -117,6 +124,7 @@ export function CoGestionnaireForm({
       if (!coGestionnaire) {
         setFormData({
           nom: '',
+          prenom: '',
           email: '',
           tel: '',
           pays: '',
@@ -132,8 +140,6 @@ export function CoGestionnaireForm({
     }
   };
 
-  if (!modalOpen) return null;
-
   // If no external control, show trigger button
   const renderTrigger = () => {
     if (isOpen !== undefined) return null;
@@ -148,10 +154,23 @@ export function CoGestionnaireForm({
     );
   };
 
+  // If external control and not open, just return null
+  if (isOpen !== undefined && !isOpen) return null;
+  
+  // If internal control and not open, show only trigger
+  if (isOpen === undefined && !internalOpen) {
+    return (
+      <Button 
+        className="bg-[#f01919] hover:bg-[#d01515] text-white"
+        onClick={() => setInternalOpen(true)}
+      >
+        {coGestionnaire ? 'Modifier' : 'Ajouter un co-gestionnaire'}
+      </Button>
+    );
+  }
+
   return (
-    <>
-      {renderTrigger()}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -182,14 +201,14 @@ export function CoGestionnaireForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom complet *
+                  Nom *
                 </label>
                 <div className="relative">
                   <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     value={formData.nom}
                     onChange={(e) => handleInputChange('nom', e.target.value)}
-                    placeholder="Ex: Jean Dupont"
+                    placeholder="Ex: Dupont"
                     className={`pl-10 ${errors.nom ? 'border-red-500' : ''}`}
                   />
                 </div>
@@ -198,6 +217,26 @@ export function CoGestionnaireForm({
                 )}
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prénom *
+                </label>
+                <div className="relative">
+                  <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    value={formData.prenom}
+                    onChange={(e) => handleInputChange('prenom', e.target.value)}
+                    placeholder="Ex: Jean"
+                    className={`pl-10 ${errors.prenom ? 'border-red-500' : ''}`}
+                  />
+                </div>
+                {errors.prenom && (
+                  <p className="text-red-500 text-sm mt-1">{errors.prenom}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email *
@@ -216,24 +255,24 @@ export function CoGestionnaireForm({
                   <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                 )}
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Téléphone *
-              </label>
-              <div className="relative">
-                <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  value={formData.tel}
-                  onChange={(e) => handleInputChange('tel', e.target.value)}
-                  placeholder="Ex: +33 1 23 45 67 89"
-                  className={`pl-10 ${errors.tel ? 'border-red-500' : ''}`}
-                />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Téléphone *
+                </label>
+                <div className="relative">
+                  <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    value={formData.tel}
+                    onChange={(e) => handleInputChange('tel', e.target.value)}
+                    placeholder="Ex: +33 1 23 45 67 89"
+                    className={`pl-10 ${errors.tel ? 'border-red-500' : ''}`}
+                  />
+                </div>
+                {errors.tel && (
+                  <p className="text-red-500 text-sm mt-1">{errors.tel}</p>
+                )}
               </div>
-              {errors.tel && (
-                <p className="text-red-500 text-sm mt-1">{errors.tel}</p>
-              )}
             </div>
           </div>
 
@@ -343,6 +382,5 @@ export function CoGestionnaireForm({
         </form>
       </div>
     </div>
-    </>
   );
 }
