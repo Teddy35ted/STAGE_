@@ -77,7 +77,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
   return (
     <div className="w-full max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">La-à-La</h1>
+        <h1 className="text-3xl font-bold text-gray-900">La-a-La</h1>
         <p className="text-gray-600 mt-2">Inscription Animateur Pro</p>
       </div>
 

@@ -134,7 +134,7 @@ export const DashboardSidebar: React.FC = () => {
             <span className="text-white font-bold text-lg">L</span>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">La-à-La</h2>
+            <h2 className="text-xl font-bold text-gray-900">La-a-La</h2>
             <p className="text-sm text-gray-600">Animateur Pro</p>
           </div>
         </div>
@@ -158,7 +158,7 @@ export const DashboardSidebar: React.FC = () => {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  {item.submenu && pathname.startsWith(item.href) && (
+                  {item.submenu && pathname && pathname.startsWith(item.href) && (
                     <div className="ml-6 mt-1 space-y-1">
                       {item.submenu.map((subItem) => (
                         <SidebarMenuButton
