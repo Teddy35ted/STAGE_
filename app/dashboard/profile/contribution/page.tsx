@@ -181,7 +181,7 @@ export default function ContributionPage() {
           <div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">{currentSubscription.plan}</h3>
             <div className="flex items-baseline space-x-2 mb-4">
-              <span className="text-3xl font-bold text-[#f01919]">{currentSubscription.price} €</span>
+              <span className="text-3xl font-bold text-[#f01919]">{currentSubscription.price} FCFA</span>
               <span className="text-gray-600">/ mois</span>
             </div>
             
@@ -231,7 +231,7 @@ export default function ContributionPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total payé cette année</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">359.88 €</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">359.88 FCFA</p>
             </div>
             <div className="p-3 rounded-lg bg-[#f01919]">
               <FiDollarSign className="w-6 h-6 text-white" />
@@ -257,7 +257,7 @@ export default function ContributionPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Prochaine facture</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">29.99 €</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">29.99 FCFA</p>
               <p className="text-sm text-gray-500 mt-1">
                 {new Date(currentSubscription.nextPayment).toLocaleDateString('fr-FR')}
               </p>
@@ -305,7 +305,7 @@ export default function ContributionPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-900">
-                      {payment.amount.toFixed(2)} €
+                      {payment.amount.toFixed(2)} FCFA
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -408,7 +408,7 @@ export default function ContributionPage() {
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                       <div className="flex items-baseline justify-center space-x-2">
                         <span className="text-3xl font-bold text-[#f01919]">
-                          {selectedPlan === 'yearly' ? plan.yearlyPrice : plan.price} €
+                          {selectedPlan === 'yearly' ? plan.yearlyPrice : plan.price} FCFA
                         </span>
                         <span className="text-gray-600">
                           / {selectedPlan === 'yearly' ? 'an' : 'mois'}
@@ -416,7 +416,7 @@ export default function ContributionPage() {
                       </div>
                       {selectedPlan === 'yearly' && (
                         <p className="text-sm text-green-600 mt-1">
-                          Économisez {((plan.price * 12) - plan.yearlyPrice).toFixed(2)} € par an
+                          Économisez {((plan.price * 12) - plan.yearlyPrice).toFixed(2)} FCFA par an
                         </p>
                       )}
                     </div>

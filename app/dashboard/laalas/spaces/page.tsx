@@ -298,7 +298,7 @@ export default function SpacesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Revenus ce mois</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalRevenue} €</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalRevenue} FCFA</p>
                 </div>
                 <div className="p-3 rounded-lg bg-blue-500">
                   <FiDollarSign className="w-6 h-6 text-white" />
@@ -399,7 +399,7 @@ export default function SpacesPage() {
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <FiDollarSign className="w-4 h-4 mr-2" />
-                      {space.pricePerHour} €/heure
+                      {space.pricePerHour} FCFA/heure
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <FiCalendar className="w-4 h-4 mr-2" />
@@ -532,7 +532,7 @@ export default function SpacesPage() {
                         <span className="text-sm text-gray-600">{request.purpose}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{request.budget} €</span>
+                        <span className="text-sm font-medium text-gray-900">{request.budget} FCFA</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRequestStatusColor(request.status)}`}>

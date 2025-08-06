@@ -167,7 +167,7 @@ export default function ShopsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Revenus Total</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalRevenue.toLocaleString()} €</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{totalRevenue.toLocaleString()} FCFA</p>
             </div>
             <div className="p-3 rounded-lg bg-blue-500">
               <FiDollarSign className="w-6 h-6 text-white" />
@@ -256,7 +256,7 @@ export default function ShopsPage() {
               {shop.status === 'active' && (
                 <div className="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="text-center">
-                    <p className="text-lg font-bold text-gray-900">{shop.revenue.toLocaleString()} €</p>
+                    <p className="text-lg font-bold text-gray-900">{shop.revenue.toLocaleString()} FCFA</p>
                     <p className="text-xs text-gray-500">Revenus</p>
                   </div>
                   <div className="text-center">

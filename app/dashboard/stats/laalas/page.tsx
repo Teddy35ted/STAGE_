@@ -5,7 +5,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { useApi } from '../../../../lib/api';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { Laala } from '../../../models/laala';
+import { LaalaDashboard } from '../../../models/laala';
 import { 
   FiTrendingUp, 
   FiEye, 
@@ -311,7 +311,7 @@ export default function LaalaStatsPage() {
   const { user } = useAuth();
 
   // Fonction pour générer des statistiques aléatoires
-  const generateRandomStats = (laala: Laala): LaalaStats => {
+  const generateRandomStats = (laala: LaalaDashboard): LaalaStats => {
     const baseFollowers = Math.floor(Math.random() * 50000) + 500;
     const baseViews = Math.floor(Math.random() * 1000000) + 10000;
     const engagementRate = Math.random() * 12 + 3; // 3-15%
@@ -342,7 +342,7 @@ export default function LaalaStatsPage() {
       id: laala.id || '',
       name: laala.nom || 'Laala sans nom',
       category: categories[Math.floor(Math.random() * categories.length)],
-      createdAt: laala.dateCreation || new Date().toISOString(),
+      createdAt: laala.date || new Date().toISOString(),
       isActive: Math.random() > 0.2, // 80% de chance d'être actif
       followers: {
         total: baseFollowers,
@@ -416,7 +416,7 @@ export default function LaalaStatsPage() {
       }
       
       // Filtrer les laalas de l'utilisateur et générer des statistiques
-      const userLaalas = laalaData.filter((laala: Laala) => 
+      const userLaalas = laalaData.filter((laala: LaalaDashboard) => 
         laala.idCreateur === user.uid
       );
       
@@ -468,10 +468,7 @@ export default function LaalaStatsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
+    return amount.toLocaleString('fr-FR') + ' FCFA';
   };
 
   const formatDate = (dateString: string) => {

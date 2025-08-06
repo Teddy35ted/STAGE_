@@ -250,7 +250,7 @@ export default function ProfilePage() {
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-[#f01919]">2,450 €</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[#f01919]">2,450 FCFA</p>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">Revenus ce mois</p>
           </div>
         </div>

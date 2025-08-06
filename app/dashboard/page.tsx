@@ -233,7 +233,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Montant gagné ce mois"
-          value="2,450 €"
+          value="2,450 FCFA"
           change="+12% vs mois dernier"
           changeType="positive"
           icon={FiDollarSign}
@@ -241,7 +241,7 @@ export default function DashboardPage() {
         />
         <MetricCard
           title="Couris disponibles"
-          value="850 €"
+          value="850 FCFA"
           change="Prêt à retirer"
           changeType="neutral"
           icon={FiTrendingUp}
@@ -350,7 +350,7 @@ export default function DashboardPage() {
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">Paiement de 125€ reçu</p>
+                  <p className="text-sm text-gray-900">Paiement de 125 FCFA reçu</p>
                   <p className="text-xs text-gray-500">Il y a 3 heures</p>
                 </div>
               </div>

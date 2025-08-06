@@ -238,7 +238,7 @@ export default function BoostPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Budget Total Dépensé</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalSpent.toFixed(2)} €</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalSpent.toFixed(2)} FCFA</p>
                 </div>
                 <div className="p-3 rounded-lg bg-[#f01919]">
                   <FiDollarSign className="w-6 h-6 text-white" />

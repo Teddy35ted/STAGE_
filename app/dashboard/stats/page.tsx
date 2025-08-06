@@ -55,7 +55,7 @@ export default function StatsPage() {
     },
     {
       title: 'Revenus',
-      value: '3,245 €',
+      value: '3,245 FCFA',
       change: '+7.8%',
       changeType: 'positive',
       icon: FiBarChart,
@@ -204,21 +204,21 @@ export default function StatsPage() {
                   <div 
                     className="bg-green-500 h-6 rounded-l"
                     style={{ width: `${(data.direct / 3000) * 100}%` }}
-                    title={`Direct: ${data.direct}€`}
+                    title={`Direct: ${data.direct} FCFA`}
                   ></div>
                   <div 
                     className="bg-blue-500 h-6"
                     style={{ width: `${(data.indirect / 3000) * 100}%` }}
-                    title={`Indirect: ${data.indirect}€`}
+                    title={`Indirect: ${data.indirect} FCFA`}
                   ></div>
                   <div 
                     className="bg-purple-500 h-6 rounded-r"
                     style={{ width: `${(data.ads / 3000) * 100}%` }}
-                    title={`Publicité: ${data.ads}€`}
+                    title={`Publicité: ${data.ads} FCFA`}
                   ></div>
                 </div>
                 <div className="w-16 text-sm text-gray-900 font-medium">
-                  {(data.direct + data.indirect + data.ads).toLocaleString()}€
+                  {(data.direct + data.indirect + data.ads).toLocaleString()} FCFA
                 </div>
               </div>
             ))}

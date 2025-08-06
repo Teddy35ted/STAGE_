@@ -156,10 +156,7 @@ export default function RevenueStatsPage() {
   const [showForecasting, setShowForecasting] = useState(true);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
+    return amount.toLocaleString('fr-FR') + ' FCFA';
   };
 
   const getGrowthColor = (growth: number) => {
