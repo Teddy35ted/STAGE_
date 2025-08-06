@@ -1,4 +1,4 @@
-# 📋 Plan de Navigation - La-à-La Dashboard
+# 📋 Plan de Navigation - La-a-La Dashboard
 
 ## 🏠 **Pages Principales**
 

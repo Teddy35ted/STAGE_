@@ -35,7 +35,7 @@ Si le bucket n'existe pas ou n'est pas bien configuré :
 1. **Allez dans Appwrite Console** → Storage → Create Bucket
 2. **Paramètres du bucket** :
    - **ID** : `medias`
-   - **Nom** : `Médias La-à-La`
+   - **Nom** : `Médias La-a-La`
    - **Taille max** : `100MB`
    - **Extensions autorisées** : `jpg, jpeg, png, gif, webp, svg, mp4, avi, mov, wmv, webm, mkv`
 

@@ -1,6 +1,6 @@
-# Intégration Appwrite + Firebase pour La-à-La Dashboard
+# Intégration Appwrite + Firebase pour La-a-La Dashboard
 
-Cette documentation explique l'intégration complète entre Appwrite (pour les médias) et Firebase (pour les données) dans le projet La-à-La Dashboard.
+Cette documentation explique l'intégration complète entre Appwrite (pour les médias) et Firebase (pour les données) dans le projet La-a-La Dashboard.
 
 ## 🎯 Objectif
 

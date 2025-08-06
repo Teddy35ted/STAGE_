@@ -15,7 +15,7 @@ const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY; // Clé API admin requise
 // Configuration du bucket "medias" existant
 const BUCKET_CONFIG = {
   id: '688fa6db0002434c0735', // ID unique du bucket existant
-  name: 'Médias La-à-La',
+  name: 'Médias La-a-La',
   permissions: [
     Permission.read(Role.any()),
     Permission.create(Role.users()),

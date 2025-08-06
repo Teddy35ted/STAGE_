@@ -15,7 +15,7 @@ const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY; // Clé API admin requise
 // Configuration du bucket unique
 const BUCKET_CONFIG = {
   id: 'la-a-la-media',
-  name: 'La-à-La Médias (Tous types)',
+  name: 'La-a-La Médias (Tous types)',
   permissions: [
     Permission.read(Role.any()),
     Permission.create(Role.users()),
@@ -51,7 +51,7 @@ const FOLDER_STRUCTURE = {
 };
 
 async function setupAppwriteSingleBucket() {
-  console.log('🚀 Configuration d\'Appwrite avec bucket unique pour La-à-La Dashboard...\n');
+  console.log('🚀 Configuration d\'Appwrite avec bucket unique pour La-a-La Dashboard...\n');
 
   // Vérifier la clé API
   if (!APPWRITE_API_KEY) {

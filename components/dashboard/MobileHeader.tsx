@@ -16,7 +16,7 @@ export const MobileHeader: React.FC = () => {
             <span className="text-white font-bold text-sm">L</span>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">La-à-La</h2>
+            <h2 className="text-lg font-bold text-gray-900">La-a-La</h2>
           </div>
         </div>
       </div>

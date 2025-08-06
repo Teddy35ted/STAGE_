@@ -19,7 +19,7 @@ Votre clé API est configurée, mais il y a un problème de compatibilité avec 
 
 #### **Paramètres de Base**
 - **Bucket ID** : `medias` (exactement, sans majuscules)
-- **Name** : `Médias La-à-La`
+- **Name** : `Médias La-a-La`
 
 #### **Paramètres de Fichiers**
 - **Maximum file size** : `100 MB` (104857600 bytes)

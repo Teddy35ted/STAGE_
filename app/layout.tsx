@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "La-à-La - Dashboard Animateur Pro",
-  description: "Dashboard pour les animateurs professionnels de La-à-La",
+  title: "La-a-La - Dashboard Animateur Pro",
+  description: "Dashboard pour les animateurs professionnels de La-a-La",
   icons: {
     icon: [
       { url: '/laala.ico', sizes: '16x16', type: 'image/x-icon' },

@@ -1,6 +1,6 @@
 # Guide : Utilisation d'un Seul Bucket Appwrite
 
-Ce guide explique comment utiliser un seul bucket Appwrite pour tous les médias du projet La-à-La Dashboard, avec une organisation par dossiers virtuels.
+Ce guide explique comment utiliser un seul bucket Appwrite pour tous les médias du projet La-a-La Dashboard, avec une organisation par dossiers virtuels.
 
 ## 🎯 Pourquoi un Seul Bucket ?
 
@@ -43,7 +43,7 @@ Ce guide explique comment utiliser un seul bucket Appwrite pour tous les médias
 ```javascript
 {
   id: 'la-a-la-media',
-  name: 'La-à-La Médias (Tous types)',
+  name: 'La-a-La Médias (Tous types)',
   maximumFileSize: 100 * 1024 * 1024, // 100MB
   allowedFileExtensions: [
     'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg',  // Images

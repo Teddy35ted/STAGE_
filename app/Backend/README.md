@@ -1,4 +1,4 @@
-# Backend Firebase Admin - Dashboard La-à-La
+# Backend Firebase Admin - Dashboard La-a-La
 
 ## 🚀 Installation
 

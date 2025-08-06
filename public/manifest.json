@@ -1,7 +1,7 @@
 {
-  "name": "La-à-La Dashboard Animateur Pro",
-  "short_name": "La-à-La",
-  "description": "Dashboard pour les animateurs professionnels de La-à-La",
+  "name": "La-a-La Dashboard Animateur Pro",
+  "short_name": "La-a-La",
+  "description": "Dashboard pour les animateurs professionnels de La-a-La",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

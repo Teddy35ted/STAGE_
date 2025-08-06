@@ -1,7 +1,7 @@
 # CLASSES OPTIMISÉES DES COLLECTIONS BASE DE DONNÉES
 
 ## Vue d'ensemble
-Ce document présente les classes optimisées représentant les collections implémentées dans la base de données Firebase Firestore du projet La-à-La Dashboard. **Seuls les attributs fournis avant insertion en base sont inclus** pour éviter les surcharges.
+Ce document présente les classes optimisées représentant les collections implémentées dans la base de données Firebase Firestore du projet La-a-La Dashboard. **Seuls les attributs fournis avant insertion en base sont inclus** pour éviter les surcharges.
 
 ---
 
@@ -294,4 +294,4 @@ Gère les demandes de retrait de fonds des utilisateurs.
 
 ---
 
-*Ce document représente la structure complète des collections de la base de données La-à-La Dashboard, optimisée pour les performances et la cohérence des données.*
+*Ce document représente la structure complète des collections de la base de données La-a-La Dashboard, optimisée pour les performances et la cohérence des données.*

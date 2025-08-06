@@ -85,7 +85,7 @@ const BUCKETS_CONFIG = [
 ];
 
 async function setupAppwrite() {
-  console.log('🚀 Configuration d\'Appwrite pour La-à-La Dashboard...\n');
+  console.log('🚀 Configuration d\'Appwrite pour La-a-La Dashboard...\n');
 
   // Vérifier la clé API
   if (!APPWRITE_API_KEY) {

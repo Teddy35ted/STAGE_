@@ -1,4 +1,4 @@
-# Test de Redirection - Dashboard La-à-La
+# Test de Redirection - Dashboard La-a-La
 
 ## 🔧 Corrections apportées
 

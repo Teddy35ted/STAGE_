@@ -66,7 +66,7 @@ Dans votre console Appwrite :
 3. **Storage** → **Create Bucket**
 4. **Configuration** :
    - **ID** : `medias`
-   - **Nom** : `Médias La-à-La`
+   - **Nom** : `Médias La-a-La`
    - **Taille max** : 100MB
    - **Extensions** : `jpg, jpeg, png, gif, webp, svg, mp4, avi, mov, wmv, webm, mkv`
    - **Permissions** :

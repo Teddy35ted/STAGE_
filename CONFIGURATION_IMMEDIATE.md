@@ -24,7 +24,7 @@ Comme il y a un problème de compatibilité avec le script, créez le bucket man
 
 ```
 Bucket ID: medias
-Name: Médias La-à-La
+Name: Médias La-a-La
 Maximum file size: 100 MB
 Allowed file extensions: jpg,jpeg,png,gif,webp,svg,mp4,avi,mov,wmv,webm,mkv
 File Security: ✅ Enabled

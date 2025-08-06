@@ -1,6 +1,6 @@
-# Configuration Appwrite pour La-à-La Dashboard
+# Configuration Appwrite pour La-a-La Dashboard
 
-Ce document explique comment configurer Appwrite pour gérer les médias du projet La-à-La Dashboard.
+Ce document explique comment configurer Appwrite pour gérer les médias du projet La-a-La Dashboard.
 
 ## 1. Configuration des Buckets de Storage
 

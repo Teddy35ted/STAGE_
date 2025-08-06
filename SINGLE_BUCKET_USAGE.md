@@ -183,7 +183,7 @@ Dans votre console Appwrite, configurez le bucket `"medias"` avec :
 // Configuration recommandée
 {
   id: "medias",
-  name: "Médias La-à-La",
+  name: "Médias La-a-La",
   maximumFileSize: 100 * 1024 * 1024, // 100MB
   allowedFileExtensions: [
     "jpg", "jpeg", "png", "gif", "webp", "svg",  // Images

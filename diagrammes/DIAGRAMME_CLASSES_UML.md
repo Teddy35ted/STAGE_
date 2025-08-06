@@ -1,4 +1,4 @@
-# DIAGRAMME DE CLASSES UML OPTIMISÉ - LA-À-LA DASHBOARD
+# DIAGRAMME DE CLASSES UML OPTIMISÉ - LA-A-LA DASHBOARD
 
 ## Vue d'ensemble du Système Optimisé
 
@@ -385,4 +385,4 @@ db.retraits.createIndex({ "date": -1 })
 
 ---
 
-*Ce diagramme UML représente l'architecture complète des données du système La-à-La Dashboard, optimisée pour les performances, la cohérence et l'évolutivité.*
+*Ce diagramme UML représente l'architecture complète des données du système La-a-La Dashboard, optimisée pour les performances, la cohérence et l'évolutivité.*
