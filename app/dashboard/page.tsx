@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FiDollarSign, 
   FiTrendingUp, 
@@ -14,6 +14,10 @@ import {
 } from 'react-icons/fi';
 import { ContactPopup } from '../../components/dashboard/ContactPopup';
 import { NotificationPopup } from '../../components/dashboard/NotificationPopup';
+import { useCRUDNotifications } from '../../contexts/NotificationContext';
+import { useApi } from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { LaalaDashboard } from '../models/laala';
 
 interface MetricCardProps {
   title: string;
@@ -22,6 +26,7 @@ interface MetricCardProps {
   changeType?: 'positive' | 'negative' | 'neutral';
   icon: React.ComponentType<any>;
   color: string;
+  onClick?: () => void;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -30,13 +35,19 @@ const MetricCard: React.FC<MetricCardProps> = ({
   change, 
   changeType = 'neutral', 
   icon: Icon, 
-  color 
+  color,
+  onClick 
 }) => {
   const changeColor = changeType === 'positive' ? 'text-green-600' : 
                      changeType === 'negative' ? 'text-red-600' : 'text-gray-600';
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+    <div 
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 ${
+        onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+      }`}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
           <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{title}</p>
@@ -84,8 +95,68 @@ const NotificationItem: React.FC<NotificationProps> = ({ title, message, time, t
 };
 
 export default function DashboardPage() {
+  const { notifyCreate, notifyUpdate, notifyDelete } = useCRUDNotifications();
   const [isContactPopupOpen, setIsContactPopupOpen] = useState(false);
   const [isNotificationPopupOpen, setIsNotificationPopupOpen] = useState(false);
+  
+  // États pour les données dynamiques
+  const [laalasCount, setLaalasCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { apiFetch } = useApi();
+  const { user } = useAuth();
+
+  // Récupération du nombre de Laalas de l'utilisateur
+  const fetchUserLaalas = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!user) {
+        console.log('👤 Utilisateur non connecté');
+        setLaalasCount(0);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🔍 Récupération des laalas pour utilisateur:', user.uid);
+      const laalasData = await apiFetch('/api/laalas');
+      
+      if (!Array.isArray(laalasData)) {
+        console.warn('⚠️ Réponse API inattendue:', laalasData);
+        setLaalasCount(0);
+        return;
+      }
+      
+      // Filtrer les laalas actifs (non supprimés et publics ou en cours)
+      const activeLaalas = laalasData.filter((laala: LaalaDashboard) => 
+        laala.idCreateur === user.uid && 
+        (laala.isLaalaPublic || laala.encours) &&
+        !laala.isSignaler
+      );
+      
+      setLaalasCount(activeLaalas.length);
+      console.log('✅ Nombre de laalas actifs trouvés:', activeLaalas.length);
+      
+    } catch (err) {
+      console.error('❌ Erreur récupération laalas:', err);
+      setError('Erreur lors du chargement des données');
+      setLaalasCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chargement initial des données
+  useEffect(() => {
+    if (user) {
+      fetchUserLaalas();
+    } else {
+      setLaalasCount(0);
+      setLoading(false);
+    }
+  }, [user]);
 
   const notifications = [
     {
@@ -150,6 +221,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Key Metrics */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center">
+            <FiBell className="w-5 h-5 text-red-400 mr-2" />
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Montant gagné ce mois"
@@ -177,11 +257,16 @@ export default function DashboardPage() {
         />
         <MetricCard
           title="Laalas actifs"
-          value="8"
-          change="2 programmés"
+          value={loading ? "..." : laalasCount.toString()}
+          change={loading ? "Chargement..." : laalasCount === 0 ? "Aucun laala créé • Cliquez pour actualiser" : `${laalasCount === 1 ? "1 laala" : `${laalasCount} laalas`} en ligne • Cliquez pour actualiser`}
           changeType="neutral"
           icon={FiEdit3}
           color="bg-purple-500"
+          onClick={() => {
+            if (!loading) {
+              fetchUserLaalas();
+            }
+          }}
         />
       </div>
 
@@ -205,6 +290,37 @@ export default function DashboardPage() {
             <FiUsers className="w-5 h-5 text-[#f01919] flex-shrink-0" />
             <span className="text-sm font-medium text-gray-900 truncate">Analyser fans</span>
           </button>
+        </div>
+        
+        {/* Test Notifications Section */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Test des Notifications</h3>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <button 
+              onClick={() => notifyCreate('Laala', 'Test Laala', true)}
+              className="px-3 py-2 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+            >
+              ✓ Création
+            </button>
+            <button 
+              onClick={() => notifyUpdate('Boutique', 'Ma Boutique', true)}
+              className="px-3 py-2 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+            >
+              ↻ Mise à jour
+            </button>
+            <button 
+              onClick={() => notifyDelete('Contenu', 'Article test', true)}
+              className="px-3 py-2 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+            >
+              🗑 Suppression
+            </button>
+            <button 
+              onClick={() => notifyCreate('Test', 'Opération', false)}
+              className="px-3 py-2 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+            >
+              ⚠ Erreur
+            </button>
+          </div>
         </div>
       </div>
 

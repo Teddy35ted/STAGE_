@@ -7,6 +7,7 @@ import { Textarea } from '../../../components/ui/textarea';
 import { MediaUpload } from '../../../components/ui/media-upload';
 import { useApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useCRUDNotifications } from '../../../contexts/NotificationContext';
 import { LaalaDashboard } from '../../models/laala';
 import { MediaUploadResult } from '../../../lib/appwrite/media-service';
 import { 
@@ -36,6 +37,7 @@ interface LaalaExtended extends LaalaDashboard {
 }
 
 export default function LaalasPage() {
+  const { notifyCreate, notifyUpdate, notifyDelete } = useCRUDNotifications();
   const [laalas, setLaalas] = useState<LaalaExtended[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -137,6 +139,7 @@ export default function LaalasPage() {
       });
       
       console.log('✅ Laala créé avec succès');
+      notifyCreate('Laala', newLaala.nom, true);
       
       // Réinitialiser le formulaire
       setNewLaala({
@@ -154,6 +157,7 @@ export default function LaalasPage() {
       
     } catch (err) {
       console.error('❌ Erreur création laala:', err);
+      notifyCreate('Laala', newLaala.nom, false);
       setError('Erreur lors de la création du laala');
     } finally {
       setLoading(false);
@@ -204,6 +208,7 @@ export default function LaalasPage() {
       });
       
       console.log('✅ Laala supprimé:', id);
+      notifyDelete('Laala', laalaName, true);
       
       if (linkedContents.length > 0) {
         // Message de succès avec info sur les contenus supprimés
@@ -215,6 +220,7 @@ export default function LaalasPage() {
       
     } catch (err) {
       console.error('❌ Erreur suppression laala:', err);
+      notifyDelete('Laala', laalaName, false);
       setError('Erreur lors de la suppression du laala');
     } finally {
       setLoading(false);

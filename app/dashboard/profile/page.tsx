@@ -6,11 +6,13 @@ import { Input } from '../../../components/ui/input';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave } from 'react-icons/fi';
 
 import { useAuth } from '../../../contexts/AuthContext';
+import { useCRUDNotifications } from '../../../contexts/NotificationContext';
 import { UserDashboard } from '../../models/user';
 import { useApi } from '../../../lib/api';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { notifyUpdate } = useCRUDNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState<UserDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,8 +47,10 @@ export default function ProfilePage() {
           method: 'PUT',
           body: JSON.stringify(profile),
         });
+        notifyUpdate('Profil', profile.nom || 'Utilisateur', true);
         setIsEditing(false);
       } catch (err) {
+        notifyUpdate('Profil', profile.nom || 'Utilisateur', false);
         setError('Failed to save profile');
       }
     }

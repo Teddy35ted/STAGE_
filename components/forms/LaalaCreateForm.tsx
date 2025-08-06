@@ -7,6 +7,7 @@ import { MediaUpload } from '../ui/media-upload';
 import { FiX, FiUpload, FiCalendar, FiImage, FiVideo } from 'react-icons/fi';
 import { LaalaCore } from '../../app/models/laala';
 import { MediaUploadResult } from '../../lib/appwrite/media-service';
+import { useCRUDNotifications } from '../../contexts/NotificationContext';
 
 interface LaalaCreateFormProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface LaalaCreateFormProps {
 }
 
 export default function LaalaCreateForm({ isOpen, onClose, onSubmit, creatorId }: LaalaCreateFormProps) {
+  const { notifyCreate } = useCRUDNotifications();
   const [formData, setFormData] = useState<LaalaCore>({
     nom: '',
     description: '',

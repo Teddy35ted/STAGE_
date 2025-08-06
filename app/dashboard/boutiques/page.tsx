@@ -7,6 +7,7 @@ import { Textarea } from '../../../components/ui/textarea';
 import { MediaUpload } from '../../../components/ui/media-upload';
 import { useApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useCRUDNotifications } from '../../../contexts/NotificationContext';
 import { Boutique } from '../../models/boutiques';
 import { MediaUploadResult } from '../../../lib/appwrite/media-service';
 import { 
@@ -81,6 +82,7 @@ const defaultSchedule: WeekSchedule = {
 };
 
 export default function BoutiquesPage() {
+  const { notifyCreate, notifyUpdate, notifyDelete } = useCRUDNotifications();
   const [boutiques, setBoutiques] = useState<BoutiqueExtended[]>([]);
   const [selectedTab, setSelectedTab] = useState<'boutiques'>('boutiques');
   const [searchTerm, setSearchTerm] = useState('');
@@ -271,6 +273,7 @@ export default function BoutiquesPage() {
       });
       
       console.log('✅ Boutique créée avec succès');
+      notifyCreate('Boutique', newBoutique.nom, true);
       
       // Réinitialiser le formulaire
       setNewBoutique({
@@ -290,6 +293,7 @@ export default function BoutiquesPage() {
       
     } catch (err) {
       console.error('❌ Erreur création boutique:', err);
+      notifyCreate('Boutique', newBoutique.nom, false);
       setError('Erreur lors de la création de la boutique');
     } finally {
       setLoading(false);
@@ -298,7 +302,11 @@ export default function BoutiquesPage() {
 
   // Suppression d'une boutique
   const deleteBoutique = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette boutique ?')) {
+    // Trouver la boutique pour récupérer son nom
+    const boutique = boutiques.find(b => b.id === id);
+    const boutiqueName = boutique?.displayName || boutique?.nom || 'Boutique inconnue';
+    
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la boutique "${boutiqueName}" ?`)) {
       return;
     }
     
@@ -308,10 +316,12 @@ export default function BoutiquesPage() {
       });
       
       console.log('✅ Boutique supprimée:', id);
+      notifyDelete('Boutique', boutiqueName, true);
       await fetchBoutiques();
       
     } catch (err) {
       console.error('❌ Erreur suppression boutique:', err);
+      notifyDelete('Boutique', boutiqueName, false);
       setError('Erreur lors de la suppression');
     }
   };
