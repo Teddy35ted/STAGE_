@@ -15,6 +15,21 @@ import {
 import { ContactPopup } from '../../components/dashboard/ContactPopup';
 import { NotificationPopup } from '../../components/dashboard/NotificationPopup';
 import { useCRUDNotifications } from '../../contexts/NotificationContext';
+import { useNotifications, Notification } from '@/contexts/NotificationContext';
+
+// Helper function to format time ago
+const formatTimeAgo = (timestamp: Date) => {
+  const now = new Date();
+  const diff = now.getTime() - timestamp.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (days > 0) return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
+  if (hours > 0) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+  if (minutes > 0) return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
+  return 'À l\'instant';
+};
 import { useApi } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { LaalaDashboard } from '../models/laala';
@@ -66,36 +81,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
   );
 };
 
-interface NotificationProps {
-  title: string;
-  message: string;
-  time: string;
-  type: 'info' | 'success' | 'warning';
-}
-
-const NotificationItem: React.FC<NotificationProps> = ({ title, message, time, type }) => {
-  const typeColors = {
-    info: 'bg-blue-100 text-blue-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-  };
-
-  return (
-    <div className="flex items-start space-x-3 p-4 border-b border-gray-100 last:border-b-0">
-      <div className={`p-2 rounded-full ${typeColors[type]}`}>
-        <FiBell className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">{title}</p>
-        <p className="text-sm text-gray-600 mt-1">{message}</p>
-        <p className="text-xs text-gray-500 mt-1">{time}</p>
-      </div>
-    </div>
-  );
-};
-
 export default function DashboardPage() {
   const { notifyCreate, notifyUpdate, notifyDelete } = useCRUDNotifications();
+  const { getUnreadCount, notifications } = useNotifications();
   const [isContactPopupOpen, setIsContactPopupOpen] = useState(false);
   const [isNotificationPopupOpen, setIsNotificationPopupOpen] = useState(false);
   
@@ -158,27 +146,6 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  const notifications = [
-    {
-      title: 'Nouveau fan',
-      message: '5 nouveaux fans ont rejoint votre communauté',
-      time: 'Il y a 2 heures',
-      type: 'success' as const,
-    },
-    {
-      title: 'Proposition publicitaire',
-      message: 'Nouvelle proposition pour votre espace Laala',
-      time: 'Il y a 4 heures',
-      type: 'info' as const,
-    },
-    {
-      title: 'Retrait en attente',
-      message: 'Votre demande de retrait est en cours de traitement',
-      time: 'Il y a 1 jour',
-      type: 'warning' as const,
-    },
-  ];
-
   return (
     <div className="space-y-6 relative">
       {/* Header */}
@@ -198,9 +165,11 @@ export default function DashboardPage() {
           >
             <FiBell className="w-5 h-5" />
             {/* Notification Badge */}
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-xs text-white font-bold">3</span>
-            </div>
+            {getUnreadCount() > 0 && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-xs text-white font-bold">{getUnreadCount()}</span>
+              </div>
+            )}
           </button>
           
           {/* Date */}
@@ -291,37 +260,6 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-gray-900 truncate">Analyser fans</span>
           </button>
         </div>
-        
-        {/* Test Notifications Section */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Test des Notifications</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <button 
-              onClick={() => notifyCreate('Laala', 'Test Laala', true)}
-              className="px-3 py-2 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-            >
-              ✓ Création
-            </button>
-            <button 
-              onClick={() => notifyUpdate('Boutique', 'Ma Boutique', true)}
-              className="px-3 py-2 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-            >
-              ↻ Mise à jour
-            </button>
-            <button 
-              onClick={() => notifyDelete('Contenu', 'Article test', true)}
-              className="px-3 py-2 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-            >
-              🗑 Suppression
-            </button>
-            <button 
-              onClick={() => notifyCreate('Test', 'Opération', false)}
-              className="px-3 py-2 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
-            >
-              ⚠ Erreur
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Recent Activity & Notifications */}
@@ -361,12 +299,63 @@ export default function DashboardPage() {
         {/* Notifications */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+              {getUnreadCount() > 0 && (
+                <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+                  {getUnreadCount()} nouvelle{getUnreadCount() > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
-          <div>
-            {notifications.map((notification, index) => (
-              <NotificationItem key={index} {...notification} />
-            ))}
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-4 sm:p-6 text-center">
+                <FiBell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">Aucune notification récente</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {notifications.slice(0, 5).map((notification: Notification) => (
+                  <div key={notification.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                        notification.type === 'success' ? 'bg-green-500' : 
+                        notification.type === 'error' ? 'bg-red-500' : 
+                        notification.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                      }`}></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                        <div className="flex items-center mt-2 space-x-2">
+                          <p className="text-xs text-gray-500">
+                            {formatTimeAgo(notification.timestamp)}
+                          </p>
+                          {notification.action && notification.entity && (
+                            <>
+                              <span className="text-xs text-gray-400">•</span>
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                {notification.action} {notification.entity}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {notifications.length > 5 && (
+                  <div className="p-4 text-center border-t border-gray-100">
+                    <button 
+                      onClick={() => setIsNotificationPopupOpen(true)}
+                      className="text-sm text-[#f01919] hover:text-[#d01515] font-medium"
+                    >
+                      Voir toutes les notifications ({notifications.length})
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -409,9 +398,11 @@ export default function DashboardPage() {
         >
           <FiBell className="w-6 h-6" />
           {/* Notification Badge */}
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-            <span className="text-xs text-white font-bold">3</span>
-          </div>
+          {getUnreadCount() > 0 && (
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-xs text-white font-bold">{getUnreadCount()}</span>
+            </div>
+          )}
           {/* Tooltip */}
           <div className="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
             Notifications
