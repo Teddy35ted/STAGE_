@@ -82,11 +82,9 @@ const withdrawalHistory = [
 ];
 
 export default function EarningsPage() {
-  const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   const totalEarnings = earningsData.reduce((sum, item) => sum + item.amount, 0);
-  const availableForWithdrawal = 850.00;
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -156,7 +154,7 @@ export default function EarningsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total ce mois</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">2,450 €</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">2,450 FCFA</p>
               <p className="text-sm text-green-600 mt-1">+12% vs mois dernier</p>
             </div>
             <div className="p-3 rounded-lg bg-[#f01919]">
@@ -169,7 +167,7 @@ export default function EarningsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Disponible</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">850 €</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">850 FCFA</p>
               <p className="text-sm text-gray-600 mt-1">Prêt à retirer</p>
             </div>
             <div className="p-3 rounded-lg bg-green-500">
@@ -182,7 +180,7 @@ export default function EarningsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Revenus directs</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">1,850 €</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">1,850 FCFA</p>
               <p className="text-sm text-blue-600 mt-1">75% du total</p>
             </div>
             <div className="p-3 rounded-lg bg-blue-500">
@@ -195,50 +193,12 @@ export default function EarningsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Revenus indirects</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">600 €</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">600 FCFA</p>
               <p className="text-sm text-purple-600 mt-1">25% du total</p>
             </div>
             <div className="p-3 rounded-lg bg-purple-500">
               <FiArrowDown className="w-6 h-6 text-white" />
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Withdrawal Request */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Demander un retrait</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Montant (€)
-            </label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={withdrawalAmount}
-              onChange={(e) => setWithdrawalAmount(e.target.value)}
-              max={availableForWithdrawal}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Maximum: {availableForWithdrawal} €
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Méthode de paiement
-            </label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]">
-              <option>Virement bancaire</option>
-              <option>PayPal</option>
-              <option>Crypto</option>
-            </select>
-          </div>
-          <div className="flex items-end">
-            <Button className="w-full bg-[#f01919] hover:bg-[#d01515] text-white">
-              <FiDownload className="w-4 h-4 mr-2" />
-              Demander le retrait
-            </Button>
           </div>
         </div>
       </div>
@@ -281,7 +241,7 @@ export default function EarningsPage() {
                     <p className="text-sm text-gray-900">{earning.description}</p>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="text-sm font-medium text-gray-900">+{earning.amount.toFixed(2)} €</p>
+                    <p className="text-sm font-medium text-gray-900">+{earning.amount.toFixed(2)} FCFA</p>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <p className="text-sm text-gray-500">
@@ -327,7 +287,7 @@ export default function EarningsPage() {
               {withdrawalHistory.map((withdrawal) => (
                 <tr key={withdrawal.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="text-sm font-medium text-gray-900">-{withdrawal.amount.toFixed(2)} €</p>
+                    <p className="text-sm font-medium text-gray-900">-{withdrawal.amount.toFixed(2)} FCFA</p>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <p className="text-sm text-gray-900">{withdrawal.method}</p>

@@ -26,6 +26,12 @@ interface RetraitExtended extends Retrait {
   displayAmount?: string;
   displayStatus?: 'pending' | 'processing' | 'completed' | 'rejected';
   displayMethod?: string;
+  description?: string;
+  dateCreation?: string;
+  iban?: string;
+  email?: string;
+  statut?: string;
+  methode?: string;
 }
 
 const paymentMethods = [
@@ -103,9 +109,9 @@ export default function WithdrawalPage() {
       // Transformer les retraits pour l'affichage
       const transformedWithdrawals: RetraitExtended[] = withdrawalsData.map((withdrawal: Retrait) => ({
         ...withdrawal,
-        displayAmount: `${withdrawal.montant || 0}€`,
-        displayStatus: withdrawal.statut as 'pending' | 'processing' | 'completed' | 'rejected' || 'pending',
-        displayMethod: withdrawal.methode || 'bank'
+        displayAmount: `${withdrawal.montant || 0} FCFA`,
+        displayStatus: withdrawal.istraite ? 'completed' : 'pending',
+        displayMethod: 'bank' // Par défaut puisque le modèle n'a pas cette propriété
       }));
       
       setWithdrawals(transformedWithdrawals);
@@ -197,7 +203,8 @@ export default function WithdrawalPage() {
   }, [user]);
 
   const filteredWithdrawals = withdrawals.filter(withdrawal => {
-    const matchesSearch = withdrawal.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = withdrawal.operation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         withdrawal.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          withdrawal.displayAmount?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || withdrawal.displayStatus === filterStatus;
     return matchesSearch && matchesStatus;
@@ -322,7 +329,7 @@ export default function WithdrawalPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Montant Total</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalAmount.toLocaleString()}€</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalAmount.toLocaleString()} FCFA</p>
                   <p className="text-sm text-blue-600 mt-1">Demandé</p>
                 </div>
                 <div className="p-3 rounded-lg bg-blue-500">
@@ -348,7 +355,7 @@ export default function WithdrawalPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Montant Reçu</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{completedAmount.toLocaleString()}€</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{completedAmount.toLocaleString()} FCFA</p>
                   <p className="text-sm text-purple-600 mt-1">Versé</p>
                 </div>
                 <div className="p-3 rounded-lg bg-purple-500">
@@ -445,13 +452,13 @@ export default function WithdrawalPage() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-3">
-                          {withdrawal.description || 'Demande de retrait'}
+                          {withdrawal.operation || 'Demande de retrait'}
                         </p>
                         <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                          <span>📅 {withdrawal.dateCreation ? new Date(withdrawal.dateCreation).toLocaleDateString('fr-FR') : 'Date inconnue'}</span>
+                          <span>📅 {withdrawal.date ? new Date(withdrawal.date).toLocaleDateString('fr-FR') : 'Date inconnue'}</span>
                           <span>💳 {methodInfo.name}</span>
-                          {withdrawal.iban && <span>🏦 {withdrawal.iban.slice(-4)}</span>}
-                          {withdrawal.email && <span>📧 {withdrawal.email}</span>}
+                          {withdrawal.rib && <span>🏦 {withdrawal.rib.slice(-4)}</span>}
+                          {withdrawal.tel && <span>📧 {withdrawal.tel}</span>}
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -513,18 +520,19 @@ export default function WithdrawalPage() {
 
       {/* Modal de création */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Nouvelle Demande de Retrait</h2>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-              >
-                <FiX className="w-4 h-4" />
-              </Button>
-            </div>
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-50/90 via-indigo-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-md shadow-2xl shadow-blue-500/20 rounded-2xl border border-white/20 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Nouvelle Demande de Retrait</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  <FiX className="w-4 h-4" />
+                </Button>
+              </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
@@ -535,7 +543,7 @@ export default function WithdrawalPage() {
             <form onSubmit={(e) => { e.preventDefault(); createWithdrawal(); }} className="space-y-4">
               <div>
                 <label htmlFor="montant" className="block text-sm font-medium text-gray-700 mb-1">
-                  Montant à retirer (€)
+                  Montant à retirer (FCFA)
                 </label>
                 <Input
                   id="montant"
@@ -643,6 +651,7 @@ export default function WithdrawalPage() {
                 </Button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}

@@ -259,10 +259,7 @@ export default function AdsEarningsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
+    return `${amount.toLocaleString('fr-FR')} FCFA`;
   };
 
   const formatDate = (dateString: string) => {
