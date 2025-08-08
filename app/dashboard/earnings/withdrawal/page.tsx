@@ -19,7 +19,9 @@ import {
   FiRefreshCw,
   FiDownload,
   FiAlertCircle,
-  FiTrendingDown
+  FiTrendingDown,
+  FiEye,
+  FiMail
 } from 'react-icons/fi';
 
 interface RetraitExtended extends Retrait {
@@ -70,6 +72,9 @@ export default function WithdrawalPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<RetraitExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -195,6 +200,81 @@ export default function WithdrawalPage() {
     }
   };
 
+  // Fonction pour voir les détails d'un retrait (READ)
+  const viewWithdrawalDetails = (withdrawal: RetraitExtended) => {
+    console.log('📖 Lecture retrait:', withdrawal.id);
+    setSelectedWithdrawal(withdrawal);
+    setShowDetailModal(true);
+  };
+
+  // Fonction pour modifier un retrait (UPDATE)
+  const editWithdrawal = (withdrawal: RetraitExtended) => {
+    console.log('✏️ Modification retrait:', withdrawal.id);
+    setSelectedWithdrawal(withdrawal);
+    
+    // Pré-remplir le formulaire avec les données du retrait
+    setNewWithdrawal({
+      montant: withdrawal.montant?.toString() || '',
+      methode: withdrawal.displayMethod || 'bank',
+      description: withdrawal.description || '',
+      iban: withdrawal.iban || '',
+      email: withdrawal.email || ''
+    });
+    
+    setShowEditModal(true);
+  };
+
+  // Mise à jour d'un retrait existant
+  const updateWithdrawal = async () => {
+    if (!selectedWithdrawal) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!newWithdrawal.montant || parseFloat(newWithdrawal.montant) <= 0) {
+        setError('Le montant doit être supérieur à 0');
+        return;
+      }
+      
+      const withdrawalData = {
+        montant: parseFloat(newWithdrawal.montant),
+        methode: newWithdrawal.methode,
+        description: newWithdrawal.description,
+        iban: newWithdrawal.iban,
+        email: newWithdrawal.email
+      };
+      
+      await apiFetch(`/api/retraits/${selectedWithdrawal.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(withdrawalData)
+      });
+      
+      console.log('✅ Retrait mis à jour avec succès');
+      
+      // Réinitialiser les états
+      setSelectedWithdrawal(null);
+      setShowEditModal(false);
+      
+      // Réinitialiser le formulaire
+      setNewWithdrawal({
+        montant: '',
+        methode: 'bank',
+        description: '',
+        iban: '',
+        email: ''
+      });
+      
+      await fetchWithdrawals();
+      
+    } catch (err) {
+      console.error('❌ Erreur mise à jour retrait:', err);
+      setError('Erreur lors de la mise à jour du retrait');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Chargement initial
   useEffect(() => {
     if (user) {
@@ -269,44 +349,6 @@ export default function WithdrawalPage() {
           <FiPlus className="w-4 h-4 mr-2" />
           Nouveau Retrait
         </Button>
-      </div>
-
-      {/* Actions CRUD */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions disponibles</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <FiPlus className="w-4 h-4 mr-2" />
-            Créer
-          </Button>
-          <Button 
-            onClick={fetchWithdrawals}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={loading}
-          >
-            <FiDollarSign className="w-4 h-4 mr-2" />
-            Lire
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-orange-300 text-orange-600 hover:bg-orange-50"
-            disabled={filteredWithdrawals.length === 0}
-          >
-            <FiEdit3 className="w-4 h-4 mr-2" />
-            Modifier
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50"
-            disabled={filteredWithdrawals.length === 0}
-          >
-            <FiTrash2 className="w-4 h-4 mr-2" />
-            Supprimer
-          </Button>
-        </div>
       </div>
 
       <>
@@ -462,14 +504,30 @@ export default function WithdrawalPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => viewWithdrawalDetails(withdrawal)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          title="Voir les détails"
+                        >
+                          <FiEye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => editWithdrawal(withdrawal)}
+                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          title="Modifier le retrait"
+                        >
                           <FiEdit3 className="w-4 h-4" />
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
                           onClick={() => deleteWithdrawal(withdrawal.id!)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Supprimer le retrait"
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </Button>
@@ -651,6 +709,322 @@ export default function WithdrawalPage() {
                 </Button>
               </div>
             </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de détails de retrait (READ) */}
+      {showDetailModal && selectedWithdrawal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            {/* Header du modal de détails */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiDollarSign className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Détails du Retrait</h2>
+                    <p className="text-blue-100 text-sm">{selectedWithdrawal.displayAmount}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedWithdrawal(null);
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu du modal de détails */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="space-y-6">
+                {/* Informations de base */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FiDollarSign className="w-5 h-5 mr-2 text-blue-600" />
+                    Informations de base
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Montant</label>
+                      <p className="text-gray-900 font-medium">{selectedWithdrawal.displayAmount}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Statut</label>
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedWithdrawal.displayStatus || 'pending')}`}>
+                        {getStatusLabel(selectedWithdrawal.displayStatus || 'pending')}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Méthode</label>
+                      <p className="text-gray-900">{getMethodInfo(selectedWithdrawal.displayMethod || 'bank').name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Date</label>
+                      <p className="text-gray-900">{selectedWithdrawal.date ? new Date(selectedWithdrawal.date).toLocaleDateString('fr-FR') : 'Date inconnue'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Opération</label>
+                      <p className="text-gray-900">{selectedWithdrawal.operation || 'Demande de retrait'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">RIB/IBAN</label>
+                      <p className="text-gray-900">{selectedWithdrawal.rib || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informations de contact */}
+                {(selectedWithdrawal.tel || selectedWithdrawal.email) && (
+                  <div className="bg-blue-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FiMail className="w-5 h-5 mr-2 text-blue-600" />
+                      Informations de contact
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedWithdrawal.tel && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Téléphone</label>
+                          <p className="text-gray-900">{selectedWithdrawal.tel}</p>
+                        </div>
+                      )}
+                      {selectedWithdrawal.email && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Email</label>
+                          <p className="text-gray-900">{selectedWithdrawal.email}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {selectedWithdrawal.description && (
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
+                    <p className="text-gray-700">{selectedWithdrawal.description}</p>
+                  </div>
+                )}
+
+                {/* Informations système */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations système</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">ID du retrait:</span>
+                      <span className="text-gray-900 font-mono">{selectedWithdrawal.id}</span>
+                    </div>
+                    {selectedWithdrawal.dateCreation && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Date de création:</span>
+                        <span className="text-gray-900">{new Date(selectedWithdrawal.dateCreation).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions en bas */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    editWithdrawal(selectedWithdrawal);
+                  }}
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                >
+                  <FiEdit3 className="w-4 h-4 mr-2" />
+                  Modifier
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedWithdrawal(null);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification de retrait (UPDATE) */}
+      {showEditModal && selectedWithdrawal && (
+        <div className="fixed inset-0 bg-gradient-to-br from-orange-50/90 via-amber-50/90 to-yellow-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-lg max-h-[90vh] overflow-hidden">
+            {/* Header moderne */}
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiEdit3 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Modifier Retrait</h2>
+                    <p className="text-orange-100 text-sm">{selectedWithdrawal.displayAmount}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedWithdrawal(null);
+                    // Réinitialiser le formulaire
+                    setNewWithdrawal({
+                      montant: '',
+                      methode: 'bank',
+                      description: '',
+                      iban: '',
+                      email: ''
+                    });
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu du formulaire de modification */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <form onSubmit={(e) => { e.preventDefault(); updateWithdrawal(); }} className="space-y-4">
+                <div>
+                  <label htmlFor="edit-montant" className="block text-sm font-medium text-gray-700 mb-1">
+                    Montant à retirer (FCFA)
+                  </label>
+                  <Input
+                    id="edit-montant"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newWithdrawal.montant}
+                    onChange={(e) => setNewWithdrawal(prev => ({ ...prev, montant: e.target.value }))}
+                    placeholder="0.00"
+                    className="focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit-methode" className="block text-sm font-medium text-gray-700 mb-1">
+                    Méthode de paiement
+                  </label>
+                  <select
+                    id="edit-methode"
+                    value={newWithdrawal.methode}
+                    onChange={(e) => setNewWithdrawal(prev => ({ ...prev, methode: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {paymentMethods.map(method => (
+                      <option key={method.id} value={method.id}>{method.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {newWithdrawal.methode === 'bank' && (
+                  <div>
+                    <label htmlFor="edit-iban" className="block text-sm font-medium text-gray-700 mb-1">
+                      IBAN
+                    </label>
+                    <Input
+                      id="edit-iban"
+                      type="text"
+                      value={newWithdrawal.iban}
+                      onChange={(e) => setNewWithdrawal(prev => ({ ...prev, iban: e.target.value }))}
+                      placeholder="FR76 1234 5678 9012 3456 7890 123"
+                      className="focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                )}
+
+                {(newWithdrawal.methode === 'paypal' || newWithdrawal.methode === 'crypto') && (
+                  <div>
+                    <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email / Adresse
+                    </label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={newWithdrawal.email}
+                      onChange={(e) => setNewWithdrawal(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="votre@email.com"
+                      className="focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-1">
+                    Description (optionnel)
+                  </label>
+                  <Textarea
+                    id="edit-description"
+                    value={newWithdrawal.description}
+                    onChange={(e) => setNewWithdrawal(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Motif du retrait..."
+                    rows={2}
+                    className="focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                  />
+                </div>
+
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <FiAlertCircle className="w-4 h-4 inline mr-1" />
+                    Les modifications seront prises en compte pour le traitement du retrait.
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedWithdrawal(null);
+                    }}
+                    disabled={loading}
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white"
+                    disabled={loading || !newWithdrawal.montant || parseFloat(newWithdrawal.montant) <= 0}
+                  >
+                    {loading ? (
+                      <>
+                        <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Mise à jour...
+                      </>
+                    ) : (
+                      <>
+                        <FiCheck className="w-4 h-4 mr-2" />
+                        Mettre à jour
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

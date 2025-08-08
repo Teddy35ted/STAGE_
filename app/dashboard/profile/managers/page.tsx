@@ -23,7 +23,8 @@ import {
   FiTrendingUp,
   FiCheck,
   FiShield,
-  FiUserCheck
+  FiUserCheck,
+  FiEye
 } from 'react-icons/fi';
 
 interface CoGestionnaireExtended extends CoGestionnaire {
@@ -51,6 +52,9 @@ export default function ManagersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedManager, setSelectedManager] = useState<CoGestionnaireExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -183,6 +187,97 @@ export default function ManagersPage() {
     }
   };
 
+  // Fonction pour voir les détails d'un co-gestionnaire (READ)
+  const viewManagerDetails = (manager: CoGestionnaireExtended) => {
+    console.log('📖 Lecture co-gestionnaire:', manager.id);
+    setSelectedManager(manager);
+    setShowDetailModal(true);
+  };
+
+  // Fonction pour modifier un co-gestionnaire (UPDATE)
+  const editManager = (manager: CoGestionnaireExtended) => {
+    console.log('✏️ Modification co-gestionnaire:', manager.id);
+    setSelectedManager(manager);
+    
+    // Pré-remplir le formulaire avec les données du co-gestionnaire
+    setNewManager({
+      nom: manager.nom || '',
+      prenom: manager.prenom || '',
+      email: manager.email || '',
+      telephone: manager.telephone || '',
+      role: manager.role || 'assistant',
+      permissions: manager.permissions || [],
+      description: manager.description || ''
+    });
+    
+    setShowEditModal(true);
+  };
+
+  // Mise à jour d'un co-gestionnaire existant
+  const updateManager = async () => {
+    if (!selectedManager) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!newManager.nom.trim()) {
+        setError('Le nom est requis');
+        return;
+      }
+      
+      if (!newManager.prenom.trim()) {
+        setError('Le prénom est requis');
+        return;
+      }
+      
+      if (!newManager.email.trim()) {
+        setError('L\'email est requis');
+        return;
+      }
+      
+      const managerData = {
+        nom: newManager.nom,
+        prenom: newManager.prenom,
+        email: newManager.email,
+        telephone: newManager.telephone,
+        role: newManager.role,
+        permissions: newManager.permissions,
+        description: newManager.description
+      };
+      
+      await apiFetch(`/api/co-gestionnaires/${selectedManager.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(managerData)
+      });
+      
+      console.log('✅ Co-gestionnaire mis à jour avec succès');
+      
+      // Réinitialiser les états
+      setSelectedManager(null);
+      setShowEditModal(false);
+      
+      // Réinitialiser le formulaire
+      setNewManager({
+        nom: '',
+        prenom: '',
+        email: '',
+        telephone: '',
+        role: 'assistant',
+        permissions: [],
+        description: ''
+      });
+      
+      await fetchManagers();
+      
+    } catch (err) {
+      console.error('❌ Erreur mise à jour co-gestionnaire:', err);
+      setError('Erreur lors de la mise à jour du co-gestionnaire');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Gestion des permissions
   const togglePermission = (permission: string) => {
     setNewManager(prev => ({
@@ -258,44 +353,6 @@ export default function ManagersPage() {
           <FiPlus className="w-4 h-4 mr-2" />
           Nouveau Co-gestionnaire
         </Button>
-      </div>
-
-      {/* Actions CRUD */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions disponibles</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <FiPlus className="w-4 h-4 mr-2" />
-            Créer
-          </Button>
-          <Button 
-            onClick={fetchManagers}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={loading}
-          >
-            <FiUsers className="w-4 h-4 mr-2" />
-            Lire
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-orange-300 text-orange-600 hover:bg-orange-50"
-            disabled={filteredManagers.length === 0}
-          >
-            <FiEdit3 className="w-4 h-4 mr-2" />
-            Modifier
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50"
-            disabled={filteredManagers.length === 0}
-          >
-            <FiTrash2 className="w-4 h-4 mr-2" />
-            Supprimer
-          </Button>
-        </div>
       </div>
 
       {/* Stats Cards */}
@@ -476,14 +533,30 @@ export default function ManagersPage() {
                   )}
                 </div>
                 <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => viewManagerDetails(manager)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    title="Voir les détails"
+                  >
+                    <FiEye className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => editManager(manager)}
+                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    title="Modifier le co-gestionnaire"
+                  >
                     <FiEdit3 className="w-4 h-4" />
                   </Button>
                   <Button 
                     size="sm" 
                     variant="outline"
                     onClick={() => deleteManager(manager.id!)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Supprimer le co-gestionnaire"
                   >
                     <FiTrash2 className="w-4 h-4" />
                   </Button>
@@ -750,6 +823,379 @@ export default function ManagersPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de détails de co-gestionnaire (READ) */}
+      {showDetailModal && selectedManager && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            {/* Header du modal de détails */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiUsers className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Détails du Co-gestionnaire</h2>
+                    <p className="text-blue-100 text-sm">{selectedManager.displayName}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedManager(null);
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu du modal de détails */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="space-y-6">
+                {/* Informations personnelles */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FiUser className="w-5 h-5 mr-2 text-blue-600" />
+                    Informations personnelles
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Prénom</label>
+                      <p className="text-gray-900 font-medium">{selectedManager.prenom}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Nom</label>
+                      <p className="text-gray-900 font-medium">{selectedManager.nom}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Email</label>
+                      <p className="text-gray-900">{selectedManager.displayEmail}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Téléphone</label>
+                      <p className="text-gray-900">{selectedManager.telephone || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rôle et permissions */}
+                <div className="bg-blue-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FiShield className="w-5 h-5 mr-2 text-blue-600" />
+                    Rôle et permissions
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Statut</label>
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedManager.displayStatus || 'pending')}`}>
+                        {getStatusLabel(selectedManager.displayStatus || 'pending')}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Rôle</label>
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(selectedManager.role || 'assistant')}`}>
+                        {getRoleName(selectedManager.role || 'assistant')}
+                      </span>
+                    </div>
+                    {selectedManager.permissions && selectedManager.permissions.length > 0 && (
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium text-gray-600">Permissions</label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedManager.permissions.map(permission => (
+                            <span key={permission} className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                              {permissions.find(p => p.id === permission)?.name || permission}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedManager.description && (
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
+                    <p className="text-gray-700">{selectedManager.description}</p>
+                  </div>
+                )}
+
+                {/* Informations système */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations système</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">ID du co-gestionnaire:</span>
+                      <span className="text-gray-900 font-mono">{selectedManager.id}</span>
+                    </div>
+                    {selectedManager.dateCreation && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Date de création:</span>
+                        <span className="text-gray-900">{new Date(selectedManager.dateCreation).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions en bas */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    editManager(selectedManager);
+                  }}
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                >
+                  <FiEdit3 className="w-4 h-4 mr-2" />
+                  Modifier
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedManager(null);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification de co-gestionnaire (UPDATE) */}
+      {showEditModal && selectedManager && (
+        <div className="fixed inset-0 bg-gradient-to-br from-orange-50/90 via-amber-50/90 to-yellow-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-3xl max-h-[90vh] overflow-hidden">
+            {/* Header moderne */}
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiEdit3 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Modifier Co-gestionnaire</h2>
+                    <p className="text-orange-100 text-sm">{selectedManager.displayName}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedManager(null);
+                    // Réinitialiser le formulaire
+                    setNewManager({
+                      nom: '',
+                      prenom: '',
+                      email: '',
+                      telephone: '',
+                      role: 'assistant',
+                      permissions: [],
+                      description: ''
+                    });
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu du formulaire de modification */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              <form onSubmit={(e) => { e.preventDefault(); updateManager(); }} className="space-y-6">
+                {/* Informations personnelles */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                    <FiUser className="w-5 h-5 text-orange-600 mr-2" />
+                    Informations personnelles
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="edit-nom" className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom *
+                      </label>
+                      <div className="relative">
+                        <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          id="edit-nom"
+                          type="text"
+                          value={newManager.nom}
+                          onChange={(e) => setNewManager(prev => ({ ...prev, nom: e.target.value }))}
+                          placeholder="Ex: Dupont"
+                          className="pl-10 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-prenom" className="block text-sm font-medium text-gray-700 mb-2">
+                        Prénom *
+                      </label>
+                      <div className="relative">
+                        <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          id="edit-prenom"
+                          type="text"
+                          value={newManager.prenom}
+                          onChange={(e) => setNewManager(prev => ({ ...prev, prenom: e.target.value }))}
+                          placeholder="Ex: Jean"
+                          className="pl-10 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-2">
+                        Email *
+                      </label>
+                      <div className="relative">
+                        <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          id="edit-email"
+                          type="email"
+                          value={newManager.email}
+                          onChange={(e) => setNewManager(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="Ex: jean.dupont@email.com"
+                          className="pl-10 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-telephone" className="block text-sm font-medium text-gray-700 mb-2">
+                        Téléphone
+                      </label>
+                      <div className="relative">
+                        <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          id="edit-telephone"
+                          type="tel"
+                          value={newManager.telephone}
+                          onChange={(e) => setNewManager(prev => ({ ...prev, telephone: e.target.value }))}
+                          placeholder="Ex: +33 6 12 34 56 78"
+                          className="pl-10 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rôle et permissions */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                    <FiShield className="w-5 h-5 text-blue-600 mr-2" />
+                    Rôle et permissions
+                  </h3>
+
+                  <div>
+                    <label htmlFor="edit-role" className="block text-sm font-medium text-gray-700 mb-2">
+                      Rôle
+                    </label>
+                    <select
+                      id="edit-role"
+                      value={newManager.role}
+                      onChange={(e) => setNewManager(prev => ({ ...prev, role: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {roles.map(role => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Permissions
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {permissions.map(permission => (
+                        <label key={permission.id} className="flex items-center space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={newManager.permissions.includes(permission.id)}
+                            onChange={() => togglePermission(permission.id)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-gray-900">{permission.name}</span>
+                            <p className="text-xs text-gray-500">{permission.description}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
+                      Description (optionnel)
+                    </label>
+                    <Textarea
+                      id="edit-description"
+                      value={newManager.description}
+                      onChange={(e) => setNewManager(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Description du rôle ou des responsabilités..."
+                      rows={3}
+                      className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedManager(null);
+                    }}
+                    disabled={loading}
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white"
+                    disabled={loading || !newManager.nom.trim() || !newManager.prenom.trim() || !newManager.email.trim()}
+                  >
+                    {loading ? (
+                      <>
+                        <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Mise à jour...
+                      </>
+                    ) : (
+                      <>
+                        <FiCheck className="w-4 h-4 mr-2" />
+                        Mettre à jour
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
