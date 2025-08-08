@@ -42,6 +42,9 @@ export default function LaalasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedLaala, setSelectedLaala] = useState<LaalaExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -227,6 +230,92 @@ export default function LaalasPage() {
     }
   };
 
+  // Fonction pour voir les détails d'un laala (READ)
+  const viewLaalaDetails = (laala: LaalaExtended) => {
+    console.log('📖 Lecture laala:', laala.nom);
+    setSelectedLaala(laala);
+    setShowDetailModal(true);
+  };
+
+  // Fonction pour modifier un laala (UPDATE)
+  const editLaala = (laala: LaalaExtended) => {
+    console.log('✏️ Modification laala:', laala.nom);
+    setSelectedLaala(laala);
+    
+    // Pré-remplir le formulaire avec les données du laala
+    setNewLaala({
+      nom: laala.nom || '',
+      description: laala.description || '',
+      type: laala.isLaalaPublic ? 'public' : 'private',
+      htags: laala.htags || [],
+      newTag: ''
+    });
+    
+    // Définir les médias existants
+    setCoverUrl(laala.cover || '');
+    setCoverMediaType(laala.iscoverVideo ? 'video' : 'image');
+    
+    setShowEditModal(true);
+  };
+
+  // Mise à jour d'un laala existant
+  const updateLaala = async () => {
+    if (!selectedLaala) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!newLaala.nom.trim() || !newLaala.description.trim()) {
+        setError('Le nom et la description sont requis');
+        return;
+      }
+      
+      const laalaData = {
+        nom: newLaala.nom,
+        description: newLaala.description,
+        type: newLaala.type,
+        htags: newLaala.htags,
+        isLaalaPublic: newLaala.type === 'public',
+        cover: coverUrl,
+        iscoverVideo: coverMediaType === 'video',
+        dateModification: new Date().toISOString()
+      };
+      
+      await apiFetch(`/api/laalas/${selectedLaala.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(laalaData)
+      });
+      
+      console.log('✅ Laala mis à jour avec succès');
+      notifyUpdate('Laala', newLaala.nom, true);
+      
+      // Réinitialiser les états
+      setSelectedLaala(null);
+      setShowEditModal(false);
+      
+      // Réinitialiser le formulaire
+      setNewLaala({
+        nom: '',
+        description: '',
+        type: 'public',
+        htags: [],
+        newTag: ''
+      });
+      setCoverUrl('');
+      setCoverMediaType('image');
+      
+      await fetchLaalas();
+      
+    } catch (err) {
+      console.error('❌ Erreur mise à jour laala:', err);
+      notifyUpdate('Laala', newLaala.nom, false);
+      setError('Erreur lors de la mise à jour du laala');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Ajout d'un hashtag
   const addHashtag = () => {
     if (newLaala.newTag.trim() && !newLaala.htags.includes(newLaala.newTag.trim())) {
@@ -312,44 +401,6 @@ export default function LaalasPage() {
           <FiPlus className="w-4 h-4 mr-2" />
           Nouveau Laala
         </Button>
-      </div>
-
-      {/* Actions CRUD */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions disponibles</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <FiPlus className="w-4 h-4 mr-2" />
-            Créer
-          </Button>
-          <Button 
-            onClick={fetchLaalas}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={loading}
-          >
-            <FiEye className="w-4 h-4 mr-2" />
-            Lire
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-orange-300 text-orange-600 hover:bg-orange-50"
-            disabled={filteredLaalas.length === 0}
-          >
-            <FiEdit3 className="w-4 h-4 mr-2" />
-            Modifier
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50"
-            disabled={filteredLaalas.length === 0}
-          >
-            <FiTrash2 className="w-4 h-4 mr-2" />
-            Supprimer
-          </Button>
-        </div>
       </div>
 
       <>
@@ -524,17 +575,30 @@ export default function LaalasPage() {
                       {laala.isLaalaPublic ? 'Public' : 'Privé'}
                     </span>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <FiSettings className="w-4 h-4" />
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => viewLaalaDetails(laala)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        title="Voir les détails"
+                      >
+                        <FiEye className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => editLaala(laala)}
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        title="Modifier le laala"
+                      >
                         <FiEdit3 className="w-4 h-4" />
                       </Button>
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={() => deleteLaala(laala.id!, laala.displayTitle!)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Supprimer le laala"
                       >
                         <FiTrash2 className="w-4 h-4" />
                       </Button>
@@ -862,6 +926,413 @@ export default function LaalasPage() {
                       <>
                         <FiPlus className="w-4 h-4 mr-2" />
                         Créer le Laala
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de détails de laala (READ) */}
+      {showDetailModal && selectedLaala && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Header du modal de détails */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiUsers className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Détails du Laala</h2>
+                    <p className="text-blue-100 text-sm">{selectedLaala.displayTitle}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedLaala(null);
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu du modal de détails */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Colonne principale - Informations */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Informations générales */}
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FiSettings className="w-5 h-5 mr-2 text-blue-600" />
+                      Informations générales
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Nom</label>
+                        <p className="text-gray-900 font-medium">{selectedLaala.nom}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Type</label>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedLaala.type || 'Laala freestyle')}`}>
+                          {selectedLaala.isLaalaPublic ? 'Public' : 'Privé'}
+                        </span>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium text-gray-600">Description</label>
+                        <p className="text-gray-900">{selectedLaala.description || 'Aucune description'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hashtags */}
+                  {selectedLaala.htags && selectedLaala.htags.length > 0 && (
+                    <div className="bg-purple-50 rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <FiUsers className="w-5 h-5 mr-2 text-purple-600" />
+                        Hashtags
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedLaala.htags.map((tag, index) => (
+                          <span key={index} className="inline-flex px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Créateur */}
+                  <div className="bg-blue-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FiUsers className="w-5 h-5 mr-2 text-blue-600" />
+                      Créateur
+                    </h3>
+                    <div className="flex items-center space-x-3">
+                      {selectedLaala.avatarCrea && (
+                        <img 
+                          src={selectedLaala.avatarCrea} 
+                          alt={selectedLaala.nomCrea}
+                          className="w-12 h-12 rounded-full border-2 border-blue-200"
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-900">{selectedLaala.nomCrea}</p>
+                        {selectedLaala.iscert && (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            Certifié
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Colonne latérale - Statistiques et image */}
+                <div className="space-y-6">
+                  {/* Image de couverture */}
+                  {selectedLaala.cover && (
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      {selectedLaala.iscoverVideo ? (
+                        <video 
+                          src={selectedLaala.cover} 
+                          className="w-full h-48 object-cover"
+                          controls
+                        />
+                      ) : (
+                        <img 
+                          src={selectedLaala.cover} 
+                          alt={selectedLaala.nom}
+                          className="w-full h-48 object-cover"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Statistiques */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FiTrendingUp className="w-5 h-5 mr-2 text-purple-600" />
+                      Statistiques
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Vues</span>
+                        <div className="flex items-center space-x-1">
+                          <FiEye className="w-4 h-4 text-blue-500" />
+                          <span className="font-medium">{selectedLaala.vues || 0}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Likes</span>
+                        <div className="flex items-center space-x-1">
+                          <FiHeart className="w-4 h-4 text-red-500" />
+                          <span className="font-medium">{selectedLaala.likes || 0}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Participants</span>
+                        <div className="flex items-center space-x-1">
+                          <FiUsers className="w-4 h-4 text-green-500" />
+                          <span className="font-medium">{selectedLaala.participants?.length || 0}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Republications</span>
+                        <span className="font-medium">{selectedLaala.republication || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Statut */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Statut</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">État</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedLaala.displayStatus || 'inactive')}`}>
+                          {getStatusLabel(selectedLaala.displayStatus || 'inactive')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">En cours</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selectedLaala.encours ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {selectedLaala.encours ? 'Oui' : 'Non'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">À la une</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selectedLaala.alaune ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {selectedLaala.alaune ? 'Oui' : 'Non'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Monétisé</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selectedLaala.ismonetise ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {selectedLaala.ismonetise ? 'Oui' : 'Non'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions en bas */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    editLaala(selectedLaala);
+                  }}
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                >
+                  <FiEdit3 className="w-4 h-4 mr-2" />
+                  Modifier
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedLaala(null);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification de laala (UPDATE) */}
+      {showEditModal && selectedLaala && (
+        <div className="fixed inset-0 bg-gradient-to-br from-orange-50/90 via-amber-50/90 to-yellow-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            {/* Header moderne */}
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiEdit3 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Modifier le Laala</h2>
+                    <p className="text-orange-100 text-sm">{selectedLaala.displayTitle}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedLaala(null);
+                    // Réinitialiser le formulaire
+                    setNewLaala({
+                      nom: '',
+                      description: '',
+                      type: 'public',
+                      htags: [],
+                      newTag: ''
+                    });
+                    setCoverUrl('');
+                    setCoverMediaType('image');
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu du formulaire de modification */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
+                  <FiAlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-red-800 font-medium">Erreur</h4>
+                    <p className="text-red-700 text-sm mt-1">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={(e) => { e.preventDefault(); updateLaala(); }} className="space-y-6">
+                {/* Informations de base */}
+                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiSettings className="w-5 h-5 mr-2 text-orange-600" />
+                    Informations de base
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="edit-nom" className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom du Laala *
+                      </label>
+                      <Input
+                        id="edit-nom"
+                        type="text"
+                        value={newLaala.nom}
+                        onChange={(e) => setNewLaala(prev => ({ ...prev, nom: e.target.value }))}
+                        placeholder="Ex: Mon Laala Cuisine"
+                        className="transition-all duration-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-type" className="block text-sm font-medium text-gray-700 mb-2">
+                        Type de Laala
+                      </label>
+                      <select
+                        id="edit-type"
+                        value={newLaala.type}
+                        onChange={(e) => setNewLaala(prev => ({ ...prev, type: e.target.value as 'public' | 'private' }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
+                      >
+                        <option value="public">🌍 Public</option>
+                        <option value="private">🔒 Privé</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
+                      Description *
+                    </label>
+                    <Textarea
+                      id="edit-description"
+                      value={newLaala.description}
+                      onChange={(e) => setNewLaala(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Décrivez votre laala, son objectif, sa thématique..."
+                      rows={4}
+                      className="transition-all duration-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Hashtags */}
+                <div className="bg-purple-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiUsers className="w-5 h-5 mr-2 text-purple-600" />
+                    Hashtags
+                  </h3>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="text"
+                      value={newLaala.newTag}
+                      onChange={(e) => setNewLaala(prev => ({ ...prev, newTag: e.target.value }))}
+                      placeholder="Ajouter un hashtag"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addHashtag())}
+                      className="flex-1"
+                    />
+                    <Button type="button" onClick={addHashtag} variant="outline">
+                      <FiPlus className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {newLaala.htags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {newLaala.htags.map((tag, index) => (
+                        <span 
+                          key={index} 
+                          className="inline-flex items-center px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full"
+                        >
+                          #{tag}
+                          <button
+                            type="button"
+                            onClick={() => removeHashtag(tag)}
+                            className="ml-2 text-purple-600 hover:text-purple-800"
+                          >
+                            <FiX className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedLaala(null);
+                    }}
+                    disabled={loading}
+                    className="px-6 py-2"
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                    disabled={loading || !newLaala.nom.trim() || !newLaala.description.trim()}
+                  >
+                    {loading ? (
+                      <>
+                        <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Mise à jour...
+                      </>
+                    ) : (
+                      <>
+                        <FiCheck className="w-4 h-4 mr-2" />
+                        Mettre à jour
                       </>
                     )}
                   </Button>

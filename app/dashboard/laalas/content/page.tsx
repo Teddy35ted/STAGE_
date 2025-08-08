@@ -45,6 +45,9 @@ export default function ContentPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<ContenuExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingLaalas, setLoadingLaalas] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -228,6 +231,90 @@ export default function ContentPage() {
     }
   };
 
+  // Fonction pour voir les détails d'un contenu (READ)
+  const viewContentDetails = (content: ContenuExtended) => {
+    console.log('📖 Lecture contenu:', content.nom);
+    setSelectedContent(content);
+    setShowDetailModal(true);
+  };
+
+  // Fonction pour modifier un contenu (UPDATE)
+  const editContent = (content: ContenuExtended) => {
+    console.log('✏️ Modification contenu:', content.nom);
+    setSelectedContent(content);
+    
+    // Pré-remplir le formulaire avec les données du contenu
+    setNewContent({
+      nom: content.nom || '',
+      description: '', // Le modèle n'a pas de description, donc on laisse vide
+      type: content.type || 'texte',
+      src: content.src || '',
+      idLaala: content.idLaala || '',
+      allowComment: content.allowComment !== false,
+      htags: content.htags || [],
+      newTag: ''
+    });
+    
+    setShowEditModal(true);
+  };
+
+  // Mise à jour d'un contenu existant
+  const updateContent = async () => {
+    if (!selectedContent) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!newContent.nom.trim() || !newContent.description.trim() || !newContent.idLaala) {
+        setError('Le nom, la description et le laala sont requis');
+        return;
+      }
+      
+      const contentData = {
+        nom: newContent.nom,
+        description: newContent.description,
+        type: newContent.type,
+        src: newContent.src,
+        idLaala: newContent.idLaala,
+        allowComment: newContent.allowComment,
+        htags: newContent.htags,
+        dateModification: new Date().toISOString()
+      };
+      
+      await apiFetch(`/api/contenus/${selectedContent.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(contentData)
+      });
+      
+      console.log('✅ Contenu mis à jour avec succès');
+      
+      // Réinitialiser les états
+      setSelectedContent(null);
+      setShowEditModal(false);
+      
+      // Réinitialiser le formulaire
+      setNewContent({
+        nom: '',
+        description: '',
+        type: 'texte',
+        src: '',
+        idLaala: '',
+        allowComment: true,
+        htags: [],
+        newTag: ''
+      });
+      
+      await fetchContents();
+      
+    } catch (err) {
+      console.error('❌ Erreur mise à jour contenu:', err);
+      setError('Erreur lors de la mise à jour du contenu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Ajout d'un hashtag
   const addHashtag = () => {
     if (newContent.newTag.trim() && !newContent.htags.includes(newContent.newTag.trim())) {
@@ -336,45 +423,6 @@ export default function ContentPage() {
           </div>
         </div>
       )}
-
-      {/* Actions CRUD */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions disponibles</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Button 
-            onClick={handleOpenCreateModal}
-            className="bg-green-600 hover:bg-green-700 text-white"
-            disabled={laalas.length === 0}
-          >
-            <FiPlus className="w-4 h-4 mr-2" />
-            Créer
-          </Button>
-          <Button 
-            onClick={fetchContents}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={loading}
-          >
-            <FiFileText className="w-4 h-4 mr-2" />
-            Lire
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-orange-300 text-orange-600 hover:bg-orange-50"
-            disabled={filteredContents.length === 0}
-          >
-            <FiEdit3 className="w-4 h-4 mr-2" />
-            Modifier
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50"
-            disabled={filteredContents.length === 0}
-          >
-            <FiTrash2 className="w-4 h-4 mr-2" />
-            Supprimer
-          </Button>
-        </div>
-      </div>
 
       <>
           {/* Stats Cards */}
