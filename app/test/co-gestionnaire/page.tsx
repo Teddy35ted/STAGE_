@@ -18,19 +18,10 @@ export default function TestCoGestionnaireForm() {
 
       console.log('📝 Données co-gestionnaire à créer:', formData);
 
-      // Préparer les données pour l'API
+      // Préparer les données pour l'API - le formulaire inclut déjà tous les champs nécessaires
       const coGestionnaireData = {
-        nom: formData.nom,
-        prenom: formData.prenom,
-        email: formData.email,
-        tel: formData.tel,
-        telephone: formData.tel,
-        pays: formData.pays,
-        ville: formData.ville,
-        ACCES: 'gerer' as const,
-        description: formData.description,
-        permissions: formData.permissions,
-        password: formData.password
+        ...formData,
+        telephone: formData.tel, // Ajouter l'alias telephone
       };
 
       // Obtenir le token d'authentification

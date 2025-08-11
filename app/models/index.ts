@@ -234,3 +234,14 @@ export interface DashboardReport {
   lastGenerated?: string;
   nextGeneration?: string;
 }
+
+// === CO-GESTIONNAIRES (Gestion déléguée) ===
+export * from './co_gestionnaire';
+export type {
+  CoGestionnaire,
+  CoGestionnaireCore,
+  CoGestionnaireExtended,
+  ResourcePermission,
+  PermissionAction,
+  PermissionResource
+} from './co_gestionnaire';

@@ -33,6 +33,21 @@ export interface CoGestionnaire {
     tokenExpiry?: string; // Expiration du token temporaire
 }
 
+// Interface pour la création d'un co-gestionnaire (sans les champs générés automatiquement)
+export interface CoGestionnaireCore {
+    nom: string;
+    prenom: string;
+    email: string;
+    tel: string;
+    telephone?: string; // Alternative pour téléphone
+    pays: string;
+    ville: string;
+    ACCES: 'gerer' | 'consulter' | 'Ajouter';
+    permissions: ResourcePermission[]; // Permissions granulaires par ressource
+    description?: string;
+    password: string; // Mot de passe requis pour la création
+}
+
 // Interface étendue pour l'affichage avec informations du propriétaire
 export interface CoGestionnaireExtended extends CoGestionnaire {
     proprietaireNom?: string;

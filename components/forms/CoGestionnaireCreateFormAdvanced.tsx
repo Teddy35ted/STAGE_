@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save, User, Mail, Phone, MapPin, Lock, Shield, CheckCircle } from 'lucide-react';
-import { ResourcePermission, PermissionAction, PermissionResource } from '../../app/models/co_gestionnaire';
+import { ResourcePermission, PermissionAction, PermissionResource, CoGestionnaireCore } from '../../app/models/co_gestionnaire';
 
 interface CoGestionnaireCreateFormProps {
   isOpen: boolean;
@@ -9,16 +9,8 @@ interface CoGestionnaireCreateFormProps {
   loading?: boolean;
 }
 
-export interface CoGestionnaireFormData {
-  nom: string;
-  prenom: string;
-  email: string;
-  tel: string;
-  pays: string;
-  ville: string;
-  description: string;
-  password: string;
-  permissions: ResourcePermission[];
+export interface CoGestionnaireFormData extends Omit<CoGestionnaireCore, 'telephone'> {
+  // Le formulaire utilise 'tel' au lieu de 'telephone'
 }
 
 const RESOURCES: { key: PermissionResource; label: string; description: string }[] = [
@@ -48,6 +40,7 @@ export default function CoGestionnaireCreateForm({
     tel: '',
     pays: 'Togo',
     ville: 'Lomé',
+    ACCES: 'gerer',
     description: '',
     password: '',
     permissions: []
@@ -126,6 +119,7 @@ export default function CoGestionnaireCreateForm({
         tel: '',
         pays: 'Togo',
         ville: 'Lomé',
+        ACCES: 'gerer',
         description: '',
         password: '',
         permissions: []
@@ -260,6 +254,26 @@ export default function CoGestionnaireCreateForm({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
+            </div>
+
+            {/* Niveau d'accès */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Shield className="w-4 h-4 inline mr-2" />
+                Niveau d'accès *
+              </label>
+              <select
+                value={formData.ACCES}
+                onChange={(e) => setFormData(prev => ({ ...prev, ACCES: e.target.value as 'gerer' | 'consulter' | 'Ajouter' }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="gerer">Gérer - Accès complet selon permissions</option>
+                <option value="consulter">Consulter - Lecture seule</option>
+                <option value="Ajouter">Ajouter - Création uniquement</option>
+              </select>
+              <p className="text-sm text-gray-500 mt-1">
+                Ce niveau détermine l'étendue des permissions accordées
+              </p>
             </div>
 
             {/* Mot de passe */}
