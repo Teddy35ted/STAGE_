@@ -1,340 +1,504 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { 
-  FiTarget, 
-  FiUsers, 
-  FiTrendingUp, 
-  FiEye,
-  FiHeart,
-  FiMessageCircle,
-  FiShare2,
-  FiCalendar,
-  FiPlay,
-  FiPause,
+  FiPlus, 
+  FiSearch, 
+  FiFilter,
   FiEdit3,
   FiTrash2,
-  FiPlus,
-  FiFilter,
-  FiBarChart,
-  FiDollarSign
+  FiPlay,
+  FiPause,
+  FiClock,
+  FiCheck,
+  FiMessageCircle,
+  FiUsers,
+  FiTrendingUp,
+  FiCalendar,
+  FiX
 } from 'react-icons/fi';
+import { CampaignCore, CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS, MAX_COMMUNICATIONS } from '../../../models/campaign';
+import { ValidationMessageT } from '../../../models';
+import { ContenuDashboard } from '../../../models/contenu';
 
-interface Campaign {
-  id: string;
-  name: string;
-  type: 'engagement' | 'acquisition' | 'retention' | 'conversion';
-  description: string;
-  status: 'draft' | 'active' | 'paused' | 'completed' | 'scheduled';
-  budget: number;
-  spent: number;
-  startDate: string;
-  endDate: string;
-  targetAudience: {
-    size: number;
-    criteria: string[];
-    demographics: {
-      ageRange: string;
-      gender: string[];
-      interests: string[];
-      location: string[];
-    };
-  };
-  objectives: {
-    primary: string;
-    kpis: {
-      name: string;
-      target: number;
-      current: number;
-      unit: string;
-    }[];
-  };
-  content: {
-    posts: number;
-    emails: number;
-    notifications: number;
-  };
-  performance: {
-    reach: number;
-    impressions: number;
-    engagement: number;
-    clicks: number;
-    conversions: number;
-    newFollowers: number;
-    revenue: number;
-  };
-  channels: string[];
-  createdAt: string;
+// Simple Badge component
+const Badge: React.FC<{ 
+  variant?: 'default' | 'secondary'; 
+  children: React.ReactNode;
+  className?: string;
+}> = ({ variant = 'default', children, className = '' }) => {
+  const baseClasses = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
+  const variantClasses = variant === 'default' 
+    ? 'bg-blue-100 text-blue-800' 
+    : 'bg-gray-100 text-gray-800';
+  
+  return (
+    <span className={`${baseClasses} ${variantClasses} ${className}`}>
+      {children}
+    </span>
+  );
+};
+
+interface CampaignCreateFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (campaignData: Partial<CampaignCore>) => void;
+  availableCommunications: ValidationMessageT[];
 }
 
-const campaignsData: Campaign[] = [
-  {
-    id: '1',
-    name: 'Campagne Lifestyle Printemps',
-    type: 'engagement',
-    description: 'Augmenter l\'engagement sur le contenu lifestyle avec focus sur les routines printanières',
-    status: 'active',
-    budget: 500.00,
-    spent: 287.50,
-    startDate: '2024-01-10',
-    endDate: '2024-02-10',
-    targetAudience: {
-      size: 2847,
-      criteria: ['Fans actifs', 'Intérêt lifestyle', 'Engagement élevé'],
-      demographics: {
-        ageRange: '25-40 ans',
-        gender: ['Femmes'],
-        interests: ['Lifestyle', 'Bien-être', 'Mode'],
-        location: ['France', 'Belgique', 'Suisse']
-      }
-    },
-    objectives: {
-      primary: 'Augmenter l\'engagement de 25%',
-      kpis: [
-        { name: 'Taux d\'engagement', target: 8.5, current: 7.2, unit: '%' },
-        { name: 'Nouveaux followers', target: 500, current: 234, unit: 'followers' },
-        { name: 'Partages', target: 200, current: 156, unit: 'partages' }
-      ]
-    },
-    content: {
-      posts: 15,
-      emails: 3,
-      notifications: 8
-    },
-    performance: {
-      reach: 15420,
-      impressions: 45680,
-      engagement: 3290,
-      clicks: 892,
-      conversions: 67,
-      newFollowers: 234,
-      revenue: 1250.00
-    },
-    channels: ['Instagram', 'Email', 'Push'],
-    createdAt: '2024-01-08'
-  },
-  {
-    id: '2',
-    name: 'Acquisition Tech Audience',
-    type: 'acquisition',
-    description: 'Attirer de nouveaux fans intéressés par la technologie et l\'innovation',
-    status: 'active',
-    budget: 750.00,
-    spent: 445.20,
-    startDate: '2024-01-05',
-    endDate: '2024-01-25',
-    targetAudience: {
-      size: 5600,
-      criteria: ['Lookalike tech', 'Développeurs', 'Entrepreneurs'],
-      demographics: {
-        ageRange: '22-35 ans',
-        gender: ['Hommes', 'Femmes'],
-        interests: ['Tech', 'Innovation', 'Business'],
-        location: ['France', 'Canada']
-      }
-    },
-    objectives: {
-      primary: 'Acquérir 1000 nouveaux followers qualifiés',
-      kpis: [
-        { name: 'Nouveaux followers', target: 1000, current: 567, unit: 'followers' },
-        { name: 'Coût par acquisition', target: 0.75, current: 0.78, unit: '€' },
-        { name: 'Taux de conversion', target: 3.5, current: 2.8, unit: '%' }
-      ]
-    },
-    content: {
-      posts: 12,
-      emails: 2,
-      notifications: 5
-    },
-    performance: {
-      reach: 28900,
-      impressions: 67800,
-      engagement: 1890,
-      clicks: 1456,
-      conversions: 89,
-      newFollowers: 567,
-      revenue: 890.00
-    },
-    channels: ['LinkedIn', 'Twitter', 'Email'],
-    createdAt: '2024-01-03'
-  },
-  {
-    id: '3',
-    name: 'Rétention Clients Premium',
-    type: 'retention',
-    description: 'Fidéliser les clients premium et augmenter leur engagement',
-    status: 'completed',
-    budget: 300.00,
-    spent: 298.75,
-    startDate: '2023-12-15',
-    endDate: '2024-01-15',
-    targetAudience: {
-      size: 156,
-      criteria: ['Clients premium', 'Achat récent', 'Engagement élevé'],
-      demographics: {
-        ageRange: '30-50 ans',
-        gender: ['Femmes', 'Hommes'],
-        interests: ['Formation', 'Business', 'Lifestyle'],
-        location: ['France']
-      }
-    },
-    objectives: {
-      primary: 'Maintenir 90% de rétention',
-      kpis: [
-        { name: 'Taux de rétention', target: 90, current: 94, unit: '%' },
-        { name: 'Engagement premium', target: 15, current: 18, unit: 'actions/mois' },
-        { name: 'Upsell rate', target: 25, current: 32, unit: '%' }
-      ]
-    },
-    content: {
-      posts: 8,
-      emails: 6,
-      notifications: 12
-    },
-    performance: {
-      reach: 156,
-      impressions: 1890,
-      engagement: 456,
-      clicks: 234,
-      conversions: 45,
-      newFollowers: 12,
-      revenue: 2340.00
-    },
-    channels: ['Email', 'Push', 'SMS'],
-    createdAt: '2023-12-10'
-  },
-  {
-    id: '4',
-    name: 'Conversion Black Friday',
-    type: 'conversion',
-    description: 'Maximiser les conversions pendant la période Black Friday',
-    status: 'scheduled',
-    budget: 1200.00,
-    spent: 0,
-    startDate: '2024-11-20',
-    endDate: '2024-11-30',
-    targetAudience: {
-      size: 4500,
-      criteria: ['Intérêt achat', 'Panier abandonné', 'Fans engagés'],
-      demographics: {
-        ageRange: '25-45 ans',
-        gender: ['Femmes', 'Hommes'],
-        interests: ['Shopping', 'Lifestyle', 'Tech'],
-        location: ['France', 'Belgique', 'Suisse']
-      }
-    },
-    objectives: {
-      primary: 'Générer 50k€ de revenus',
-      kpis: [
-        { name: 'Revenus', target: 50000, current: 0, unit: '€' },
-        { name: 'Taux de conversion', target: 8, current: 0, unit: '%' },
-        { name: 'Panier moyen', target: 85, current: 0, unit: '€' }
-      ]
-    },
-    content: {
-      posts: 20,
-      emails: 8,
-      notifications: 15
-    },
-    performance: {
-      reach: 0,
-      impressions: 0,
-      engagement: 0,
-      clicks: 0,
-      conversions: 0,
-      newFollowers: 0,
-      revenue: 0
-    },
-    channels: ['Instagram', 'Email', 'Push', 'SMS'],
-    createdAt: '2024-01-12'
-  }
-];
+// Composant formulaire de création de campagne
+const CampaignCreateForm: React.FC<CampaignCreateFormProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  availableCommunications
+}) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    selectedMessages: [] as string[],
+    startDate: '',
+    endDate: ''
+  });
 
-export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(campaignsData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Le nom de la campagne est requis';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'La description est requise';
+    }
+
+    if (formData.selectedMessages.length === 0) {
+      newErrors.messages = 'Au moins une communication doit être sélectionnée';
+    }
+
+    if (formData.selectedMessages.length > MAX_COMMUNICATIONS) {
+      newErrors.messages = `Maximum ${MAX_COMMUNICATIONS} communications par campagne`;
+    }
+
+    if (!formData.startDate) {
+      newErrors.startDate = 'La date de début est requise';
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = 'La date de fin est requise';
+    }
+
+    if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
+      newErrors.endDate = 'La date de fin doit être après la date de début';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    // Créer l'objet campagne (simplifié pour la création)
+    const campaignData: Partial<CampaignCore> = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      status: 'draft',
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      communications: [], // Sera rempli côté backend
+      createdBy: '', // Sera rempli côté backend
+      stats: {
+        totalSent: 0,
+        totalDelivered: 0,
+        totalOpened: 0,
+        totalClicked: 0
+      }
+    };
+
+    // Ajouter les IDs des messages sélectionnés comme propriété temporaire
+    (campaignData as any).selectedMessageIds = formData.selectedMessages;
+
+    onSubmit(campaignData);
+    
+    // Reset form
+    setFormData({
+      name: '',
+      description: '',
+      selectedMessages: [],
+      startDate: '',
+      endDate: ''
+    });
+    setErrors({});
+    onClose();
+  };
+
+  const toggleMessageSelection = (messageId: string) => {
+    setFormData(prev => {
+      const isSelected = prev.selectedMessages.includes(messageId);
+      
+      if (isSelected) {
+        return {
+          ...prev,
+          selectedMessages: prev.selectedMessages.filter(id => id !== messageId)
+        };
+      } else if (prev.selectedMessages.length < MAX_COMMUNICATIONS) {
+        return {
+          ...prev,
+          selectedMessages: [...prev.selectedMessages, messageId]
+        };
+      }
+      
+      return prev;
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gradient-to-br from-red-50/90 via-pink-50/90 to-rose-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white/95 backdrop-blur-md shadow-2xl shadow-red-500/20 rounded-2xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Nouvelle Campagne</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <FiX className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Nom de la campagne */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nom de la campagne *
+            </label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Ex: Campagne promotion été 2024"
+              className={`w-full ${errors.name ? 'border-red-500' : ''}`}
+            />
+            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description *
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Décrivez l'objectif et le contenu de votre campagne..."
+              rows={4}
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:border-transparent ${
+                errors.description ? 'border-red-500' : ''
+              }`}
+            />
+            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+          </div>
+
+          {/* Dates */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date de début *
+              </label>
+              <Input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                className={`w-full ${errors.startDate ? 'border-red-500' : ''}`}
+              />
+              {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date de fin *
+              </label>
+              <Input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                className={`w-full ${errors.endDate ? 'border-red-500' : ''}`}
+              />
+              {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+            </div>
+          </div>
+
+          {/* Sélection des communications */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Communications à inclure * (max {MAX_COMMUNICATIONS})
+            </label>
+            <div className="bg-gray-50/50 border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+              {availableCommunications.length === 0 ? (
+                <div className="p-4 text-sm text-gray-500 text-center">
+                  Aucune communication disponible
+                </div>
+              ) : (
+                <div className="p-2 space-y-1">
+                  {availableCommunications.map((message) => {
+                    const messageId = message.id || '';
+                    const isSelected = formData.selectedMessages.includes(messageId);
+                    const isDisabled = !isSelected && formData.selectedMessages.length >= MAX_COMMUNICATIONS;
+                    
+                    // Récupérer le contenu du message
+                    const messageText = message.messages && message.messages[0] ? 
+                      message.messages[0].text || 'Message sans texte' : 
+                      'Message vide';
+                    
+                    return (
+                      <div
+                        key={messageId}
+                        className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 shadow-sm' 
+                            : isDisabled 
+                              ? 'bg-gray-100/50 cursor-not-allowed opacity-60' 
+                              : 'bg-white/70 hover:bg-white/90 hover:shadow-sm cursor-pointer border border-transparent hover:border-gray-200'
+                        }`}
+                        onClick={() => !isDisabled && toggleMessageSelection(messageId)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={isDisabled}
+                          readOnly
+                          className="mr-3 h-4 w-4 text-[#f01919] focus:ring-[#f01919] border-gray-300 rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-800 truncate">
+                            {message.nomsend || 'Utilisateur inconnu'}
+                          </div>
+                          <div className="text-xs text-gray-600 truncate">
+                            {messageText}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            {message.date || 'Date inconnue'}
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="ml-2 bg-white/80">
+                          {message.messages ? message.messages.length : 0} msg
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-xs text-gray-500">
+                {formData.selectedMessages.length} / {MAX_COMMUNICATIONS} communications sélectionnées
+              </p>
+              {formData.selectedMessages.length >= MAX_COMMUNICATIONS && (
+                <p className="text-xs text-amber-600 font-medium">
+                  Limite atteinte
+                </p>
+              )}
+            </div>
+            {errors.messages && <p className="text-red-500 text-sm mt-1">{errors.messages}</p>}
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button 
+              type="submit"
+              className="bg-gradient-to-r from-[#f01919] to-[#d01515] hover:from-[#d01515] hover:to-[#b01010] text-white shadow-lg"
+            >
+              <FiPlus className="w-4 h-4 mr-2" />
+              Créer la campagne
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Composant principal des campagnes
+const CampaignsPage: React.FC = () => {
+  const { user } = useAuth();
+  const [campaigns, setCampaigns] = useState<CampaignCore[]>([]);
+  const [communications, setCommunications] = useState<ValidationMessageT[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+  // Récupérer les campagnes
+  const fetchCampaigns = async () => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/campaigns', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCampaigns(data.data || []);
+      } else {
+        console.error('Erreur lors de la récupération des campagnes');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  // Récupérer les communications disponibles
+  const fetchCommunications = async () => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/messages', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCommunications(data.data || []);
+      } else {
+        console.error('Erreur lors de la récupération des communications');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchCampaigns(), fetchCommunications()]);
+      setLoading(false);
+    };
+    
+    loadData();
+  }, [user]);
+
+  // Créer une nouvelle campagne
+  const handleCreateCampaign = async (campaignData: Partial<CampaignCore>) => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(campaignData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCampaigns(prev => [data.data, ...prev]);
+        console.log('Campagne créée avec succès');
+      } else {
+        console.error('Erreur lors de la création de la campagne');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  // Supprimer une campagne
+  const handleDeleteCampaign = async (campaignId: string) => {
+    if (!user || !confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/campaigns?id=${campaignId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+        console.log('Campagne supprimée avec succès');
+      } else {
+        console.error('Erreur lors de la suppression de la campagne');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  // Mettre à jour le statut d'une campagne
+  const handleUpdateCampaignStatus = async (campaignId: string, newStatus: CampaignCore['status']) => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/campaigns', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id: campaignId, status: newStatus })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCampaigns(prev => prev.map(c => c.id === campaignId ? data.data : c));
+        console.log('Statut de la campagne mis à jour');
+      } else {
+        console.error('Erreur lors de la mise à jour du statut');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  // Filtrer les campagnes
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          campaign.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || campaign.status === filterStatus;
-    const matchesType = filterType === 'all' || campaign.type === filterType;
-    return matchesSearch && matchesStatus && matchesType;
+    const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
+  // Fonction pour obtenir l'icône du statut
+  const getStatusIcon = (status: CampaignCore['status']) => {
     switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'paused': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'scheduled': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'draft': return <FiEdit3 className="w-4 h-4" />;
+      case 'active': return <FiPlay className="w-4 h-4" />;
+      case 'paused': return <FiPause className="w-4 h-4" />;
+      case 'completed': return <FiCheck className="w-4 h-4" />;
+      case 'scheduled': return <FiClock className="w-4 h-4" />;
+      default: return <FiEdit3 className="w-4 h-4" />;
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'draft': return 'Brouillon';
-      case 'active': return 'Active';
-      case 'paused': return 'En pause';
-      case 'completed': return 'Terminée';
-      case 'scheduled': return 'Programmée';
-      default: return status;
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'engagement': return 'bg-blue-100 text-blue-800';
-      case 'acquisition': return 'bg-green-100 text-green-800';
-      case 'retention': return 'bg-purple-100 text-purple-800';
-      case 'conversion': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'engagement': return 'Engagement';
-      case 'acquisition': return 'Acquisition';
-      case 'retention': return 'Rétention';
-      case 'conversion': return 'Conversion';
-      default: return type;
-    }
-  };
-
-  const calculateROI = (revenue: number, spent: number) => {
-    return spent > 0 ? (((revenue - spent) / spent) * 100).toFixed(1) : '0.0';
-  };
-
-  const calculateProgress = (current: number, target: number) => {
-    return target > 0 ? Math.min((current / target) * 100, 100) : 0;
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
-  };
-
-  // Stats calculations
-  const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
-  const totalBudget = campaigns.reduce((sum, c) => sum + c.budget, 0);
-  const totalSpent = campaigns.reduce((sum, c) => sum + c.spent, 0);
-  const totalRevenue = campaigns.reduce((sum, c) => sum + c.performance.revenue, 0);
-  const totalNewFollowers = campaigns.reduce((sum, c) => sum + c.performance.newFollowers, 0);
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -343,15 +507,15 @@ export default function CampaignsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Campagnes</h1>
           <p className="text-gray-600 mt-1">
-            Créez et gérez vos campagnes marketing pour engager votre audience
+            Gérez vos campagnes de communication - rassemblement de communications (max {MAX_COMMUNICATIONS})
           </p>
         </div>
         <Button 
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => setIsCreateModalOpen(true)}
           className="bg-[#f01919] hover:bg-[#d01515] text-white"
         >
           <FiPlus className="w-4 h-4 mr-2" />
-          Nouvelle campagne
+          Nouvelle Campagne
         </Button>
       </div>
 
@@ -360,12 +524,12 @@ export default function CampaignsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Campagnes Actives</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{activeCampaigns}</p>
-              <p className="text-sm text-green-600 mt-1">En cours</p>
+              <p className="text-sm font-medium text-gray-600">Total</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{campaigns.length}</p>
+              <p className="text-sm text-blue-600 mt-1">Campagnes</p>
             </div>
             <div className="p-3 rounded-lg bg-[#f01919]">
-              <FiTarget className="w-6 h-6 text-white" />
+              <FiMessageCircle className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
@@ -373,25 +537,14 @@ export default function CampaignsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Budget Total</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalBudget)}</p>
-              <p className="text-sm text-blue-600 mt-1">Dépensé: {formatCurrency(totalSpent)}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-blue-500">
-              <FiDollarSign className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Revenus Générés</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
-              <p className="text-sm text-green-600 mt-1">ROI: {calculateROI(totalRevenue, totalSpent)}%</p>
+              <p className="text-sm font-medium text-gray-600">Actives</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {campaigns.filter(c => c.status === 'active').length}
+              </p>
+              <p className="text-sm text-green-600 mt-1">En cours</p>
             </div>
             <div className="p-3 rounded-lg bg-green-500">
-              <FiTrendingUp className="w-6 h-6 text-white" />
+              <FiPlay className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
@@ -399,18 +552,35 @@ export default function CampaignsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Nouveaux Followers</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalNewFollowers.toLocaleString()}</p>
-              <p className="text-sm text-purple-600 mt-1">Via campagnes</p>
+              <p className="text-sm font-medium text-gray-600">Brouillons</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {campaigns.filter(c => c.status === 'draft').length}
+              </p>
+              <p className="text-sm text-orange-600 mt-1">En préparation</p>
             </div>
-            <div className="p-3 rounded-lg bg-purple-500">
-              <FiUsers className="w-6 h-6 text-white" />
+            <div className="p-3 rounded-lg bg-orange-500">
+              <FiEdit3 className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Terminées</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {campaigns.filter(c => c.status === 'completed').length}
+              </p>
+              <p className="text-sm text-blue-600 mt-1">Finalisées</p>
+            </div>
+            <div className="p-3 rounded-lg bg-blue-500">
+              <FiCheck className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filtres et Actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
@@ -422,8 +592,8 @@ export default function CampaignsPage() {
           </div>
           <div>
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
             >
               <option value="all">Tous les statuts</option>
@@ -431,262 +601,176 @@ export default function CampaignsPage() {
               <option value="active">Active</option>
               <option value="paused">En pause</option>
               <option value="completed">Terminée</option>
-              <option value="scheduled">Programmée</option>
+              <option value="scheduled">Planifiée</option>
             </select>
           </div>
           <div>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
+            <Button 
+              onClick={() => { fetchCampaigns(); fetchCommunications(); }} 
+              variant="outline" 
+              className="w-full"
+              disabled={loading}
             >
-              <option value="all">Tous les types</option>
-              <option value="engagement">Engagement</option>
-              <option value="acquisition">Acquisition</option>
-              <option value="retention">Rétention</option>
-              <option value="conversion">Conversion</option>
-            </select>
-          </div>
-          <div>
-            <Button variant="outline" className="w-full">
-              <FiFilter className="w-4 h-4 mr-2" />
-              Filtres avancés
+              <FiSearch className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
             </Button>
           </div>
-        </div>
-      </div>
-
-      {/* Campaigns List */}
-      <div className="space-y-6">
-        {filteredCampaigns.map((campaign) => (
-          <div key={campaign.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(campaign.status)}`}>
-                    {getStatusLabel(campaign.status)}
-                  </span>
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(campaign.type)}`}>
-                    {getTypeLabel(campaign.type)}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{campaign.description}</p>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span>🎯 {campaign.targetAudience.size.toLocaleString()} personnes</span>
-                  <span>📅 {formatDate(campaign.startDate)} - {formatDate(campaign.endDate)}</span>
-                  <span>💰 {formatCurrency(campaign.spent)} / {formatCurrency(campaign.budget)}</span>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                {campaign.status === 'active' && (
-                  <Button size="sm" variant="outline">
-                    <FiPause className="w-4 h-4" />
-                  </Button>
-                )}
-                {campaign.status === 'paused' && (
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                    <FiPlay className="w-4 h-4" />
-                  </Button>
-                )}
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setSelectedCampaign(campaign)}
-                >
-                  <FiBarChart className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline">
-                  <FiEdit3 className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                  <FiTrash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* KPIs Progress */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {campaign.objectives.kpis.map((kpi, index) => (
-                <div key={index} className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-gray-500">{kpi.name}</span>
-                    <span className="text-xs font-medium text-gray-900">
-                      {kpi.current} / {kpi.target} {kpi.unit}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-[#f01919] h-2 rounded-full" 
-                      style={{ width: `${calculateProgress(kpi.current, kpi.target)}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {calculateProgress(kpi.current, kpi.target).toFixed(1)}% atteint
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Performance Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <p className="text-lg font-bold text-gray-900">{campaign.performance.reach.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">Portée</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-gray-900">{campaign.performance.engagement.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">Engagement</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-gray-900">{campaign.performance.clicks.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">Clics</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(campaign.performance.revenue)}</p>
-                <p className="text-xs text-gray-500">Revenus</p>
-              </div>
-            </div>
-
-            {/* Channels */}
-            <div className="mt-4">
-              <div className="flex flex-wrap gap-1">
-                {campaign.channels.map((channel, index) => (
-                  <span key={index} className="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                    {channel}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Campaign Details Modal */}
-      {selectedCampaign && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">{selectedCampaign.name}</h2>
-                <Button variant="outline" onClick={() => setSelectedCampaign(null)}>
-                  Fermer
-                </Button>
-              </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Campaign Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Informations générales</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-medium">Type:</span> {getTypeLabel(selectedCampaign.type)}</p>
-                    <p><span className="font-medium">Statut:</span> {getStatusLabel(selectedCampaign.status)}</p>
-                    <p><span className="font-medium">Période:</span> {formatDate(selectedCampaign.startDate)} - {formatDate(selectedCampaign.endDate)}</p>
-                    <p><span className="font-medium">Budget:</span> {formatCurrency(selectedCampaign.budget)}</p>
-                    <p><span className="font-medium">Dépensé:</span> {formatCurrency(selectedCampaign.spent)}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Audience cible</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-medium">Taille:</span> {selectedCampaign.targetAudience.size.toLocaleString()} personnes</p>
-                    <p><span className="font-medium">Âge:</span> {selectedCampaign.targetAudience.demographics.ageRange}</p>
-                    <p><span className="font-medium">Genre:</span> {selectedCampaign.targetAudience.demographics.gender.join(', ')}</p>
-                    <p><span className="font-medium">Localisation:</span> {selectedCampaign.targetAudience.demographics.location.join(', ')}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance Details */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Performance détaillée</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{selectedCampaign.performance.impressions.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">Impressions</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{selectedCampaign.performance.reach.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">Portée</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{selectedCampaign.performance.engagement.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">Engagement</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{selectedCampaign.performance.conversions}</p>
-                    <p className="text-sm text-gray-500">Conversions</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Content Summary */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Contenu de la campagne</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-xl font-bold text-blue-900">{selectedCampaign.content.posts}</p>
-                    <p className="text-sm text-blue-600">Posts</p>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-xl font-bold text-green-900">{selectedCampaign.content.emails}</p>
-                    <p className="text-sm text-green-600">Emails</p>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <p className="text-xl font-bold text-purple-900">{selectedCampaign.content.notifications}</p>
-                    <p className="text-sm text-purple-600">Notifications</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Modal Placeholder */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Nouvelle campagne</h2>
-            <p className="text-gray-600 mb-4">
-              Cette fonctionnalité sera bientôt disponible. Vous pourrez créer des campagnes marketing ciblées.
-            </p>
-            <div className="flex justify-end space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowCreateModal(false)}
-              >
-                Fermer
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {filteredCampaigns.length === 0 && (
-        <div className="text-center py-12">
-          <FiTarget className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune campagne trouvée</h3>
-          <p className="text-gray-600 mb-4">
-            {searchTerm || filterStatus !== 'all' || filterType !== 'all'
-              ? 'Aucune campagne ne correspond à vos critères de recherche.'
-              : 'Vous n\'avez pas encore créé de campagnes.'
-            }
-          </p>
-          {!searchTerm && filterStatus === 'all' && filterType === 'all' && (
+          <div>
             <Button 
-              onClick={() => setShowCreateModal(true)}
-              className="bg-[#f01919] hover:bg-[#d01515] text-white"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="w-full bg-[#f01919] hover:bg-[#d01515] text-white"
             >
               <FiPlus className="w-4 h-4 mr-2" />
-              Créer votre première campagne
+              Nouvelle
             </Button>
-          )}
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Liste des campagnes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredCampaigns.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <FiMessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {campaigns.length === 0 
+                ? 'Aucune campagne' 
+                : 'Aucune campagne trouvée'
+              }
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {campaigns.length === 0 
+                ? "Créez votre première campagne pour rassembler vos communications"
+                : "Aucune campagne ne correspond à vos critères de recherche"
+              }
+            </p>
+            {campaigns.length === 0 && (
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-[#f01919] hover:bg-[#d01515] text-white"
+              >
+                <FiPlus className="w-4 h-4 mr-2" />
+                Créer ma première campagne
+              </Button>
+            )}
+          </div>
+        ) : (
+          filteredCampaigns.map((campaign) => (
+            <div key={campaign.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    {getStatusIcon(campaign.status)}
+                    <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
+                    <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
+                      {CAMPAIGN_STATUS_LABELS[campaign.status]}
+                    </Badge>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{campaign.description}</p>
+                  
+                  <div className="space-y-2 text-sm text-gray-500 mb-3">
+                    <div className="flex items-center">
+                      <FiMessageCircle className="w-4 h-4 mr-2" />
+                      {campaign.communications?.length || 0} / {MAX_COMMUNICATIONS} communications
+                    </div>
+                    <div className="flex items-center">
+                      <FiCalendar className="w-4 h-4 mr-2" />
+                      {new Date(campaign.startDate).toLocaleDateString('fr-FR')}
+                    </div>
+                    <div className="flex items-center">
+                      <FiTrendingUp className="w-4 h-4 mr-2" />
+                      {campaign.stats?.totalSent || 0} envoyés
+                    </div>
+                    <div className="flex items-center">
+                      <FiUsers className="w-4 h-4 mr-2" />
+                      {campaign.stats && campaign.stats.totalSent > 0 
+                        ? `${Math.round((campaign.stats.totalOpened / campaign.stats.totalSent) * 100)}%`
+                        : '0%'
+                      } d'ouverture
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Actions de la campagne */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">
+                    ID: {campaign.id?.slice(-8)}
+                  </span>
+                  
+                  <div className="flex space-x-2">
+                    {campaign.status === 'draft' && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdateCampaignStatus(campaign.id!, 'active')}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        title="Démarrer la campagne"
+                      >
+                        <FiPlay className="w-4 h-4" />
+                      </Button>
+                    )}
+                    
+                    {campaign.status === 'active' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleUpdateCampaignStatus(campaign.id!, 'paused')}
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        title="Mettre en pause"
+                      >
+                        <FiPause className="w-4 h-4" />
+                      </Button>
+                    )}
+                    
+                    {campaign.status === 'paused' && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdateCampaignStatus(campaign.id!, 'active')}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        title="Reprendre la campagne"
+                      >
+                        <FiPlay className="w-4 h-4" />
+                      </Button>
+                    )}
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      title="Modifier la campagne"
+                    >
+                      <FiEdit3 className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteCampaign(campaign.id!)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Supprimer la campagne"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal de création */}
+      <CampaignCreateForm
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateCampaign}
+        availableCommunications={communications}
+      />
     </div>
   );
-}
+};
+
+// Export par défaut du composant React
+export default CampaignsPage;

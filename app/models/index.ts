@@ -30,8 +30,29 @@ export type {
   ContenuFilters
 } from './contenu';
 
-// === PRIORITÉ 4: MESSAGES (En attente) ===
+// === PRIORITÉ 4: CAMPAGNES (Rassemblement de communications) ===
+export * from './campaign';
+export type {
+  CampaignCore,
+  CampaignDashboard,
+  CampaignQuickCreate,
+  CampaignCommunication,
+  CampaignRecipient,
+  CampaignFilters,
+  CampaignStats,
+  Campaign
+} from './campaign';
+
+// === PRIORITÉ 5: MESSAGES ET COMMUNICATIONS ===
 export * from './message';
+export type {
+  ValidationMessageT
+} from './message';
+
+// === PRIORITÉ 6: AUTRES MODÈLES ===
+export * from './boutiques';
+export * from './co_gestionnaire';
+export * from './retrait';
 
 // === SERVICES ===
 export * from './services';

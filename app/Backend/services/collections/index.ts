@@ -1,5 +1,6 @@
 // Export des services de collections
 export { AnimatorsService } from './AnimatorsService';
+export { CampaignService } from './CampaignService';
 // export { EventsService } from './EventsService';
 
 // Vous pouvez ajouter d'autres services ici :
