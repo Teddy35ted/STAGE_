@@ -127,9 +127,10 @@ export class CampaignService extends BaseService<CampaignCore> {
     try {
       console.log('📚 Récupération campagnes par utilisateur:', userId);
       
+      // Requête temporaire sans orderBy en attendant la création de l'index composite
+      // TODO: Remettre .orderBy('createdAt', 'desc') une fois l'index créé
       const snapshot = await this.collection
         .where('createdBy', '==', userId)
-        .orderBy('createdAt', 'desc')
         .get();
       
       if (snapshot.empty) {
@@ -145,6 +146,13 @@ export class CampaignService extends BaseService<CampaignCore> {
           createdAt: this.convertTimestamp(data.createdAt),
           updatedAt: this.convertTimestamp(data.updatedAt)
         } as CampaignCore;
+      });
+      
+      // Tri côté client en attendant l'index composite Firestore
+      campaigns.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
       });
       
       console.log(`📋 ${campaigns.length} campagnes récupérées pour l'utilisateur`);

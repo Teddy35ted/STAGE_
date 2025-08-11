@@ -342,20 +342,29 @@ const CampaignsPage: React.FC = () => {
     if (!user) return;
 
     try {
+      console.log('🔄 Début récupération campagnes...');
       const token = await user.getIdToken();
+      console.log('🔑 Token obtenu, longueur:', token.length);
+      
       const response = await fetch('/api/campaigns', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
+      console.log('📡 Réponse API campaigns:', response.status, response.statusText);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Données campagnes reçues:', data);
         setCampaigns(data.data || []);
       } else {
+        const errorData = await response.text();
+        console.error('❌ Erreur response:', response.status, errorData);
         console.error('Erreur lors de la récupération des campagnes');
       }
     } catch (error) {
+      console.error('❌ Erreur fetch campagnes:', error);
       console.error('Erreur:', error);
     }
   };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CampaignService } from '../../Backend/services';
-import { auth } from 'firebase-admin';
+import { adminAuth } from '../../Backend/config/firebase-admin';
 
 // Instances des services
 const campaignService = new CampaignService();
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth().verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     const currentUserId = decodedToken.uid;
 
     console.log('🔍 Récupération campagnes pour utilisateur:', currentUserId);
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth().verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     const currentUserId = decodedToken.uid;
 
     console.log('📝 Création campagne par utilisateur:', currentUserId);
@@ -147,7 +147,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth().verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     const currentUserId = decodedToken.uid;
 
     console.log('✏️ Mise à jour campagne par utilisateur:', currentUserId);
@@ -229,7 +229,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth().verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     const currentUserId = decodedToken.uid;
 
     console.log('🗑️ Suppression campagne par utilisateur:', currentUserId);
