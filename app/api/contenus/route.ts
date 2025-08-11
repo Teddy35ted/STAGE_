@@ -66,7 +66,8 @@ export async function POST(request: NextRequest) {
         sexe: 'Masculin' as const,
         pays: 'Togo',
         ville: 'Lomé',
-        codePays: '+228'
+        codePays: '+228',
+        password: 'defaultPassword123'
       };
       
       await userService.createUser(defaultUserData, context.proprietaireId);
