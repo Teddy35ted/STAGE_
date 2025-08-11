@@ -1,86 +1,275 @@
-# 🏆 4 CAS D'UTILISATION INDISPENSABLES
+# 📋 DESCRIPTIONS DES CAS D'UTILISATION ESSENTIELS
 
-Cette section décrit les 4 cas d'utilisation jugés critiques pour le lancement et l'adoption de la plateforme par les Animateurs Professionnels.
-
----
-
-### 1. Gérer ses Laalas et Contenus
-
-- **ID :** UC-CORE-01
-- **Acteur Principal :** Animateur Pro
-- **Description :** Ce cas d'utilisation permet à l'Animateur Pro de gérer l'ensemble de son catalogue de spectacles (laalas) et les éléments qui les composent (contenus). C'est la fonctionnalité centrale de création de valeur de la plateforme.
-- **Pré-conditions :**
-  - L'Animateur Pro doit être authentifié sur la plateforme.
-- **Scénario Nominal :**
-  1. L'Animateur accède à la section "Gérer mes laalas" de son dashboard.
-  2. Il peut **créer** un nouveau laala en définissant son nom, sa description, sa catégorie, et ses paramètres (public, monétisé, etc.).
-  3. Pour un laala existant, il peut **ajouter/modifier/supprimer** des contenus (texte, image, vidéo).
-  4. Il peut **mettre à jour** les informations d'un laala ou d'un contenu.
-  5. Il peut **programmer** la date et l'heure de publication d'un laala ou d'un contenu spécifique.
-  6. Il peut **supprimer** un laala ou un contenu, ce qui le retire de la vue publique.
-- **Post-conditions :**
-  - Le catalogue de l'animateur est mis à jour et visible par les fans selon les paramètres de publication.
-  - Les contenus programmés seront publiés automatiquement par le système à la date prévue.
+Descriptions textuelles des 14 cas d'utilisation essentiels avec scénarios nominaux et alternatifs.
 
 ---
 
-### 2. Gérer ses Gains et Demander un Retrait
+## 🔐 COMPTE
 
-- **ID :** UC-CORE-02
-- **Acteur Principal :** Animateur Pro
-- **Description :** Ce cas d'utilisation est au cœur de la proposition de valeur "Pro". Il permet à l'animateur de suivre ses revenus, de comprendre d'où ils proviennent, et surtout de pouvoir les retirer. C'est un facteur de confiance et de motivation essentiel.
-- **Pré-conditions :**
-  - L'Animateur Pro doit être authentifié.
-  - L'Animateur doit avoir généré des gains (solde supérieur à zéro).
-- **Scénario Nominal :**
-  1. L'Animateur accède à la section "Gérer mes gains".
-  2. Le système affiche un tableau de bord des gains, incluant les revenus directs, indirects, les couris, et les revenus publicitaires.
-  3. L'Animateur peut consulter l'historique détaillé de chaque type de revenu.
-  4. Si son solde disponible est supérieur au seuil minimum, l'option "Demander un retrait" est active.
-  5. L'Animateur clique sur "Demander un retrait", choisit un montant et une méthode de paiement (préalablement configurée).
-  6. Le système enregistre la demande et la passe au statut "En attente".
-- **Post-conditions :**
-  - Une demande de retrait est créée et en attente de traitement par les administrateurs de LaaLa.
-  - Le solde disponible de l'animateur est mis à jour (ou bloqué) en conséquence.
-  - L'animateur reçoit une notification confirmant sa demande.
+### UC-01 : Se connecter / Créer un compte
 
----
+**Description :** Permet l'authentification des utilisateurs existants et l'inscription de nouveaux utilisateurs.
 
-### 3. Gérer son Profil
+**Préconditions :**
+- Application accessible
+- (Pour connexion) : Compte existant avec email/mot de passe valides
 
-- **ID :** UC-CORE-03
-- **Acteur Principal :** Animateur Pro
-- **Description :** Le profil est la vitrine de l'animateur. Ce cas d'utilisation lui permet de contrôler son image publique, de mettre en avant ses compétences et de fournir les informations nécessaires pour être contacté et pour que la plateforme puisse fonctionner correctement (ex: informations de paiement).
-- **Pré-conditions :**
-  - L'Animateur Pro doit être authentifié.
-- **Scénario Nominal :**
-  1. L'Animateur accède à la section "Profil" de son dashboard.
-  2. Il peut **mettre à jour** ses informations personnelles (nom, photo, biographie, spécialités, localisation).
-  3. Il peut **gérer ses boutiques** associées, en créant de nouvelles ou en modifiant celles existantes.
-  4. Il peut **configurer ses informations de paiement** pour les retraits.
-  5. Il peut **modifier son mot de passe** et gérer ses paramètres de sécurité.
-- **Post-conditions :**
-  - Les informations du profil public de l'animateur sont immédiatement mises à jour.
-  - Les nouvelles informations de paiement sont enregistrées pour les futurs retraits.
+**Scénario nominal :**
+1. Utilisateur saisit email/mot de passe → Système vérifie → Accès au dashboard
+2. Nouvel utilisateur : saisit informations personnelles → Validation → Compte créé
+
+**Scénarios alternatifs :**
+- Mot de passe oublié → Demande de réinitialisation → Email envoyé
+- Email déjà existant → Message d'erreur → Redirection vers connexion
+- Données incomplètes → Messages de validation → Correction requise
+
+### UC-02 : Modifier son profil
+
+**Description :** Permet la mise à jour des informations personnelles et préférences de l'utilisateur.
+
+**Préconditions :**
+- Utilisateur authentifié
+- Accès à la section profil
+
+**Scénario nominal :**
+1. Accès à "Profil" → Modification des champs → Sauvegarde → Confirmation
+
+**Scénarios alternatifs :**
+- Upload d'avatar trop volumineux → Compression automatique ou erreur
+- Email modifié → Vérification par email requise
+- Données invalides → Messages d'erreur → Correction
 
 ---
 
-### 4. Consulter ses Statistiques
+## 👥 CO-GESTIONNAIRES
 
-- **ID :** UC-CORE-04
-- **Acteur Principal :** Animateur Pro
-- **Description :** Pour un professionnel, l'analyse des données est indispensable pour optimiser sa stratégie et maximiser ses revenus. Ce cas d'utilisation fournit à l'animateur les outils pour comprendre la performance de ses activités.
-- **Pré-conditions :**
-  - L'Animateur Pro doit être authentifié.
-  - Des activités (vues, likes, gains, etc.) doivent avoir été enregistrées par le système.
-- **Scénario Nominal :**
-  1. L'Animateur accède à la section "Statistiques".
-  2. Il peut choisir une période d'analyse (jour, semaine, mois, année).
-  3. Le système affiche des graphiques et des chiffres clés concernant :
-     - La **performance des laalas** (les plus vus, les plus rentables).
-     - La **performance des contenus** (les plus aimés, ceux qui génèrent le plus d'engagement).
-     - L'**évolution de ses revenus** (par source et sur la période choisie).
-     - La **croissance de sa communauté** (nouveaux fans/friends).
-     - Le **retour sur investissement** de ses publicités.
-- **Post-conditions :**
-  - L'Animateur a une vision claire de ses performances et peut prendre des décisions éclairées pour ses futures activités.
+### UC-03 : Ajouter un co-gestionnaire avec permissions
+
+**Description :** Permet au propriétaire d'ajouter des co-gestionnaires avec des permissions granulaires pour déléguer certaines tâches.
+
+**Préconditions :**
+- Utilisateur propriétaire authentifié
+- Limite de co-gestionnaires non atteinte
+- Email valide du futur co-gestionnaire
+
+**Scénario nominal :**
+1. Accès à "Co-gestionnaires" → "Ajouter" → Saisie infos + permissions → Invitation envoyée
+
+**Scénarios alternatifs :**
+- Email déjà co-gestionnaire → Message d'erreur
+- Aucune permission sélectionnée → Erreur de validation
+- Limite de co-gestionnaires atteinte → Blocage avec message
+
+### UC-04 : Modifier/Supprimer un co-gestionnaire
+
+**Description :** Permet la gestion des co-gestionnaires existants (modification des permissions ou suppression).
+
+**Préconditions :**
+- Utilisateur propriétaire authentifié
+- Co-gestionnaire existant sélectionné
+
+**Scénario nominal :**
+1. Liste des co-gestionnaires → Sélection → Modification permissions OU Suppression → Confirmation
+
+**Scénarios alternatifs :**
+- Co-gestionnaire connecté → Déconnexion forcée lors suppression
+- Tentative de modifier ses propres permissions → Blocage
+- Co-gestionnaire avec actions en cours → Avertissement avant suppression
+
+---
+
+## 🎬 LAALAS
+
+### UC-05 : Créer un laala
+
+**Description :** Permet la création de nouveaux projets/spectacles (laalas) avec configuration des paramètres de base.
+
+**Préconditions :**
+- Utilisateur authentifié
+- Limit de laalas non atteinte
+- Informations de base disponibles (nom, description, catégorie)
+
+**Scénario nominal :**
+1. "Nouveau Laala" → Saisie nom, description, type, catégorie → Configuration → Création
+
+**Scénarios alternatifs :**
+- Nom déjà utilisé → Suggestion de modification
+- Type planifié sans date → Erreur de validation
+- Limite de laalas atteinte → Blocage avec upgrade proposé
+
+### UC-06 : Modifier/Supprimer un laala
+
+**Description :** Permet la gestion des laalas existants (modification des paramètres ou suppression complète).
+
+**Préconditions :**
+- Utilisateur authentifié
+- Laala existant sélectionné
+- Permissions appropriées (propriétaire ou co-gestionnaire autorisé)
+
+**Scénario nominal :**
+1. Liste laalas → Sélection → Modification OU Suppression → Confirmation
+
+**Scénarios alternatifs :**
+- Laala avec contenus → Avertissement avant suppression
+- Modification type avec contenus incompatibles → Conversion ou blocage
+- Laala en cours → Blocage de suppression avec message
+
+---
+
+## 📁 CONTENUS
+
+### UC-07 : Ajouter un contenu
+
+**Description :** Permet l'ajout de contenus multimédias (images, vidéos, textes) à un laala existant.
+
+**Préconditions :**
+- Utilisateur authentifié
+- Laala existant sélectionné
+- Permissions d'ajout de contenu
+- Fichiers respectant les formats/tailles autorisés
+
+**Scénario nominal :**
+1. Sélection laala → "Ajouter contenu" → Choix type → Upload/Saisie → Validation → Ajout
+
+**Scénarios alternatifs :**
+- Fichier trop volumineux → Compression ou erreur
+- Format non supporté → Message d'erreur avec formats acceptés
+- Laala plein → Blocage avec limite indiquée
+
+### UC-08 : Modifier/Supprimer un contenu
+
+**Description :** Permet la gestion des contenus existants (modification des propriétés ou suppression).
+
+**Préconditions :**
+- Utilisateur authentifié
+- Contenu existant sélectionné
+- Permissions de modification/suppression
+
+**Scénario nominal :**
+1. Liste contenus → Sélection → Modification OU Suppression → Confirmation
+
+**Scénarios alternatifs :**
+- Contenu avec interactions → Avertissement avant suppression
+- Modification type → Validation compatibilité
+- Dernier contenu d'un laala → Confirmation suppression
+
+---
+
+## 🏪 BOUTIQUES
+
+### UC-09 : Créer une boutique
+
+**Description :** Permet la création de boutiques commerciales avec informations de localisation et horaires d'ouverture.
+
+**Préconditions :**
+- Utilisateur authentifié
+- Informations commerciales de base disponibles
+- Limite de boutiques non atteinte
+
+**Scénario nominal :**
+1. "Nouvelle Boutique" → Infos de base → Localisation → Horaires → Création
+
+**Scénarios alternatifs :**
+- Adresse introuvable → Saisie manuelle coordonnées
+- Nom déjà pris → Suggestion alternatives
+- Limite boutiques atteinte → Upgrade requis
+
+### UC-10 : Modifier/Supprimer une boutique
+
+**Description :** Permet la gestion des boutiques existantes (modification des informations ou suppression).
+
+**Préconditions :**
+- Utilisateur authentifié
+- Boutique existante sélectionnée
+- Permissions de gestion appropriées
+
+**Scénario nominal :**
+1. Liste boutiques → Sélection → Modification OU Suppression → Confirmation
+
+**Scénarios alternatifs :**
+- Boutique avec commandes → Blocage suppression
+- Modification adresse → Validation géolocalisation
+- Boutique liée à des articles → Avertissement transfert
+
+---
+
+## 💰 FINANCES
+
+### UC-11 : Consulter ses gains
+
+**Description :** Permet la consultation détaillée des différents types de revenus et soldes de l'utilisateur.
+
+**Préconditions :**
+- Utilisateur authentifié
+- Accès à la section finances
+- Données financières initialisées dans le système
+
+**Scénario nominal :**
+1. Accès "Finances" → Affichage soldes → Détail par type → Historique disponible
+
+**Scénarios alternatifs :**
+- Aucun gain → Message informatif avec conseils
+- Erreur de calcul → Recalcul automatique
+- Solde négatif → Alerte avec explication
+
+### UC-12 : Demander un retrait
+
+**Description :** Permet de demander le retrait des fonds disponibles vers un compte bancaire ou mobile money.
+
+**Préconditions :**
+- Utilisateur authentifié
+- Solde disponible supérieur au minimum requis
+- Aucune demande de retrait en cours
+- Informations bancaires (RIB) configurées
+
+**Scénario nominal :**
+1. "Retrait" → Vérification solde → Saisie montant + RIB → Validation → Demande créée
+
+**Scénarios alternatifs :**
+- Solde insuffisant → Blocage avec solde affiché
+- Montant minimum non atteint → Message avec seuil
+- RIB invalide → Validation avec correction
+- Demande en cours → Blocage avec statut
+
+---
+
+## 👥 CO-GESTIONNAIRE
+
+### UC-13 : Se connecter au compte partagé
+
+**Description :** Permet aux co-gestionnaires de s'authentifier et d'accéder au compte du propriétaire avec leurs permissions spécifiques.
+
+**Préconditions :**
+- Co-gestionnaire avec compte actif
+- Identifiants de connexion valides
+- Permissions non révoquées par le propriétaire
+- Compte propriétaire accessible
+
+**Scénario nominal :**
+1. Saisie identifiants co-gestionnaire → Vérification → Accès compte propriétaire avec permissions
+
+**Scénarios alternatifs :**
+- Compte désactivé → Message d'erreur
+- Permissions révoquées → Blocage d'accès
+- Premier login → Définition mot de passe obligatoire
+
+### UC-14 : Gérer selon permissions
+
+**Description :** Permet aux co-gestionnaires d'effectuer des actions limitées selon leurs permissions accordées par le propriétaire.
+
+**Préconditions :**
+- Co-gestionnaire authentifié sur compte partagé
+- Permissions spécifiques accordées pour les ressources demandées
+- Audit des actions activé
+
+**Scénario nominal :**
+1. Navigation limitée selon permissions → Actions autorisées uniquement → Audit des actions
+
+**Scénarios alternatifs :**
+- Action non autorisée → Blocage avec message permissions
+- Permission révoquée pendant session → Déconnexion forcée
+- Conflit avec propriétaire → Notification et blocage temporaire
+
+---
+
+*Descriptions complètes des 14 cas d'utilisation essentiels avec gestion des exceptions.*
