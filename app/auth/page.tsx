@@ -1,25 +1,31 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LoginForm } from '../../components/auth/LoginForm';
-import { CompleteRegistrationForm } from '../../components/auth/CompleteRegistrationForm';
+import { RoleSelector } from '../../components/auth/RoleSelector';
+import { AnimateurAuth } from '../../components/auth/AnimateurAuth';
+import { CoGestionnaireAuth } from '../../components/auth/CoGestionnaireAuth';
+
+type AuthStep = 'role-selection' | 'animateur' | 'cogestionnaire';
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [currentStep, setCurrentStep] = useState<AuthStep>('role-selection');
 
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
+  const handleRoleSelect = (role: 'animateur' | 'cogestionnaire') => {
+    setCurrentStep(role);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f01919] to-[#d01515] flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        {isLogin ? (
-          <LoginForm onToggleMode={toggleMode} />
-        ) : (
-          <CompleteRegistrationForm onToggleMode={toggleMode} />
-        )}
-      </div>
-    </div>
-  );
+  const handleBack = () => {
+    setCurrentStep('role-selection');
+  };
+
+  switch (currentStep) {
+    case 'animateur':
+      return <AnimateurAuth onBack={handleBack} />;
+    
+    case 'cogestionnaire':
+      return <CoGestionnaireAuth onBack={handleBack} />;
+    
+    default:
+      return <RoleSelector onRoleSelect={handleRoleSelect} />;
+  }
 }

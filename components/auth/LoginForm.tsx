@@ -1,242 +1,213 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../app/firebase/config';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { FiMail, FiLock, FiPhone } from 'react-icons/fi';
+import { Eye, EyeOff, Mail, Phone } from 'lucide-react';
 
 interface LoginFormProps {
-  onToggleMode: () => void;
+  onToggleMode?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
+export default function LoginForm({ onToggleMode }: LoginFormProps) {
+  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isPhoneLogin, setIsPhoneLogin] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { signIn, signInWithPhone } = useAuth();
-  const router = useRouter();
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      setError('Veuillez remplir tous les champs');
-      return;
-    }
-
-    setLoading(true);
+    setIsLoading(true);
     setError('');
 
     try {
-      await signIn(email, password);
-      console.log('Login successful, redirecting to dashboard...');
-      // Redirection immédiate avec replace pour éviter l'historique
-      router.replace('/dashboard');
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError(error.message || 'Erreur lors de la connexion');
-      setLoading(false);
-    }
-    // Ne pas mettre setLoading(false) dans finally pour éviter le flash
-  };
-
-  const handlePhoneLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      if (!confirmationResult) {
-        if (!phoneNumber) {
-          setError('Veuillez entrer un numéro de téléphone');
-          return;
-        }
-        
-        const result = await signInWithPhone(phoneNumber);
-        setConfirmationResult(result);
-        setError('');
+      if (loginMethod === 'email') {
+        await signInWithEmailAndPassword(auth, email, password);
       } else {
-        if (!verificationCode) {
-          setError('Veuillez entrer le code de vérification');
-          return;
-        }
-        
-        await confirmationResult.confirm(verificationCode);
-        console.log('Phone login successful, redirecting to dashboard...');
-        // Redirection immédiate avec replace
-        router.replace('/dashboard');
+        // TODO: Implémenter la connexion par téléphone
+        setError('Connexion par téléphone non encore implémentée');
+        setIsLoading(false);
+        return;
       }
+      
+      // Redirection vers le dashboard après connexion réussie
+      window.location.href = '/dashboard';
     } catch (error: any) {
-      console.error('Phone login error:', error);
-      setError(error.message || 'Erreur lors de la connexion par téléphone');
+      console.error('Erreur de connexion:', error);
+      switch (error.code) {
+        case 'auth/user-not-found':
+          setError('Aucun compte trouvé avec ces identifiants');
+          break;
+        case 'auth/wrong-password':
+          setError('Mot de passe incorrect');
+          break;
+        case 'auth/invalid-email':
+          setError('Format d\'email invalide');
+          break;
+        case 'auth/too-many-requests':
+          setError('Trop de tentatives. Veuillez réessayer plus tard');
+          break;
+        default:
+          setError('Erreur de connexion. Veuillez réessayer');
+      }
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
-
-  const resetForm = () => {
-    setEmail('');
-    setPassword('');
-    setPhoneNumber('');
-    setVerificationCode('');
-    setConfirmationResult(null);
-    setError('');
-  };
-
-  const handleTabSwitch = (isPhone: boolean) => {
-    setIsPhoneLogin(isPhone);
-    resetForm();
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">La-a-La</h1>
-        <p className="text-gray-600 mt-2">Connexion Animateur Pro</p>
+    <div className="bg-white rounded-xl p-8 shadow-2xl">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Connexion</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Connectez-vous à votre compte animateur
+        </p>
       </div>
 
-      <div className="flex mb-6">
+      {/* Sélecteur de méthode de connexion */}
+      <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg mb-6">
         <button
           type="button"
-          onClick={() => handleTabSwitch(false)}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-l-lg border transition-colors ${
-            !isPhoneLogin
-              ? 'bg-[#f01919] text-white border-[#f01919]'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          onClick={() => setLoginMethod('email')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-colors ${
+            loginMethod === 'email'
+              ? 'bg-white text-red-600 shadow-sm'
+              : 'text-gray-600 hover:text-red-600'
           }`}
         >
-          Email
+          <Mail size={16} />
+          <span>Email</span>
         </button>
         <button
           type="button"
-          onClick={() => handleTabSwitch(true)}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-r-lg border transition-colors ${
-            isPhoneLogin
-              ? 'bg-[#f01919] text-white border-[#f01919]'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          onClick={() => setLoginMethod('phone')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md transition-colors ${
+            loginMethod === 'phone'
+              ? 'bg-white text-red-600 shadow-sm'
+              : 'text-gray-600 hover:text-red-600'
           }`}
         >
-          Téléphone
+          <Phone size={16} />
+          <span>Téléphone</span>
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-          {error}
-        </div>
-      )}
-
-      {!isPhoneLogin ? (
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <div className="relative">
-            <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Champ Email ou Téléphone */}
+        {loginMethod === 'email' ? (
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Adresse email
+            </label>
             <Input
+              id="email"
               type="email"
-              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10"
+              placeholder="votre@email.com"
               required
-              disabled={loading}
+              className="w-full"
             />
           </div>
+        ) : (
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              Numéro de téléphone
+            </label>
+            <div className="flex">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                +237
+              </span>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="6XXXXXXXX"
+                required
+                className="flex-1 rounded-l-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Champ Mot de passe */}
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            Mot de passe
+          </label>
           <div className="relative">
-            <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
-              type="password"
-              placeholder="Mot de passe"
+              id="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
+              placeholder="Votre mot de passe"
               required
-              disabled={loading}
+              className="w-full pr-10"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4 text-gray-400" />
+              ) : (
+                <Eye className="h-4 w-4 text-gray-400" />
+              )}
+            </button>
           </div>
-          <Button
-            type="submit"
-            disabled={loading || !email || !password}
-            className="w-full bg-[#f01919] hover:bg-[#d01515] text-white disabled:opacity-50"
-          >
-            {loading ? 'Connexion...' : 'Se connecter'}
-          </Button>
-        </form>
-      ) : (
-        <form onSubmit={handlePhoneLogin} className="space-y-4">
-          {!confirmationResult ? (
-            <div className="relative">
-              <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                type="tel"
-                placeholder="+33 6 12 34 56 78"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="pl-10"
-                required
-                disabled={loading}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Format: +33 6 12 34 56 78
-              </p>
-            </div>
-          ) : (
-            <div>
-              <Input
-                type="text"
-                placeholder="Code de vérification"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                required
-                disabled={loading}
-                maxLength={6}
-              />
-              <p className="text-sm text-gray-600 mt-2">
-                Entrez le code reçu par SMS au {phoneNumber}
-              </p>
-              <button
-                type="button"
-                onClick={() => setConfirmationResult(null)}
-                className="text-sm text-[#f01919] hover:underline mt-2"
-              >
-                Changer de numéro
-              </button>
-            </div>
-          )}
-          <Button
-            type="submit"
-            disabled={loading || (!confirmationResult && !phoneNumber) || (confirmationResult && !verificationCode)}
-            className="w-full bg-[#f01919] hover:bg-[#d01515] text-white disabled:opacity-50"
-          >
-            {loading
-              ? 'Envoi...'
-              : confirmationResult
-              ? 'Vérifier le code'
-              : 'Envoyer le code'}
-          </Button>
-        </form>
-      )}
+        </div>
 
-      <div id="recaptcha-container" className="mt-4"></div>
+        {/* Message d'erreur */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+            {error}
+          </div>
+        )}
 
-      <div className="mt-6 text-center">
-        <p className="text-gray-600">
-          Pas encore de compte ?{' '}
+        {/* Bouton de soumission */}
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+        >
+          {isLoading ? 'Connexion...' : 'Se connecter'}
+        </Button>
+      </form>
+
+      {/* Liens */}
+      <div className="mt-6 space-y-3">
+        <div className="text-center">
+          <button
+            type="button"
+            className="text-sm text-red-600 hover:text-red-500 underline"
+            onClick={() => {
+              // TODO: Implémenter la réinitialisation de mot de passe
+              alert('Fonctionnalité de réinitialisation à implémenter');
+            }}
+          >
+            Mot de passe oublié ?
+          </button>
+        </div>
+        
+        <div className="text-center">
+          <span className="text-sm text-gray-600">Pas encore de compte ? </span>
           <button
             type="button"
             onClick={onToggleMode}
-            className="text-[#f01919] hover:underline font-medium"
+            className="text-sm text-red-600 hover:text-red-500 font-medium"
           >
-            S'inscrire
+            Créer un compte
           </button>
-        </p>
+        </div>
       </div>
     </div>
   );
-};
+}
