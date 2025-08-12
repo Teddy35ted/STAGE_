@@ -108,6 +108,7 @@ export const COLLECTIONS = {
   CO_GESTIONNAIRES: process.env.COLLECTION_CO_GESTIONNAIRES || 'co_gestionnaires',
   RETRAITS: process.env.COLLECTION_RETRAITS || 'retraits',
   CAMPAIGNS: process.env.COLLECTION_CAMPAIGNS || 'campaigns',
+  AUDIT_LOGS: process.env.COLLECTION_AUDIT_LOGS || 'audit_logs',
 } as const;
 
 // Utilitaires Firestore

@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
 import { adminAuth } from '../config/firebase-admin';
 import { CoGestionnaireAuthService, CoGestionnaireAuthContext } from '../services/auth/CoGestionnaireAuthService';
+import { AuditLogService } from '../services/collections/AuditLogService';
 import { PermissionAction, PermissionResource } from '../../models/co_gestionnaire';
+import { AuditLogCore } from '../../models/audit_log';
 
 export interface AuthResult {
   isAuthenticated: boolean;
@@ -11,9 +13,11 @@ export interface AuthResult {
 
 export class PermissionMiddleware {
   private authService: CoGestionnaireAuthService;
+  private auditService: AuditLogService;
 
   constructor() {
     this.authService = new CoGestionnaireAuthService();
+    this.auditService = new AuditLogService();
   }
 
   /**
@@ -30,6 +34,18 @@ export class PermissionMiddleware {
       const decodedToken = await adminAuth.verifyIdToken(token);
       
       const context = await this.authService.getAuthContext(decodedToken);
+      
+      // VALIDATION SUPPLÉMENTAIRE: Si c'est un co-gestionnaire, vérifier qu'il est toujours actif
+      if (context.isCoGestionnaire && context.coGestionnaireId) {
+        const isActive = await this.authService.isCoGestionnaireActive(context.coGestionnaireId);
+        if (!isActive) {
+          console.log('❌ Co-gestionnaire inactif/supprimé tentant d\'accéder aux ressources:', context.coGestionnaireId);
+          return { 
+            isAuthenticated: false, 
+            error: 'Co-gestionnaire inactif ou supprimé - accès révoqué' 
+          };
+        }
+      }
       
       return { isAuthenticated: true, context };
     } catch (error) {
@@ -138,16 +154,47 @@ export class PermissionMiddleware {
   }
 
   /**
-   * Logs d'audit pour les actions des co-gestionnaires
+   * Logs d'audit pour les actions des co-gestionnaires avec persistance en base
    */
   async logCoGestionnaireAction(
     context: CoGestionnaireAuthContext,
     resource: PermissionResource,
     action: PermissionAction,
-    resourceId?: string
+    resourceId?: string,
+    request?: NextRequest,
+    success: boolean = true,
+    errorMessage?: string
   ): Promise<void> {
     if (context.isCoGestionnaire && context.coGestionnaireInfo) {
-      console.log(`📋 Action co-gestionnaire: ${context.coGestionnaireInfo.nom} ${context.coGestionnaireInfo.prenom} a effectué ${action} sur ${resource}${resourceId ? ` (ID: ${resourceId})` : ''} pour le compte de ${context.proprietaireId}`);
+      const logData: AuditLogCore = {
+        coGestionnaireId: context.coGestionnaireId!,
+        coGestionnaireNom: context.coGestionnaireInfo.nom,
+        coGestionnairePrenom: context.coGestionnaireInfo.prenom,
+        proprietaireId: context.proprietaireId,
+        action,
+        resource,
+        resourceId,
+        details: `Action ${action} sur ${resource}${resourceId ? ` (ID: ${resourceId})` : ''}`,
+        ipAddress: request?.headers.get('x-forwarded-for') || request?.headers.get('x-real-ip') || 'unknown',
+        userAgent: request?.headers.get('user-agent') || 'unknown',
+        success,
+        errorMessage
+      };
+
+      try {
+        // Persister le log en base de données
+        await this.auditService.create({
+          ...logData,
+          timestamp: new Date().toISOString()
+        });
+
+        // Log console pour développement
+        const statusIcon = success ? '✅' : '❌';
+        console.log(`📋 ${statusIcon} Action co-gestionnaire: ${context.coGestionnaireInfo.nom} ${context.coGestionnaireInfo.prenom} a effectué ${action} sur ${resource}${resourceId ? ` (ID: ${resourceId})` : ''} pour le compte de ${context.proprietaireId}`);
+      } catch (error) {
+        console.error('❌ Erreur persistance log audit:', error);
+        // Ne pas empêcher l'action principale même si le log échoue
+      }
     }
   }
 }

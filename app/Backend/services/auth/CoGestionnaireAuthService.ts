@@ -215,9 +215,47 @@ export class CoGestionnaireAuthService {
   async validateAccess(coGestionnaireId: string, proprietaireId: string): Promise<boolean> {
     try {
       const coGestionnaire = await this.coGestionnaireService.getById(coGestionnaireId);
-      return coGestionnaire?.idProprietaire === proprietaireId && coGestionnaire?.statut === 'actif';
+      
+      // Vérifications de sécurité strictes
+      if (!coGestionnaire) {
+        console.log('❌ Co-gestionnaire non trouvé pour validation accès:', coGestionnaireId);
+        return false;
+      }
+      
+      if (coGestionnaire.idProprietaire !== proprietaireId) {
+        console.log('❌ Co-gestionnaire ne correspond pas au propriétaire:', {
+          coGestionnaireId,
+          proprietaireActuel: coGestionnaire.idProprietaire,
+          proprietaireAttendu: proprietaireId
+        });
+        return false;
+      }
+      
+      if (coGestionnaire.statut !== 'actif') {
+        console.log('❌ Co-gestionnaire inactif/suspendu:', {
+          coGestionnaireId,
+          statut: coGestionnaire.statut
+        });
+        return false;
+      }
+      
+      console.log('✅ Accès validé pour co-gestionnaire:', coGestionnaire.nom, coGestionnaire.prenom);
+      return true;
     } catch (error) {
       console.error('❌ Erreur validation accès:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Vérifie si un co-gestionnaire est encore actif (pour validation de token)
+   */
+  async isCoGestionnaireActive(coGestionnaireId: string): Promise<boolean> {
+    try {
+      const coGestionnaire = await this.coGestionnaireService.getById(coGestionnaireId);
+      return coGestionnaire?.statut === 'actif';
+    } catch (error) {
+      console.error('❌ Erreur vérification statut co-gestionnaire:', error);
       return false;
     }
   }
