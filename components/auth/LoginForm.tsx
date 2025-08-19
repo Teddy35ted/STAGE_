@@ -167,7 +167,7 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
 
         {/* Message d'erreur */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md">
             {error}
           </div>
         )}
@@ -176,7 +176,7 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+          className="w-full bg-slate-600 hover:bg-slate-700 text-white py-2 px-4 rounded-md transition-colors disabled:opacity-50"
         >
           {isLoading ? 'Connexion...' : 'Se connecter'}
         </Button>

@@ -9,7 +9,7 @@ interface RoleSelectorProps {
 
 export const RoleSelector: React.FC<RoleSelectorProps> = ({ onRoleSelect }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f01919] to-[#d01515] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
@@ -77,7 +77,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onRoleSelect }) => {
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-2 text-gray-700">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <span>Connexion uniquement</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">

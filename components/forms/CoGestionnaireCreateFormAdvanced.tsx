@@ -140,7 +140,10 @@ export default function CoGestionnaireCreateForm({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <User className="w-6 h-6" />
-              <h2 className="text-xl font-semibold">Nouveau Co-gestionnaire</h2>
+              <div>
+                <h2 className="text-xl font-semibold">Nouveau Co-gestionnaire</h2>
+                <p className="text-blue-100 text-sm">📝 FORMULAIRE UNIQUE - Saisie de toutes les informations en UNE FOIS</p>
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -153,8 +156,21 @@ export default function CoGestionnaireCreateForm({
         </div>
 
         {/* Form */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Alerte - Formulaire unique */}
+            <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+              <div className="flex items-center">
+                <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
+                <div>
+                  <h3 className="text-green-800 font-medium">✅ FORMULAIRE UNIQUE ET COMPLET</h3>
+                  <p className="text-green-700 text-sm">
+                    <strong>Email et mot de passe sont saisis ENSEMBLE dans ce même formulaire</strong> - Aucune étape séparée
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Informations personnelles */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -191,29 +207,67 @@ export default function CoGestionnaireCreateForm({
               </div>
             </div>
 
-            {/* Contact */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4 inline mr-2" />
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="email@exemple.com"
-                />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            {/* Contact ET Authentification - Dans la même section */}
+            <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-300">
+              <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                <Mail className="w-5 h-5 mr-2" />
+                🔑 EMAIL ET MOT DE PASSE (saisie SIMULTANÉE)
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📧 Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="email@exemple.com"
+                  />
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Lock className="w-4 h-4 inline mr-2" />
+                    🔒 Mot de passe *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.password ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Mot de passe (min. 6 caractères)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    >
+                      {showPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                </div>
               </div>
 
-              <div>
+              <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                <p className="text-blue-800 text-sm font-medium">
+                  ✅ Email et mot de passe saisis ENSEMBLE dans ce formulaire unique - Plus besoin d'étapes séparées !
+                </p>
+              </div>
+
+              <div className="mt-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Phone className="w-4 h-4 inline mr-2" />
-                  Téléphone *
+                  📞 Téléphone *
                 </label>
                 <input
                   type="tel"
@@ -271,36 +325,6 @@ export default function CoGestionnaireCreateForm({
                 <option value="consulter">Consulter - Lecture seule</option>
                 <option value="Ajouter">Ajouter - Création uniquement</option>
               </select>
-              <p className="text-sm text-gray-500 mt-1">
-                Ce niveau détermine l'étendue des permissions accordées
-              </p>
-            </div>
-
-            {/* Mot de passe */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Lock className="w-4 h-4 inline mr-2" />
-                Mot de passe *
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Mot de passe (min. 6 caractères)"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                >
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
-              </div>
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
             {/* Description */}

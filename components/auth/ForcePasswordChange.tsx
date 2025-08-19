@@ -120,7 +120,7 @@ export function ForcePasswordChange({ isOpen, onClose, onSuccess, userId }: Forc
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header obligatoire */}
-        <div className="bg-red-600 text-white p-6 rounded-t-lg">
+        <div className="bg-slate-600 text-white p-6 rounded-t-lg">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
               <FiLock className="w-5 h-5 text-white" />
@@ -272,7 +272,7 @@ export function ForcePasswordChange({ isOpen, onClose, onSuccess, userId }: Forc
             <Button
               type="submit"
               disabled={loading}
-              className="bg-red-600 hover:bg-red-700 text-white w-full"
+              className="bg-slate-600 hover:bg-slate-700 text-white w-full"
             >
               {loading ? 'Changement en cours...' : 'Changer le mot de passe'}
             </Button>
