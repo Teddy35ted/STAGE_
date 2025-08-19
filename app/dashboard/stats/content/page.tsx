@@ -5,7 +5,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { useApi } from '../../../../lib/api';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { Contenu } from '../../../models/contenu';
+import { ContenuDashboard } from '../../../models/contenu';
 import { 
   FiFileText, 
   FiVideo, 
@@ -376,7 +376,7 @@ export default function ContentStatsPage() {
   const { user } = useAuth();
 
   // Fonction pour générer des statistiques aléatoires
-  const generateRandomStats = (contenu: Contenu): ContentStats => {
+  const generateRandomStats = (contenu: ContenuDashboard): ContentStats => {
     const baseViews = Math.floor(Math.random() * 50000) + 1000;
     const engagementRate = Math.random() * 15 + 2; // 2-17%
     const likes = Math.floor(baseViews * (engagementRate / 100) * (Math.random() * 0.8 + 0.4));
@@ -390,7 +390,7 @@ export default function ContentStatsPage() {
     const postingTimes = ['07h-09h', '09h-11h', '11h-13h', '14h-16h', '17h-19h', '19h-21h', '20h-22h'];
     
     const hashtagsByType = {
-      video: ['#video', '#contenu', '#créatif', '#viral'],
+      video: ['#video', '#ContenuDashboard', '#créatif', '#viral'],
       image: ['#photo', '#visual', '#art', '#inspiration'],
       text: ['#article', '#blog', '#lecture', '#info'],
       audio: ['#audio', '#podcast', '#son', '#écoute'],
@@ -404,10 +404,10 @@ export default function ContentStatsPage() {
 
     return {
       id: contenu.id || '',
-      title: contenu.titre || 'Contenu sans titre',
+      title: contenu.nom || 'Contenu sans titre',
       type: (contenu.type as any) || 'text',
       laala: contenu.idLaala || 'Laala inconnu',
-      publishedAt: contenu.dateCreation || new Date().toISOString(),
+      publishedAt: contenu.date || new Date().toISOString(),
       status: 'published',
       performance: {
         views: baseViews,
@@ -481,7 +481,7 @@ export default function ContentStatsPage() {
       }
       
       // Filtrer les contenus de l'utilisateur et générer des statistiques
-      const userContents = contenuData.filter((contenu: Contenu) => 
+      const userContents = contenuData.filter((contenu: ContenuDashboard) => 
         contenu.idCreateur === user.uid
       );
       
@@ -612,7 +612,7 @@ export default function ContentStatsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Statistiques du Contenu</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Statistiques du ContenuDashboard</h1>
           <p className="text-gray-600 mt-1">
             Analysez les performances de tous vos contenus
           </p>
@@ -681,7 +681,7 @@ export default function ContentStatsPage() {
       {loading && (
         <div className="text-center py-8">
           <FiRefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
-          <p className="text-gray-600">Chargement des statistiques de contenu...</p>
+          <p className="text-gray-600">Chargement des statistiques de ContenuDashboard...</p>
         </div>
       )}
 
@@ -719,7 +719,7 @@ export default function ContentStatsPage() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Revenus Générés</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
-                <p className="text-sm text-purple-600 mt-1">Total contenu</p>
+                <p className="text-sm text-purple-600 mt-1">Total ContenuDashboard</p>
               </div>
               <div className="p-3 rounded-lg bg-purple-500">
                 <FiTrendingUp className="w-6 h-6 text-white" />
@@ -744,7 +744,7 @@ export default function ContentStatsPage() {
 
       {/* Content Type Distribution */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Répartition par type de contenu</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Répartition par type de ContenuDashboard</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {['video', 'image', 'text', 'audio', 'carousel'].map(type => {
             const count = contents.filter(c => c.type === type).length;
@@ -768,7 +768,7 @@ export default function ContentStatsPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <Input
-              placeholder="Rechercher un contenu..."
+              placeholder="Rechercher un ContenuDashboard..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -966,7 +966,7 @@ export default function ContentStatsPage() {
                   <FiTarget className="w-4 h-4 mr-1" />
                   <span className="text-sm font-medium">{content.optimization.contentScore}/100</span>
                 </div>
-                <p className="text-xs text-gray-500">Score contenu</p>
+                <p className="text-xs text-gray-500">Score ContenuDashboard</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <div className={`flex items-center justify-center mb-1 ${getPerformanceColor(content.optimization.viralPotential)}`}>
@@ -1025,11 +1025,11 @@ export default function ContentStatsPage() {
       {filteredContents.length === 0 && (
         <div className="text-center py-12">
           <FiFileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun contenu trouvé</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun ContenuDashboard trouvé</h3>
           <p className="text-gray-600 mb-4">
             {searchTerm || filterType !== 'all' || filterLaala !== 'all'
-              ? 'Aucun contenu ne correspond à vos critères de recherche.'
-              : 'Vous n\'avez pas encore publié de contenu.'
+              ? 'Aucun ContenuDashboard ne correspond à vos critères de recherche.'
+              : 'Vous n\'avez pas encore publié de ContenuDashboard.'
             }
           </p>
         </div>
@@ -1041,7 +1041,7 @@ export default function ContentStatsPage() {
           <FiTrendingUp className="w-6 h-6 text-purple-600 mt-1" />
           <div>
             <h3 className="text-lg font-medium text-purple-900 mb-2">
-              Analyse de performance du contenu
+              Analyse de performance du ContenuDashboard
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-purple-700">
               <div>

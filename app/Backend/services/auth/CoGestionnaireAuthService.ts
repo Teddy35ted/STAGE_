@@ -56,6 +56,8 @@ export class CoGestionnaireAuthService {
         ...coGestionnaireData,
         password: hashedPassword,
         isPasswordSet: true,
+        isTemporaryPassword: true, // Marquer comme mot de passe temporaire
+        mustChangePassword: true, // Forcer le changement
         role: 'assistant', // Toujours assistant
         statut: 'actif'
       };
@@ -256,6 +258,68 @@ export class CoGestionnaireAuthService {
       return coGestionnaire?.statut === 'actif';
     } catch (error) {
       console.error('❌ Erreur vérification statut co-gestionnaire:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Change le mot de passe d'un co-gestionnaire
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      console.log('🔐 Changement de mot de passe pour:', userId);
+
+      // Rechercher le co-gestionnaire par ID
+      const coGestionnaire = await this.coGestionnaireService.getById(userId);
+      if (!coGestionnaire || coGestionnaire.statut !== 'actif') {
+        throw new Error('Co-gestionnaire non trouvé ou inactif');
+      }
+
+      // Vérifier le mot de passe actuel
+      if (!coGestionnaire.password || !coGestionnaire.isPasswordSet) {
+        throw new Error('Mot de passe non défini pour ce co-gestionnaire');
+      }
+
+      const isValidPassword = await bcrypt.compare(currentPassword, coGestionnaire.password);
+      if (!isValidPassword) {
+        console.log('❌ Mot de passe actuel incorrect');
+        return false;
+      }
+
+      // Hacher le nouveau mot de passe
+      const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+      // Mettre à jour le mot de passe
+      await this.coGestionnaireService.update(userId, {
+        password: hashedNewPassword,
+        isPasswordSet: true,
+        passwordChangedAt: new Date().toISOString(),
+        // Marquer que le mot de passe n'est plus temporaire
+        isTemporaryPassword: false
+      });
+
+      console.log('✅ Mot de passe changé avec succès pour:', coGestionnaire.nom);
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur changement de mot de passe:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Vérifie si un co-gestionnaire doit changer son mot de passe
+   */
+  async requiresPasswordChange(userId: string): Promise<boolean> {
+    try {
+      const coGestionnaire = await this.coGestionnaireService.getById(userId);
+      if (!coGestionnaire) {
+        return false;
+      }
+
+      // Si c'est un mot de passe temporaire ou si c'est la première connexion
+      return coGestionnaire.isTemporaryPassword === true || !coGestionnaire.passwordChangedAt;
+    } catch (error) {
+      console.error('❌ Erreur vérification changement mot de passe requis:', error);
       return false;
     }
   }

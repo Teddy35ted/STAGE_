@@ -5,29 +5,30 @@ import { verifyAuth } from '../../../Backend/utils/authVerifier';
 const coGestionnaireService = new CoGestionnaireService();
 
 // GET - Récupérer un co-gestionnaire (seul le propriétaire peut voir ses co-gestionnaires)
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('📖 Lecture co-gestionnaire ID:', params.id);
+    const { id } = await params;
+    console.log('📖 Lecture co-gestionnaire ID:', id);
     
-    if (!params.id || params.id.trim() === '') {
+    if (!id || id.trim() === '') {
       return NextResponse.json({ 
         error: 'ID manquant',
         details: 'L\'ID du co-gestionnaire est requis'
       }, { status: 400 });
     }
 
-    const coGestionnaire = await coGestionnaireService.getById(params.id);
+    const coGestionnaire = await coGestionnaireService.getById(id);
     
     if (!coGestionnaire) {
-      console.log('❌ Co-gestionnaire non trouvé:', params.id);
+      console.log('❌ Co-gestionnaire non trouvé:', id);
       return NextResponse.json({ 
         error: 'Co-gestionnaire not found',
-        details: `Aucun co-gestionnaire trouvé avec l'ID ${params.id}`
+        details: `Aucun co-gestionnaire trouvé avec l'ID ${id}`
       }, { status: 404 });
     }
 
@@ -53,16 +54,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT - Modifier un co-gestionnaire (seul le propriétaire peut modifier ses co-gestionnaires)
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('✏️ Mise à jour co-gestionnaire ID:', params.id);
+    const { id: coGestionnaireId } = await params;
+    console.log('✏️ Mise à jour co-gestionnaire ID:', coGestionnaireId);
     
-    if (!params.id || params.id.trim() === '') {
+    if (!coGestionnaireId || coGestionnaireId.trim() === '') {
       return NextResponse.json({ 
         error: 'ID manquant',
         details: 'L\'ID du co-gestionnaire est requis'
@@ -73,12 +75,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     console.log('📝 Données de mise à jour co-gestionnaire:', data);
     
     // Vérifier que le co-gestionnaire existe
-    const existingCoGestionnaire = await coGestionnaireService.getById(params.id);
+    const existingCoGestionnaire = await coGestionnaireService.getById(coGestionnaireId);
     if (!existingCoGestionnaire) {
-      console.log('❌ Co-gestionnaire à modifier non trouvé:', params.id);
+      console.log('❌ Co-gestionnaire à modifier non trouvé:', coGestionnaireId);
       return NextResponse.json({ 
         error: 'Co-gestionnaire not found',
-        details: `Aucun co-gestionnaire trouvé avec l'ID ${params.id}`
+        details: `Aucun co-gestionnaire trouvé avec l'ID ${coGestionnaireId}`
       }, { status: 404 });
     }
 
@@ -103,10 +105,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       ...cleanData 
     } = data;
     
-    await coGestionnaireService.update(params.id, cleanData);
+    await coGestionnaireService.update(coGestionnaireId, cleanData);
     
     // Récupérer le co-gestionnaire mis à jour
-    const updatedCoGestionnaire = await coGestionnaireService.getById(params.id);
+    const updatedCoGestionnaire = await coGestionnaireService.getById(coGestionnaireId);
     
     console.log('✅ Co-gestionnaire mis à jour:', updatedCoGestionnaire?.nom, updatedCoGestionnaire?.prenom);
     
@@ -126,16 +128,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE - Supprimer un co-gestionnaire avec révocation d'accès
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('🗑️ Suppression co-gestionnaire ID:', params.id);
+    const { id: coGestionnaireId } = await params;
+    console.log('🗑️ Suppression co-gestionnaire ID:', coGestionnaireId);
     
-    if (!params.id || params.id.trim() === '') {
+    if (!coGestionnaireId || coGestionnaireId.trim() === '') {
       return NextResponse.json({ 
         error: 'ID manquant',
         details: 'L\'ID du co-gestionnaire est requis'
@@ -143,12 +146,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     
     // Vérifier que le co-gestionnaire existe
-    const existingCoGestionnaire = await coGestionnaireService.getById(params.id);
+    const existingCoGestionnaire = await coGestionnaireService.getById(coGestionnaireId);
     if (!existingCoGestionnaire) {
-      console.log('❌ Co-gestionnaire à supprimer non trouvé:', params.id);
+      console.log('❌ Co-gestionnaire à supprimer non trouvé:', coGestionnaireId);
       return NextResponse.json({ 
         error: 'Co-gestionnaire not found',
-        details: `Aucun co-gestionnaire trouvé avec l'ID ${params.id}`
+        details: `Aucun co-gestionnaire trouvé avec l'ID ${coGestionnaireId}`
       }, { status: 404 });
     }
 
@@ -165,7 +168,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // RÉVOCATION D'ACCÈS: Désactiver le co-gestionnaire avant suppression définitive
     console.log('🔒 Révocation d\'accès - Désactivation du co-gestionnaire...');
-    await coGestionnaireService.update(params.id, { 
+    await coGestionnaireService.update(coGestionnaireId, { 
       statut: 'suspended'
     });
 
@@ -173,10 +176,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // (les tokens Firebase ont un TTL, la désactivation empêche les nouvelles authentifications)
     
     // Suppression définitive
-    await coGestionnaireService.delete(params.id);
+    await coGestionnaireService.delete(coGestionnaireId);
     
     // Vérifier que la suppression a bien eu lieu
-    const deletedCheck = await coGestionnaireService.getById(params.id);
+    const deletedCheck = await coGestionnaireService.getById(coGestionnaireId);
     if (deletedCheck) {
       console.error('❌ Échec de la suppression - le co-gestionnaire existe encore');
       return NextResponse.json({ 

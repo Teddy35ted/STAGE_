@@ -1,5 +1,5 @@
 // Service d'intégration entre Appwrite (médias) et Firebase (données)
-import { AppwriteMediaService, MediaUploadResult } from './media-service';
+import { AppwriteMediaService, MediaUploadResult, MediaCategory } from './media-service';
 
 export interface MediaIntegrationResult {
   success: boolean;
@@ -22,7 +22,7 @@ export class FirebaseAppwriteIntegration {
       console.log(`📤 Upload avatar pour l'utilisateur ${userId}...`);
       
       // 1. Upload vers Appwrite
-      const uploadResult = await AppwriteMediaService.uploadUserAvatar(avatarFile, onProgress);
+      const uploadResult = await AppwriteMediaService.uploadUserAvatar(avatarFile, userId, onProgress);
       
       // 2. Préparer les données pour Firestore
       const firestoreUpdate = {
@@ -55,13 +55,14 @@ export class FirebaseAppwriteIntegration {
     laalaData: any,
     coverFile: File,
     coverType: 'image' | 'video',
+    userId: string,
     onProgress?: (progress: number) => void
   ): Promise<MediaIntegrationResult> {
     try {
       console.log(`📤 Upload couverture Laala (${coverType})...`);
       
       // 1. Upload vers Appwrite
-      const uploadResult = await AppwriteMediaService.uploadLaalaCover(coverFile, onProgress);
+      const uploadResult = await AppwriteMediaService.uploadLaalaCover(coverFile, userId, laalaData.id, onProgress);
       
       // 2. Préparer les données pour Firestore
       const firestoreData = {
@@ -97,6 +98,7 @@ export class FirebaseAppwriteIntegration {
   static async uploadContenuMedia(
     contenuData: any,
     mediaFile: File,
+    userId: string,
     coverFile?: File,
     onProgress?: (progress: number) => void
   ): Promise<MediaIntegrationResult> {
@@ -104,7 +106,7 @@ export class FirebaseAppwriteIntegration {
       console.log(`📤 Upload contenu média (${contenuData.type})...`);
       
       // 1. Upload du fichier principal vers Appwrite
-      const uploadResult = await AppwriteMediaService.uploadContenuMedia(mediaFile, onProgress);
+      const uploadResult = await AppwriteMediaService.uploadContenuMedia(mediaFile, userId, contenuData.id, onProgress);
       
       let coverUrl = '';
       let coverFileId = '';
@@ -112,7 +114,7 @@ export class FirebaseAppwriteIntegration {
       // 2. Upload de la couverture si fournie (pour les vidéos)
       if (coverFile) {
         console.log('📤 Upload couverture vidéo...');
-        const coverResult = await AppwriteMediaService.uploadContenuMedia(coverFile);
+        const coverResult = await AppwriteMediaService.uploadContenuMedia(coverFile, userId, contenuData.id);
         coverUrl = coverResult.url;
         coverFileId = coverResult.fileId;
       }
@@ -158,6 +160,7 @@ export class FirebaseAppwriteIntegration {
    */
   static async uploadBoutiqueImages(
     boutiqueData: any,
+    userId: string,
     coverImage?: File,
     additionalImages: File[] = [],
     onProgress?: (progress: number) => void
@@ -173,7 +176,7 @@ export class FirebaseAppwriteIntegration {
       // 1. Upload de l'image de couverture
       if (coverImage) {
         console.log('📤 Upload image de couverture...');
-        const coverResult = await AppwriteMediaService.uploadBoutiqueImage(coverImage, onProgress);
+        const coverResult = await AppwriteMediaService.uploadBoutiqueImage(coverImage, userId, boutiqueData.id, onProgress);
         coverUrl = coverResult.url;
         coverFileId = coverResult.fileId;
       }
@@ -188,7 +191,7 @@ export class FirebaseAppwriteIntegration {
             (progress: number) => onProgress((i * 100 + progress) / additionalImages.length) : 
             undefined;
             
-          const imageResult = await AppwriteMediaService.uploadBoutiqueImage(imageFile, progressCallback);
+          const imageResult = await AppwriteMediaService.uploadBoutiqueImage(imageFile, userId, boutiqueData.id, progressCallback);
           imageUrls.push(imageResult.url);
           imageFileIds.push(imageResult.fileId);
         }
@@ -225,10 +228,9 @@ export class FirebaseAppwriteIntegration {
   /**
    * Supprimer un média d'Appwrite (utile lors de la suppression d'un élément)
    */
-  static async deleteMedia(bucketType: keyof typeof AppwriteMediaService.BUCKETS, fileId: string): Promise<boolean> {
+  static async deleteMedia(fileId: string): Promise<boolean> {
     try {
-      const bucketId = AppwriteMediaService.BUCKETS[bucketType];
-      await AppwriteMediaService.deleteFile(bucketId, fileId);
+      await AppwriteMediaService.deleteFile(fileId);
       return true;
     } catch (error) {
       console.error('❌ Erreur lors de la suppression du média:', error);
@@ -239,15 +241,12 @@ export class FirebaseAppwriteIntegration {
   /**
    * Nettoyer les anciens médias lors de la mise à jour
    */
-  static async cleanupOldMedia(
-    oldFileIds: string[], 
-    bucketType: keyof typeof AppwriteMediaService.BUCKETS
-  ): Promise<void> {
+  static async cleanupOldMedia(oldFileIds: string[]): Promise<void> {
     console.log(`🧹 Nettoyage de ${oldFileIds.length} anciens fichiers...`);
     
     for (const fileId of oldFileIds) {
       if (fileId) {
-        await this.deleteMedia(bucketType, fileId);
+        await this.deleteMedia(fileId);
       }
     }
     
@@ -299,7 +298,7 @@ export class FirebaseAppwriteIntegration {
 
 // Types pour les hooks React
 export interface UseMediaUploadOptions {
-  bucketType: keyof typeof AppwriteMediaService.BUCKETS;
+  category: MediaCategory;
   onSuccess?: (result: MediaUploadResult) => void;
   onError?: (error: string) => void;
   onProgress?: (progress: number) => void;

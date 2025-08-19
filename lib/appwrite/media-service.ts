@@ -141,7 +141,8 @@ export class AppwriteMediaService {
   static getFileUrl(fileId: string): string {
     try {
       const result = storage.getFileView(this.BUCKET_ID, fileId);
-      return result;
+      // Convertir explicitement en string car getFileView peut retourner un objet URL
+      return String(result);
     } catch (error) {
       console.error('❌ Erreur lors de la génération de l\'URL:', error);
       throw new Error(`Erreur lors de la génération de l'URL: ${error}`);
@@ -373,3 +374,6 @@ export interface MediaPreviewProps {
   alt?: string;
   className?: string;
 }
+
+// Instance unique du service
+export const appwriteMediaService = new AppwriteMediaService();

@@ -111,7 +111,7 @@ export function validateContenuCore(data: any): ValidationResult {
   
   // Validation du nom
   if (data.nom) {
-    errors.push(...validateString(data.nom, 'nom', { minLength: 1, maxLength: 200 }));
+    errors.push(...validateString(data.nom, 'nom', { minLength: 1, maxLength: 256 }));
   }
   
   // Validation du type
@@ -159,7 +159,7 @@ export function validateLaalaCore(data: any): ValidationResult {
   
   // Validation du nom
   if (data.nom) {
-    errors.push(...validateString(data.nom, 'nom', { minLength: 1, maxLength: 200 }));
+    errors.push(...validateString(data.nom, 'nom', { minLength: 1, maxLength: 256 }));
   }
   
   // Validation du type
@@ -292,7 +292,7 @@ export function validateBoutiqueCore(data: any): ValidationResult {
   
   // Validation du nom
   if (data.nom) {
-    errors.push(...validateString(data.nom, 'nom', { minLength: 1, maxLength: 200 }));
+    errors.push(...validateString(data.nom, 'nom', { minLength: 1, maxLength: 256 }));
   }
   
   // Validation de la description

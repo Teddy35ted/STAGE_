@@ -5,20 +5,22 @@ import { CoGestionnaire } from '../../app/models/co_gestionnaire';
 import { useApi } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield, FiUserPlus } from 'react-icons/fi';
+import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield, FiUserPlus, FiEye, FiEdit2, FiLock, FiCheck } from 'react-icons/fi';
 
 interface CoGestionnaireFormProps {
   isOpen?: boolean;
   onClose?: () => void;
   coGestionnaire?: CoGestionnaire;
   onSuccess: () => void;
+  mode?: 'view' | 'edit' | 'create';
 }
 
 export function CoGestionnaireForm({ 
   isOpen, 
   onClose, 
   coGestionnaire, 
-  onSuccess 
+  onSuccess,
+  mode = 'create'
 }: CoGestionnaireFormProps) {
   const [formData, setFormData] = useState({
     nom: coGestionnaire?.nom || '',
@@ -27,7 +29,9 @@ export function CoGestionnaireForm({
     tel: coGestionnaire?.tel || '',
     pays: coGestionnaire?.pays || '',
     ville: coGestionnaire?.ville || '',
-    ACCES: coGestionnaire?.ACCES || 'consulter'
+    ACCES: coGestionnaire?.ACCES || 'consulter',
+    password: '',
+    confirmPassword: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -64,6 +68,7 @@ export function CoGestionnaireForm({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    // Validation des champs obligatoires
     if (!formData.nom.trim()) {
       newErrors.nom = 'Le nom est requis';
     } else if (formData.nom.length < 2) {
@@ -96,6 +101,23 @@ export function CoGestionnaireForm({
       newErrors.ville = 'La ville est requise';
     }
 
+    // Validation du mot de passe pour la création uniquement
+    if (mode === 'create') {
+      if (!formData.password.trim()) {
+        newErrors.password = 'Le mot de passe est requis';
+      } else if (formData.password.length < 8) {
+        newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+      } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+        newErrors.password = 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre';
+      }
+
+      if (!formData.confirmPassword.trim()) {
+        newErrors.confirmPassword = 'La confirmation du mot de passe est requise';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -110,18 +132,31 @@ export function CoGestionnaireForm({
     setLoading(true);
 
     try {
-      const method = coGestionnaire ? 'PUT' : 'POST';
-      const url = coGestionnaire ? `/api/co-gestionnaires/${coGestionnaire.id}` : '/api/co-gestionnaires';
+      const method = coGestionnaire && mode === 'edit' ? 'PUT' : 'POST';
+      const url = coGestionnaire && mode === 'edit' ? `/api/co-gestionnaires/${coGestionnaire.id}` : '/api/co-gestionnaires';
+      
+      // Préparer les données selon le mode
+      let dataToSend;
+      if (mode === 'create') {
+        dataToSend = {
+          ...formData
+        };
+      } else if (mode === 'edit') {
+        // En mode édition, exclure email et mot de passe
+        const { email, password, confirmPassword, ...editableData } = formData;
+        dataToSend = editableData;
+      }
+      
       await apiFetch(url, {
         method,
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
       
       onSuccess();
       handleClose();
       
       // Reset form if creating new
-      if (!coGestionnaire) {
+      if (mode === 'create') {
         setFormData({
           nom: '',
           prenom: '',
@@ -129,7 +164,9 @@ export function CoGestionnaireForm({
           tel: '',
           pays: '',
           ville: '',
-          ACCES: 'consulter'
+          ACCES: 'consulter',
+          password: '',
+          confirmPassword: ''
         });
       }
       setErrors({});
@@ -177,14 +214,24 @@ export function CoGestionnaireForm({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                <FiUserPlus className="w-5 h-5 text-white" />
+                {mode === 'view' ? (
+                  <FiEye className="w-5 h-5 text-white" />
+                ) : mode === 'edit' ? (
+                  <FiEdit2 className="w-5 h-5 text-white" />
+                ) : (
+                  <FiUserPlus className="w-5 h-5 text-white" />
+                )}
               </div>
               <div>
                 <h2 className="text-xl font-bold">
-                  {coGestionnaire ? 'Modifier le co-gestionnaire' : 'Ajouter un co-gestionnaire'}
+                  {mode === 'view' ? 'Détails du co-gestionnaire' : 
+                   mode === 'edit' ? 'Modifier le co-gestionnaire' : 
+                   'Ajouter un co-gestionnaire'}
                 </h2>
                 <p className="text-red-100 text-sm">
-                  {coGestionnaire ? 'Modifiez les informations du membre' : 'Ajoutez un membre à votre équipe'}
+                  {mode === 'view' ? 'Consultez les informations du membre' :
+                   mode === 'edit' ? 'Modifiez les informations du membre' : 
+                   'Ajoutez un membre à votre équipe'}
                 </p>
               </div>
             </div>
@@ -225,6 +272,8 @@ export function CoGestionnaireForm({
                     onChange={(e) => handleInputChange('nom', e.target.value)}
                     placeholder="Ex: Dupont"
                     className={`pl-10 ${errors.nom ? 'border-red-500' : ''}`}
+                    disabled={mode === 'view'}
+                    readOnly={mode === 'view'}
                   />
                 </div>
                 {errors.nom && (
@@ -243,6 +292,8 @@ export function CoGestionnaireForm({
                     onChange={(e) => handleInputChange('prenom', e.target.value)}
                     placeholder="Ex: Jean"
                     className={`pl-10 ${errors.prenom ? 'border-red-500' : ''}`}
+                    disabled={mode === 'view'}
+                    readOnly={mode === 'view'}
                   />
                 </div>
                 {errors.prenom && (
@@ -264,8 +315,15 @@ export function CoGestionnaireForm({
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     placeholder="Ex: jean.dupont@email.com"
                     className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                    disabled={mode === 'view' || mode === 'edit'}
+                    readOnly={mode === 'view' || mode === 'edit'}
                   />
                 </div>
+                {mode === 'edit' && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    ⚠️ L'email ne peut pas être modifié
+                  </p>
+                )}
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                 )}
@@ -282,6 +340,8 @@ export function CoGestionnaireForm({
                     onChange={(e) => handleInputChange('tel', e.target.value)}
                     placeholder="Ex: +33 1 23 45 67 89"
                     className={`pl-10 ${errors.tel ? 'border-red-500' : ''}`}
+                    disabled={mode === 'view'}
+                    readOnly={mode === 'view'}
                   />
                 </div>
                 {errors.tel && (
@@ -310,6 +370,8 @@ export function CoGestionnaireForm({
                     onChange={(e) => handleInputChange('pays', e.target.value)}
                     placeholder="Ex: France"
                     className={`pl-10 ${errors.pays ? 'border-red-500' : ''}`}
+                    disabled={mode === 'view'}
+                    readOnly={mode === 'view'}
                   />
                 </div>
                 {errors.pays && (
@@ -328,6 +390,8 @@ export function CoGestionnaireForm({
                     onChange={(e) => handleInputChange('ville', e.target.value)}
                     placeholder="Ex: Paris"
                     className={`pl-10 ${errors.ville ? 'border-red-500' : ''}`}
+                    disabled={mode === 'view'}
+                    readOnly={mode === 'view'}
                   />
                 </div>
                 {errors.ville && (
@@ -336,6 +400,96 @@ export function CoGestionnaireForm({
               </div>
             </div>
           </div>
+
+          {/* Sécurité - Mots de passe (création uniquement) */}
+          {mode === 'create' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <FiShield className="w-5 h-5 text-[#f01919] mr-2" />
+                Sécurité
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mot de passe temporaire *
+                  </label>
+                  <div className="relative">
+                    <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      placeholder="Créer un mot de passe temporaire"
+                      className={`pl-10 ${errors.password ? 'border-red-500' : ''}`}
+                    />
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Min. 8 caractères avec majuscule, minuscule et chiffre
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirmer le mot de passe *
+                  </label>
+                  <div className="relative">
+                    <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      placeholder="Confirmer le mot de passe"
+                      className={`pl-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                    />
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                  )}
+                  {formData.password && formData.confirmPassword && formData.password === formData.confirmPassword && (
+                    <p className="text-green-600 text-sm mt-1 flex items-center">
+                      <FiCheck className="w-4 h-4 mr-1" />
+                      Les mots de passe correspondent
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <FiShield className="w-5 h-5 text-amber-600 mt-0.5 mr-3" />
+                  <div>
+                    <h4 className="text-sm font-medium text-amber-800 mb-1">
+                      Sécurité du mot de passe
+                    </h4>
+                    <p className="text-sm text-amber-700">
+                      Le co-gestionnaire devra modifier ce mot de passe lors de sa première connexion pour des raisons de sécurité.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'edit' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <FiShield className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800 mb-1">
+                    Sécurité
+                  </h4>
+                  <p className="text-sm text-blue-700">
+                    L'email et le mot de passe ne peuvent pas être modifiés. 
+                    Le co-gestionnaire peut changer son mot de passe depuis son profil.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Niveau d'accès */}
           <div className="space-y-4">
@@ -354,6 +508,7 @@ export function CoGestionnaireForm({
                   value={formData.ACCES}
                   onChange={(e) => handleInputChange('ACCES', e.target.value)}
                   className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] appearance-none bg-white"
+                  disabled={mode === 'view'}
                 >
                   {accessLevels.map(level => (
                     <option key={level.value} value={level.value}>
@@ -390,15 +545,17 @@ export function CoGestionnaireForm({
               onClick={handleClose}
               disabled={loading}
             >
-              Annuler
+              {mode === 'view' ? 'Fermer' : 'Annuler'}
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-[#f01919] hover:bg-[#d01515] text-white"
-            >
-              {loading ? 'Sauvegarde...' : (coGestionnaire ? 'Modifier' : 'Ajouter')}
-            </Button>
+            {mode !== 'view' && (
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-[#f01919] hover:bg-[#d01515] text-white"
+              >
+                {loading ? 'Sauvegarde...' : (mode === 'edit' ? 'Modifier' : 'Ajouter')}
+              </Button>
+            )}
           </div>
         </form>
       </div>

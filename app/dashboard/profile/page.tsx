@@ -179,26 +179,56 @@ export default function ProfilePage() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Adresse
+                Adresse complète
               </label>
-              <div className="flex items-center space-x-2">
-                <FiMapPin className="w-4 h-4 text-gray-400" />
+              <div className="flex items-start space-x-2 mb-1">
+                <FiMapPin className="w-4 h-4 text-gray-400 mt-2" />
                 {isEditing ? (
-                  <Input
-                    value={`${profile.quartier || ''} ${profile.ville} ${profile.pays}`.trim()}
-                    onChange={(e) => {
-                      const parts = e.target.value.split(' ');
-                      setProfile({ 
-                        ...profile, 
-                        quartier: parts[0] || '',
-                        ville: parts[1] || profile.ville,
-                        pays: parts[2] || profile.pays
-                      });
-                    }}
-                    className="flex-1"
-                  />
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                        Quartier / Rue
+                      </label>
+                      <Input
+                        placeholder="Ex: Rue de la Paix, Quartier Résidentiel"
+                        value={profile.quartier || ''}
+                        onChange={(e) => setProfile({ ...profile, quartier: e.target.value })}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Ville
+                        </label>
+                        <Input
+                          placeholder="Ex: Paris"
+                          value={profile.ville || ''}
+                          onChange={(e) => setProfile({ ...profile, ville: e.target.value })}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Pays
+                        </label>
+                        <Input
+                          placeholder="Ex: France"
+                          value={profile.pays || ''}
+                          onChange={(e) => setProfile({ ...profile, pays: e.target.value })}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <p className="text-gray-900 py-2">{`${profile.quartier || ''} ${profile.ville} ${profile.pays}`.trim()}</p>
+                  <div className="flex-1">
+                    <p className="text-gray-900 py-2">
+                      {[profile.quartier, profile.ville, profile.pays]
+                        .filter(Boolean)
+                        .join(', ') || 'Adresse non renseignée'}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

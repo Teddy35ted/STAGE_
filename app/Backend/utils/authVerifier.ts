@@ -82,13 +82,22 @@ export function checkPermission(
   resourceData?: any
 ): { allowed: boolean; reason?: string } {
   
-  // En mode développement, tout est autorisé
+  // Vérifications de base même en développement
+  console.log(`🔍 Vérification permission: ${operation} pour utilisateur ${auth.uid} sur ${resource || 'ressource générique'}`);
+  
+  // En mode développement, tout est autorisé MAIS on log les vérifications
   if (process.env.NODE_ENV === 'development') {
     console.log(`🔓 Mode dev - ${operation} autorisé pour ${auth.uid}`);
+    
+    // Vérifications supplémentaires pour le debug
+    if (resourceData && resourceData.idCreateur && resourceData.idCreateur !== auth.uid) {
+      console.log(`⚠️ Mode dev - Accès cross-user détecté: ${auth.uid} accède aux données de ${resourceData.idCreateur}`);
+    }
+    
     return { allowed: true, reason: 'Mode développement' };
   }
   
-  // Vérifier les permissions de base
+  // En production, vérifier les permissions strictement
   switch (operation) {
     case 'create':
       return { allowed: auth.permissions.canCreate, reason: auth.permissions.canCreate ? 'Autorisé' : 'Création non autorisée' };

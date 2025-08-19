@@ -666,10 +666,13 @@ export default function ContentPage() {
 
       {/* Modal de création */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-gradient-to-br from-emerald-50/90 via-teal-50/90 to-cyan-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Nouveau Contenu</h2>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Nouveau Contenu</h2>
+                <p className="text-gray-600 text-sm mt-1">Créez un nouveau contenu pour vos laalas</p>
+              </div>
               <Button 
                 variant="outline" 
                 size="sm"

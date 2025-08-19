@@ -4,19 +4,20 @@ import { verifyAuth } from '../../../Backend/utils/authVerifier';
 
 const laalaService = new LaalaService();
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('📖 Lecture laala ID:', params.id);
+    const { id } = await params;
+    console.log('📖 Lecture laala ID:', id);
     
-    const laala = await laalaService.getById(params.id);
+    const laala = await laalaService.getById(id);
     
     if (!laala) {
-      console.log('❌ Laala non trouvé:', params.id);
+      console.log('❌ Laala non trouvé:', id);
       return NextResponse.json({ error: 'Laala not found' }, { status: 404 });
     }
     
@@ -32,22 +33,23 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('✏️ Mise à jour laala ID:', params.id);
+    const { id: laalaId } = await params;
+    console.log('✏️ Mise à jour laala ID:', laalaId);
     
     const data = await request.json();
     console.log('📝 Données de mise à jour:', data);
     
     // Vérifier que le laala existe
-    const existingLaala = await laalaService.getById(params.id);
+    const existingLaala = await laalaService.getById(laalaId);
     if (!existingLaala) {
-      console.log('❌ Laala à modifier non trouvé:', params.id);
+      console.log('❌ Laala à modifier non trouvé:', laalaId);
       return NextResponse.json({ error: 'Laala not found' }, { status: 404 });
     }
     
@@ -66,10 +68,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Nettoyer les données
     const { id, createdAt, ...updateData } = data;
     
-    await laalaService.update(params.id, updateData);
+    await laalaService.update(laalaId, updateData);
     
     // Récupérer le laala mis à jour
-    const updatedLaala = await laalaService.getById(params.id);
+    const updatedLaala = await laalaService.getById(laalaId);
     
     console.log('✅ Laala mis à jour:', updatedLaala?.nom);
     
@@ -88,16 +90,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('🗑️ Suppression laala ID:', params.id);
+    const { id: laalaId } = await params;
+    console.log('🗑️ Suppression laala ID:', laalaId);
     
-    if (!params.id || params.id.trim() === '') {
+    if (!laalaId || laalaId.trim() === '') {
       return NextResponse.json({ 
         error: 'ID manquant',
         details: 'L\'ID du laala est requis pour la suppression'
@@ -105,12 +108,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     
     // Vérifier que le laala existe
-    const existingLaala = await laalaService.getById(params.id);
+    const existingLaala = await laalaService.getById(laalaId);
     if (!existingLaala) {
-      console.log('❌ Laala à supprimer non trouvé:', params.id);
+      console.log('❌ Laala à supprimer non trouvé:', laalaId);
       return NextResponse.json({ 
         error: 'Laala not found',
-        details: `Aucun laala trouvé avec l'ID ${params.id}`
+        details: `Aucun laala trouvé avec l'ID ${laalaId}`
       }, { status: 404 });
     }
     
@@ -128,10 +131,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       }
     }
     
-    await laalaService.delete(params.id);
+    await laalaService.delete(laalaId);
     
     // Vérifier que la suppression a bien eu lieu
-    const deletedCheck = await laalaService.getById(params.id);
+    const deletedCheck = await laalaService.getById(laalaId);
     if (deletedCheck) {
       console.error('❌ Échec de la suppression - le laala existe encore');
       return NextResponse.json({ 

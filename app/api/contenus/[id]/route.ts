@@ -4,19 +4,20 @@ import { verifyAuth } from '../../../Backend/utils/authVerifier';
 
 const contenuService = new ContenuService();
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('📖 Lecture contenu ID:', params.id);
+    const { id } = await params;
+    console.log('📖 Lecture contenu ID:', id);
     
-    const contenu = await contenuService.getById(params.id);
+    const contenu = await contenuService.getById(id);
     
     if (!contenu) {
-      console.log('❌ Contenu non trouvé:', params.id);
+      console.log('❌ Contenu non trouvé:', id);
       return NextResponse.json({ error: 'Contenu not found' }, { status: 404 });
     }
     
@@ -32,32 +33,33 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('✏️ Mise à jour contenu ID:', params.id);
+    const { id: contenuId } = await params;
+    console.log('✏️ Mise à jour contenu ID:', contenuId);
     
     const data = await request.json();
     console.log('📝 Données de mise à jour:', data);
     
     // Vérifier que le contenu existe
-    const existingContenu = await contenuService.getById(params.id);
+    const existingContenu = await contenuService.getById(contenuId);
     if (!existingContenu) {
-      console.log('❌ Contenu à modifier non trouvé:', params.id);
+      console.log('❌ Contenu à modifier non trouvé:', contenuId);
       return NextResponse.json({ error: 'Contenu not found' }, { status: 404 });
     }
     
     // Nettoyer les données (enlever les champs non modifiables)
     const { id, createdAt, ...updateData } = data;
     
-    await contenuService.update(params.id, updateData);
+    await contenuService.update(contenuId, updateData);
     
     // Récupérer le contenu mis à jour
-    const updatedContenu = await contenuService.getById(params.id);
+    const updatedContenu = await contenuService.getById(contenuId);
     
     console.log('✅ Contenu mis à jour:', updatedContenu?.nom);
     
@@ -76,16 +78,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('🗑️ Suppression contenu ID:', params.id);
+    const { id: contenuId } = await params;
+    console.log('🗑️ Suppression contenu ID:', contenuId);
     
-    if (!params.id || params.id.trim() === '') {
+    if (!contenuId || contenuId.trim() === '') {
       return NextResponse.json({ 
         error: 'ID manquant',
         details: 'L\'ID du contenu est requis pour la suppression'
@@ -93,12 +96,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     
     // Vérifier que le contenu existe
-    const existingContenu = await contenuService.getById(params.id);
+    const existingContenu = await contenuService.getById(contenuId);
     if (!existingContenu) {
-      console.log('❌ Contenu à supprimer non trouvé:', params.id);
+      console.log('❌ Contenu à supprimer non trouvé:', contenuId);
       return NextResponse.json({ 
         error: 'Contenu not found',
-        details: `Aucun contenu trouvé avec l'ID ${params.id}`
+        details: `Aucun contenu trouvé avec l'ID ${contenuId}`
       }, { status: 404 });
     }
     
@@ -116,10 +119,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       }
     }
     
-    await contenuService.delete(params.id);
+    await contenuService.delete(contenuId);
     
     // Vérifier que la suppression a bien eu lieu
-    const deletedCheck = await contenuService.getById(params.id);
+    const deletedCheck = await contenuService.getById(contenuId);
     if (deletedCheck) {
       console.error('❌ Échec de la suppression - le contenu existe encore');
       return NextResponse.json({ 

@@ -218,21 +218,41 @@ export class ContenuService extends BaseService<ContenuDashboard> {
 
   // Méthode utilitaire pour vérifier l'intégrité des données
   async checkDataIntegrity(): Promise<{
-    totalContenus: number;
-    contenusWithIds: number;
-    contenusWithoutIds: number;
+    collectionName: string;
+    totalItems: number;
+    itemsWithIds: number;
+    itemsWithoutIds: number;
     sampleIds: string[];
+    healthStatus: "Excellent" | "Bon" | "Problématique" | "Critique";
   }> {
     try {
       const allContenus = await this.getAll();
       const contenusWithIds = allContenus.filter(c => c.id && c.id.trim() !== '');
       const contenusWithoutIds = allContenus.filter(c => !c.id || c.id.trim() === '');
       
+      // Déterminer le statut de santé
+      const totalItems = allContenus.length;
+      const itemsWithIds = contenusWithIds.length;
+      const itemsWithoutIds = contenusWithoutIds.length;
+      
+      let healthStatus: "Excellent" | "Bon" | "Problématique" | "Critique";
+      if (itemsWithoutIds === 0) {
+        healthStatus = "Excellent";
+      } else if (itemsWithoutIds < totalItems * 0.1) {
+        healthStatus = "Bon";
+      } else if (itemsWithoutIds < totalItems * 0.3) {
+        healthStatus = "Problématique";
+      } else {
+        healthStatus = "Critique";
+      }
+      
       return {
-        totalContenus: allContenus.length,
-        contenusWithIds: contenusWithIds.length,
-        contenusWithoutIds: contenusWithoutIds.length,
-        sampleIds: contenusWithIds.slice(0, 5).map(c => c.id)
+        collectionName: 'contenus',
+        totalItems,
+        itemsWithIds,
+        itemsWithoutIds,
+        sampleIds: contenusWithIds.slice(0, 5).map(c => c.id),
+        healthStatus
       };
     } catch (error) {
       console.error('❌ Erreur vérification intégrité:', error);

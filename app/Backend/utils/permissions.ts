@@ -242,13 +242,13 @@ export function checkRolePermission(
   }
   
   // Vérifier les permissions globales (admin)
-  if (rolePermissions['*'] && rolePermissions['*'].includes(operation)) {
+  if ('*' in rolePermissions && rolePermissions['*'] && rolePermissions['*'].includes(operation)) {
     return { allowed: true, reason: 'Permission globale accordée' };
   }
   
   // Vérifier les permissions spécifiques à la ressource
-  const resourcePermissions = rolePermissions[resource as keyof typeof rolePermissions];
-  if (resourcePermissions && resourcePermissions.includes(operation)) {
+  const resourcePermissions = rolePermissions[resource as keyof typeof rolePermissions] as string[] | undefined;
+  if (resourcePermissions && Array.isArray(resourcePermissions) && resourcePermissions.includes(operation)) {
     return { allowed: true, reason: 'Permission spécifique accordée' };
   }
   

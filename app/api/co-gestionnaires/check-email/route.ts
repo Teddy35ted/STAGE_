@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CoGestionnaireService } from '../../../Backend/services/collections/CoGestionnaireService';
-import { UserService } from '../../../Backend/services/collections/UserService';
 
 const coGestionnaireService = new CoGestionnaireService();
-const userService = new UserService();
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,10 +31,10 @@ export async function POST(request: NextRequest) {
       console.log('❌ Aucun co-gestionnaire trouvé pour:', email);
       return NextResponse.json(
         { 
-          error: 'Co-gestionnaire non trouvé',
-          details: 'Aucun co-gestionnaire trouvé avec cet email. Vérifiez que vous avez été invité(e) par un animateur.'
+          exists: false,
+          message: 'Aucun co-gestionnaire trouvé avec cet email'
         },
-        { status: 404 }
+        { status: 200 }
       );
     }
 
@@ -45,48 +43,27 @@ export async function POST(request: NextRequest) {
       console.log('❌ Co-gestionnaire inactif:', email, 'Statut:', coGestionnaire.statut);
       return NextResponse.json(
         { 
-          error: 'Compte inactif',
-          details: 'Votre compte co-gestionnaire a été désactivé. Contactez le propriétaire du compte.'
+          exists: false,
+          message: 'Votre compte co-gestionnaire a été désactivé. Contactez le propriétaire du compte.'
         },
-        { status: 403 }
+        { status: 200 }
       );
     }
 
-    // Récupérer les informations du propriétaire pour affichage
-    let proprietaireNom = 'Propriétaire';
-    try {
-      const proprietaire = await userService.getById(coGestionnaire.idProprietaire);
-      if (proprietaire) {
-        proprietaireNom = `${proprietaire.prenom} ${proprietaire.nom}`;
-      }
-    } catch (error) {
-      console.warn('⚠️ Impossible de récupérer les infos du propriétaire:', error);
-    }
+    console.log('✅ Co-gestionnaire trouvé et actif:', email);
+    return NextResponse.json(
+      { 
+        exists: true,
+        message: 'Co-gestionnaire trouvé'
+      },
+      { status: 200 }
+    );
 
-    console.log('✅ Co-gestionnaire trouvé:', coGestionnaire.nom, coGestionnaire.prenom);
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Co-gestionnaire trouvé',
-      coGestionnaire: {
-        id: coGestionnaire.id,
-        nom: coGestionnaire.nom,
-        prenom: coGestionnaire.prenom,
-        email: coGestionnaire.email,
-        role: coGestionnaire.role,
-        statut: coGestionnaire.statut,
-        proprietaireId: coGestionnaire.idProprietaire,
-        proprietaireNom,
-        permissions: coGestionnaire.permissions || []
-      }
-    });
-    
   } catch (error) {
-    console.error('❌ Erreur vérification email co-gestionnaire:', error);
-    
-    return NextResponse.json({ 
-      error: 'Erreur interne du serveur',
-      details: error instanceof Error ? error.message : 'Erreur inconnue'
-    }, { status: 500 });
+    console.error('❌ Erreur vérification email:', error);
+    return NextResponse.json(
+      { error: 'Erreur lors de la vérification de l\'email' },
+      { status: 500 }
+    );
   }
 }

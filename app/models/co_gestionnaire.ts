@@ -31,6 +31,11 @@ export interface CoGestionnaire {
     lastLogin?: string; // Dernière connexion
     loginToken?: string; // Token temporaire pour première connexion
     tokenExpiry?: string; // Expiration du token temporaire
+    
+    // Nouvelles propriétés pour la sécurité
+    isTemporaryPassword?: boolean; // Indique si le mot de passe est temporaire
+    passwordChangedAt?: string; // Date du dernier changement de mot de passe
+    mustChangePassword?: boolean; // Force le changement de mot de passe
 }
 
 // Interface pour la création d'un co-gestionnaire (sans les champs générés automatiquement)

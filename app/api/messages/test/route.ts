@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       const testMessageData = {
         receiverId: 'test-receiver',
         message: {
-          type: 'text',
+          type: 'text' as const,
           text: `Message de test créé le ${new Date().toLocaleString()}`,
           createdAt: Date.now(),
           author: {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
           console.log('✏️ Test UPDATE message...');
           const updateData = {
             message: {
-              type: 'text',
+              type: 'text' as const,
               text: `Message modifié le ${new Date().toLocaleString()}`,
               updatedAt: Date.now()
             }

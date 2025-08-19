@@ -28,7 +28,7 @@ export function BoutiqueForm({ boutique, onSuccess }: BoutiqueFormProps) {
   const [proprietaire, setProprietaire] = useState(boutique?.proprietaire || '');
   const [adresse, setAdresse] = useState(boutique?.adresse || '');
   const [coverImage, setCoverImage] = useState<string>(boutique?.cover || '');
-  const [uploadedImages, setUploadedImages] = useState<string[]>(boutique?.images || []);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,0 +1,157 @@
+/* Styles personnalisés pour l'authentification */
+
+/* Variables CSS pour les couleurs */
+:root {
+  --primary-orange: #f97316;
+  --primary-amber: #f59e0b;
+  --secondary-blue: #3b82f6;
+  --secondary-indigo: #6366f1;
+  --accent-emerald: #10b981;
+  --accent-teal: #14b8a6;
+  --neutral-gray-50: #f9fafb;
+  --neutral-gray-100: #f3f4f6;
+  --neutral-gray-600: #4b5563;
+  --neutral-gray-900: #111827;
+}
+
+/* Animations personnalisées */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Classes d'utilitaires pour l'animation */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+/* Gradients personnalisés */
+.gradient-orange {
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-amber));
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-indigo));
+}
+
+.gradient-emerald {
+  background: linear-gradient(135deg, var(--accent-emerald), var(--accent-teal));
+}
+
+/* Styles pour les cartes de rôle */
+.role-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.role-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Styles pour les boutons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-amber));
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #ea580c, #d97706);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Styles pour les champs de formulaire */
+.form-input {
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.form-input:focus {
+  border-color: var(--primary-orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+/* Styles responsifs */
+@media (max-width: 768px) {
+  .role-card {
+    margin-bottom: 1rem;
+  }
+  
+  .gradient-bg {
+    background-attachment: scroll;
+  }
+}
+
+/* Styles pour les indicateurs de statut */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-badge.success {
+  background-color: #ecfdf5;
+  color: #065f46;
+}
+
+.status-badge.warning {
+  background-color: #fffbeb;
+  color: #92400e;
+}
+
+.status-badge.error {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+/* Styles pour les transitions de page */
+.page-transition {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.page-enter {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translateX(-20px);
+}

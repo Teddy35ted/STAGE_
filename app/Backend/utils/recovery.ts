@@ -75,12 +75,14 @@ export class RecoveryService {
     try {
       return await this.withRetry(primaryOperation, options);
     } catch (primaryError) {
-      console.warn('🔄 Opération principale échouée, utilisation du fallback:', primaryError.message);
+      const errorMessage = primaryError instanceof Error ? primaryError.message : 'Erreur inconnue';
+      console.warn('🔄 Opération principale échouée, utilisation du fallback:', errorMessage);
       
       try {
         return await this.withRetry(fallbackOperation, options);
       } catch (fallbackError) {
-        console.error('❌ Fallback également échoué:', fallbackError.message);
+        const fallbackErrorMessage = fallbackError instanceof Error ? fallbackError.message : 'Erreur inconnue';
+        console.error('❌ Fallback également échoué:', fallbackErrorMessage);
         throw new ServiceError(
           'Opération principale et fallback ont échoué',
           { primaryError, fallbackError }
