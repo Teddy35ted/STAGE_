@@ -81,7 +81,7 @@ const menuItems = [
     icon: FiDollarSign,
     href: '/dashboard/earnings',
     submenu: [
-      { title: 'Demander Retrait', href: '/dashboard/earnings/withdrawal' },
+      { title: 'Demander Retrait', href: '/dashboard/retraits' },
       { title: 'Revenus Directs', href: '/dashboard/earnings/direct' },
       { title: 'Revenus Indirects', href: '/dashboard/earnings/indirect' },
       { title: 'Couris', href: '/dashboard/earnings/couris' },
