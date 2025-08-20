@@ -1,58 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '../../../firebase/config';
+import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+
+// Initialiser Firebase Admin (si pas déjà fait)
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, newPassword } = await request.json();
 
-    if (!email) {
+    // Validation des données
+    if (!email || !newPassword) {
       return NextResponse.json(
-        { error: 'L\'adresse email est requise' },
+        { error: 'Email et nouveau mot de passe sont obligatoires' },
         { status: 400 }
       );
     }
 
-    // Validation de l'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (newPassword.length < 6) {
       return NextResponse.json(
-        { error: 'Format d\'email invalide' },
+        { error: 'Le mot de passe doit contenir au moins 6 caractères' },
         { status: 400 }
       );
     }
+
+    const auth = getAuth();
 
     try {
-      // Envoyer l'email de réinitialisation via Firebase
-      await sendPasswordResetEmail(auth, email);
-
-      return NextResponse.json({
-        message: 'Email de réinitialisation envoyé avec succès',
-        success: true
+      // Vérifier si l'utilisateur existe
+      const userRecord = await auth.getUserByEmail(email);
+      
+      // Mettre à jour le mot de passe
+      await auth.updateUser(userRecord.uid, {
+        password: newPassword,
       });
 
-    } catch (firebaseError: any) {
-      console.error('Erreur Firebase lors de l\'envoi de l\'email:', firebaseError);
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Mot de passe modifié avec succès' 
+      });
+
+    } catch (authError: any) {
+      console.error('Erreur Firebase Auth:', authError);
       
-      let errorMessage = 'Erreur lors de l\'envoi de l\'email';
+      if (authError.code === 'auth/user-not-found') {
+        return NextResponse.json(
+          { error: 'Aucun compte trouvé avec cette adresse email' },
+          { status: 404 }
+        );
+      }
       
-      switch (firebaseError.code) {
-        case 'auth/user-not-found':
-          errorMessage = 'Aucun compte trouvé avec cette adresse email';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Adresse email invalide';
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
-          break;
-        default:
-          errorMessage = 'Erreur lors de l\'envoi de l\'email. Veuillez réessayer.';
+      if (authError.code === 'auth/invalid-email') {
+        return NextResponse.json(
+          { error: 'Adresse email invalide' },
+          { status: 400 }
+        );
       }
 
       return NextResponse.json(
-        { error: errorMessage },
-        { status: 400 }
+        { error: 'Erreur lors de la modification du mot de passe' },
+        { status: 500 }
       );
     }
 

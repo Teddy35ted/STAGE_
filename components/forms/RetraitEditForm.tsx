@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Retrait } from '../../app/models/retrait';
 import { useSoldeAnimateur } from '../../hooks/useSoldeAnimateur';
 import { Button } from '../ui/button';
@@ -11,21 +11,22 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '../ui/dialog';
 
-interface RetraitFormProps {
+interface RetraitEditFormProps {
+  retrait: Retrait | null;
+  isOpen: boolean;
+  onClose: () => void;
   onSuccess: () => void;
 }
 
-export function RetraitForm({ onSuccess }: RetraitFormProps) {
+export function RetraitEditForm({ retrait, isOpen, onClose, onSuccess }: RetraitEditFormProps) {
   const [montant, setMontant] = useState(0);
   const [tel, setTel] = useState('');
   const [operateur, setOperateur] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const { solde, debiterSolde, peutDebiter } = useSoldeAnimateur();
+  const { solde, debiterSolde, crediterSolde, peutDebiter } = useSoldeAnimateur();
 
   const formatMontant = (montant: number): string => {
     return new Intl.NumberFormat('fr-FR', {
@@ -34,8 +35,20 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
     }).format(montant);
   };
 
+  // Charger les données du retrait quand le modal s'ouvre
+  useEffect(() => {
+    if (retrait && isOpen) {
+      setMontant(retrait.montant);
+      setTel(retrait.tel);
+      setOperateur(retrait.operateur);
+      setError(null);
+    }
+  }, [retrait, isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!retrait) return;
+
     setLoading(true);
     setError(null);
 
@@ -52,79 +65,63 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
       return;
     }
 
-    // Vérification du solde avant la demande
-    if (!peutDebiter(montant)) {
-      setError(`Solde insuffisant. Votre solde actuel est de ${formatMontant(solde)} FCFA`);
-      setLoading(false);
-      return;
-    }
-
     if (montant <= 0) {
       setError('Le montant doit être supérieur à 0');
       setLoading(false);
       return;
     }
 
+    // Calculer la différence de montant
+    const differenceMontant = montant - retrait.montant;
+    
+    // Vérifier si on a assez de solde pour la différence
+    if (differenceMontant > 0 && !peutDebiter(differenceMontant)) {
+      setError(`Solde insuffisant pour cette modification. Solde disponible: ${formatMontant(solde)} FCFA`);
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log('Création du retrait via API...'); // Debug
-      
-      // Créer le retrait via l'API
-      const response = await fetch('/api/retraits', {
-        method: 'POST',
+      // Modifier le retrait
+      const response = await fetch(`/api/retraits/${retrait.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          montant, 
-          tel, 
-          operateur,
-          statut: 'En attente',
-          dateCreation: new Date().toISOString()
-        }),
+        body: JSON.stringify({ montant, tel, operateur }),
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la création du retrait');
+        throw new Error('Erreur lors de la modification');
       }
 
-      const result = await response.json();
-      console.log('Retrait créé avec succès:', result); // Debug
-
-      // Débiter le solde après succès de la demande
-      const debitReussi = debiterSolde(montant);
-      
-      if (!debitReussi) {
-        setError('Erreur lors de la mise à jour du solde');
-        setLoading(false);
-        return;
+      // Ajuster le solde selon la différence
+      if (differenceMontant > 0) {
+        // Montant augmenté, débiter la différence
+        debiterSolde(differenceMontant);
+      } else if (differenceMontant < 0) {
+        // Montant réduit, créditer la différence
+        crediterSolde(Math.abs(differenceMontant));
       }
 
-      // Réinitialiser le formulaire
-      setMontant(0);
-      setTel('');
-      setOperateur('');
-      setIsOpen(false);
-      
       onSuccess();
+      onClose();
     } catch (err) {
-      setError('Erreur lors de la création de la demande de retrait');
+      setError('Erreur lors de la modification du retrait');
     } finally {
       setLoading(false);
     }
   };
 
+  if (!retrait) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-red-600 hover:bg-red-700 text-white">
-          + Nouveau Retrait
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="w-5 h-5" />
-            Nouvelle Demande de Retrait
+            Modifier la Demande de Retrait
           </DialogTitle>
         </DialogHeader>
 
@@ -134,6 +131,9 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
             <Wallet className="w-4 h-4" />
             <span className="font-medium">Solde disponible:</span>
             <span className="font-bold">{formatMontant(solde)} FCFA</span>
+          </div>
+          <div className="text-sm text-blue-600 mt-1">
+            Montant actuel du retrait: {formatMontant(retrait.montant)} FCFA
           </div>
         </div>
 
@@ -147,22 +147,21 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
           
           <div>
             <label htmlFor="montant" className="block text-sm font-medium text-gray-700 mb-2">
-              Montant à retirer (FCFA)
+              Montant à retirer (FCFA) *
             </label>
             <Input 
               id="montant" 
               type="number" 
               min="1"
-              max={solde}
               value={montant || ''} 
               onChange={(e) => setMontant(Number(e.target.value))} 
               placeholder="Entrez le montant"
-              className={`${!peutDebiter(montant) && montant > 0 ? 'border-red-300 bg-red-50' : ''}`}
+              className={`${montant > (solde + retrait.montant) && montant > 0 ? 'border-red-300 bg-red-50' : ''}`}
               required 
             />
-            {montant > solde && montant > 0 && (
+            {montant > (solde + retrait.montant) && montant > 0 && (
               <p className="text-red-600 text-xs mt-1">
-                Montant supérieur au solde disponible
+                Montant trop élevé (solde + montant actuel disponible)
               </p>
             )}
           </div>
@@ -180,11 +179,6 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
               className={`${!tel.trim() && tel !== '' ? 'border-red-300 bg-red-50' : ''}`}
               required
             />
-            {!tel.trim() && tel !== '' && (
-              <p className="text-red-600 text-xs mt-1">
-                Le numéro de téléphone est obligatoire
-              </p>
-            )}
           </div>
           
           <div>
@@ -202,36 +196,31 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
               <option value="Flooz">Flooz</option>
               <option value="Mix by Yas">Mix by Yas</option>
             </select>
-            {!operateur && (
-              <p className="text-red-600 text-xs mt-1">
-                Veuillez sélectionner un opérateur
-              </p>
-            )}
           </div>
 
           <div className="flex gap-3 pt-4">
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => setIsOpen(false)}
+              onClick={onClose}
               className="flex-1"
             >
               Annuler
             </Button>
             <Button 
               type="submit" 
-              disabled={loading || !peutDebiter(montant) || montant <= 0 || !tel.trim() || !operateur}
+              disabled={loading || !tel.trim() || !operateur || montant <= 0}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                  Traitement...
+                  Modification...
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Confirmer le retrait
+                  Modifier le retrait
                 </>
               )}
             </Button>

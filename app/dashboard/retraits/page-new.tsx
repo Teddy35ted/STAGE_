@@ -5,7 +5,6 @@ import { Plus, TrendingUp, Clock, CheckCircle, AlertCircle, Wallet, Calendar, Sm
 import { Button } from '../../../components/ui/button';
 import { RetraitForm } from '../../../components/forms/RetraitForm';
 import { RetraitActions } from '../../../components/forms/RetraitActions';
-import { RetraitDetails } from '../../../components/forms/RetraitDetails';
 import { RetraitEditForm } from '../../../components/forms/RetraitEditForm';
 import { SoldeCard } from '../../../components/dashboard/SoldeCard';
 import { Retrait } from '../../models/retrait';
@@ -76,7 +75,6 @@ export default function RetraitsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedRetrait, setSelectedRetrait] = useState<Retrait | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const formatMontant = (montant: number): string => {
@@ -87,60 +85,23 @@ export default function RetraitsPage() {
   };
 
   const formatDate = (dateString: string): string => {
-    if (!dateString) return 'Date invalide';
-    
-    try {
-      // Gère différents formats de date
-      let date;
-      if (dateString.includes('T')) {
-        // Format ISO (2025-01-20T15:30:00.000Z)
-        date = new Date(dateString);
-      } else if (dateString.includes('-')) {
-        // Format simple (2025-01-20)
-        date = new Date(dateString + 'T00:00:00.000Z');
-      } else {
-        // Fallback
-        date = new Date(dateString);
-      }
-      
-      // Vérifier si la date est valide
-      if (isNaN(date.getTime())) {
-        return 'Date invalide';
-      }
-      
-      return date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      console.error('Erreur de formatage de date:', error);
-      return 'Date invalide';
-    }
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const chargerRetraits = async () => {
+  const chargerRetraits = () => {
     try {
-      setLoading(true);
-      console.log('Chargement des retraits depuis l\'API...'); // Debug
-      
-      const response = await fetch('/api/retraits');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Retraits reçus de l\'API:', data); // Debug
-        
-        // S'assurer que data est un tableau
-        const retraitsArray = Array.isArray(data) ? data : [];
-        setRetraits(retraitsArray);
-      } else {
-        console.error('Erreur de réponse API:', response.status);
-        setRetraits([]);
+      const retraitsStores = localStorage.getItem('retraits');
+      if (retraitsStores) {
+        setRetraits(JSON.parse(retraitsStores));
       }
     } catch (error) {
       console.error('Erreur lors du chargement des retraits:', error);
-      setRetraits([]);
     } finally {
       setLoading(false);
     }
@@ -168,11 +129,6 @@ export default function RetraitsPage() {
   const openEditModal = (retrait: Retrait) => {
     setSelectedRetrait(retrait);
     setIsEditOpen(true);
-  };
-
-  const openViewModal = (retrait: Retrait) => {
-    setSelectedRetrait(retrait);
-    setIsViewOpen(true);
   };
 
   // Calcul des statistiques
@@ -220,7 +176,13 @@ export default function RetraitsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Gestion des Retraits</h1>
           <p className="text-gray-600 mt-1">Gérez vos demandes de retrait et suivez leur statut</p>
         </div>
-        <RetraitForm onSuccess={handleRetraitSuccess} />
+        <Button 
+          onClick={() => setIsFormOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nouvelle demande
+        </Button>
       </div>
 
       {/* Carte Solde */}
@@ -328,71 +290,47 @@ export default function RetraitsPage() {
               {retraits.map((retrait) => (
                 <div 
                   key={retrait.id} 
-                  className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                 >
-                  {/* En-tête de la card avec montant et statut */}
-                  <div className="px-6 py-4 border-b border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                          <Wallet className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">
-                            {formatMontant(retrait.montant)} FCFA
-                          </h3>
-                          <p className="text-sm text-gray-500">Demande de retrait</p>
-                        </div>
-                      </div>
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${getStatutColor(retrait.statut)}`}>
-                        {getStatutIcon(retrait.statut)}
-                        {retrait.statut}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Corps de la card avec détails */}
-                  <div className="px-6 py-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">Téléphone</p>
-                          <p className="text-sm font-medium text-gray-900">{retrait.tel}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-gradient-to-br from-green-400 to-blue-600 rounded"></div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">Opérateur</p>
-                          <p className="text-sm font-medium text-gray-900">{retrait.operateur}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">Date de demande</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {formatDate(retrait.dateCreation || retrait.date || new Date().toISOString())}
-                          </p>
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg font-bold text-gray-900">
+                              {formatMontant(retrait.montant)} FCFA
+                            </span>
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatutColor(retrait.statut)}`}>
+                              {getStatutIcon(retrait.statut)}
+                              {retrait.statut}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Smartphone className="w-4 h-4" />
+                              <span>{retrait.tel}</span>
+                            </div>
+                            <div className="hidden sm:block text-gray-400">•</div>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium">{retrait.operateur}</span>
+                            </div>
+                            <div className="hidden sm:block text-gray-400">•</div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>{formatDate(retrait.dateCreation)}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Pied de la card avec boutons d'action */}
-                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 rounded-b-lg">
-                    <div className="flex items-center justify-end">
-                      <div className="flex items-center gap-2">
-                        <RetraitActions
-                          retrait={retrait}
-                          onDeleteSuccess={handleDeleteSuccess}
-                          onEditClick={() => openEditModal(retrait)}
-                          onViewClick={() => openViewModal(retrait)}
-                        />
-                      </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <RetraitActions
+                        retrait={retrait}
+                        onDeleteSuccess={handleDeleteSuccess}
+                        onEditClick={() => openEditModal(retrait)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -401,6 +339,19 @@ export default function RetraitsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de création */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Nouvelle Demande de Retrait
+            </DialogTitle>
+          </DialogHeader>
+          <RetraitForm onSuccess={handleRetraitSuccess} />
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de modification */}
       <RetraitEditForm
@@ -411,16 +362,6 @@ export default function RetraitsPage() {
           setSelectedRetrait(null);
         }}
         onSuccess={handleEditSuccess}
-      />
-
-      {/* Modal de visualisation */}
-      <RetraitDetails
-        retrait={selectedRetrait}
-        isOpen={isViewOpen}
-        onClose={() => {
-          setIsViewOpen(false);
-          setSelectedRetrait(null);
-        }}
       />
     </div>
   );

@@ -21,6 +21,10 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
   const [error, setError] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
@@ -67,8 +71,24 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation des champs
     if (!resetEmail) {
       setError('Veuillez entrer votre adresse email');
+      return;
+    }
+
+    if (!newPassword) {
+      setError('Veuillez entrer un nouveau mot de passe');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
       return;
     }
 
@@ -76,18 +96,16 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
     setError('');
 
     try {
-      // Option 1: Utiliser Firebase directement (plus simple)
-      await sendPasswordResetEmail(auth, resetEmail);
-      setResetSuccess(true);
-
-      // Option 2: Utiliser l'API route (décommentez si vous préférez)
-      /*
+      // Appeler l'API pour vérifier l'email et changer le mot de passe
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: resetEmail }),
+        body: JSON.stringify({ 
+          email: resetEmail,
+          newPassword: newPassword 
+        }),
       });
 
       const data = await response.json();
@@ -95,25 +113,12 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
       if (response.ok) {
         setResetSuccess(true);
       } else {
-        setError(data.error || 'Erreur lors de l\'envoi de l\'email');
+        setError(data.error || 'Erreur lors de la modification du mot de passe');
       }
-      */
       
     } catch (error: any) {
-      console.error('Erreur lors de l\'envoi de l\'email de réinitialisation:', error);
-      switch (error.code) {
-        case 'auth/user-not-found':
-          setError('Aucun compte trouvé avec cette adresse email');
-          break;
-        case 'auth/invalid-email':
-          setError('Adresse email invalide');
-          break;
-        case 'auth/too-many-requests':
-          setError('Trop de tentatives. Veuillez réessayer plus tard.');
-          break;
-        default:
-          setError('Erreur lors de l\'envoi de l\'email. Veuillez réessayer.');
-      }
+      console.error('Erreur lors de la modification du mot de passe:', error);
+      setError('Erreur lors de la modification du mot de passe. Veuillez réessayer.');
     } finally {
       setResetLoading(false);
     }
@@ -122,6 +127,10 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
   const resetPasswordForm = () => {
     setShowResetPassword(false);
     setResetEmail('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
     setResetSuccess(false);
     setError('');
   };
@@ -141,7 +150,7 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
             </button>
             <h2 className="text-2xl font-bold text-gray-900">Réinitialiser le mot de passe</h2>
             <p className="text-gray-600 mt-2">
-              Entrez votre adresse email pour recevoir un lien de réinitialisation
+              Entrez votre adresse email et choisissez un nouveau mot de passe
             </p>
           </div>
 
@@ -151,9 +160,9 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Email envoyé !</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Mot de passe modifié !</h3>
               <p className="text-gray-600 mb-6">
-                Vérifiez votre boîte email et suivez les instructions pour réinitialiser votre mot de passe.
+                Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
               </p>
               <Button
                 onClick={resetPasswordForm}
@@ -188,12 +197,68 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nouveau mot de passe
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Entrez votre nouveau mot de passe"
+                    className="pr-10"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Le mot de passe doit contenir au moins 6 caractères
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirmer le nouveau mot de passe
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirmez votre nouveau mot de passe"
+                    className="pr-10"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Les mots de passe ne correspondent pas
+                  </p>
+                )}
+              </div>
+
               <Button
                 type="submit"
-                disabled={resetLoading}
+                disabled={resetLoading || !resetEmail || !newPassword || !confirmPassword || newPassword !== confirmPassword}
                 className="w-full bg-slate-600 hover:bg-slate-700 text-white py-2 px-4 rounded-md transition-colors disabled:opacity-50"
               >
-                {resetLoading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
+                {resetLoading ? 'Modification en cours...' : 'Modifier le mot de passe'}
               </Button>
             </form>
           )}
