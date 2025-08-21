@@ -5,6 +5,8 @@ import { SidebarProvider, SidebarInset } from '../../components/ui/sidebar';
 import { DashboardSidebar } from '../../components/dashboard/DashboardSidebar';
 import { MobileHeader } from '../../components/dashboard/MobileHeader';
 import { ForcePasswordChange } from '../../components/auth/ForcePasswordChange';
+import { RouteGuard } from '../../components/permissions/RouteGuard';
+import { PermissionsDebug } from '../../components/debug/PermissionsDebug';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePasswordChangeRequired } from '../../hooks/usePasswordChangeRequired';
 import { useRouter } from 'next/navigation';
@@ -62,10 +64,15 @@ export default function DashboardLayout({
         <SidebarInset className="flex-1">
           <MobileHeader />
           <main className="p-3 sm:p-4 md:p-6">
-            {children}
+            <RouteGuard>
+              {children}
+            </RouteGuard>
           </main>
         </SidebarInset>
       </div>
+      
+      {/* Composant de débogage des permissions */}
+      <PermissionsDebug />
       
       {/* Modal de changement de mot de passe obligatoire */}
       {requiresPasswordChange && coGestionnaireId && !passwordChangeComplete && (

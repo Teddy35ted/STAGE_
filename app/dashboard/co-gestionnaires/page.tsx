@@ -281,27 +281,33 @@ export default function CoGestionnairesPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleView(coGestionnaire)}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                      title="Voir les détails"
                     >
-                      <FiEye className="w-4 h-4" />
+                      <FiEye className="w-4 h-4 mr-1" />
+                      Voir
                     </Button>
                     
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(coGestionnaire)}
-                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                      title="Modifier les informations"
                     >
-                      <FiEdit2 className="w-4 h-4" />
+                      <FiEdit2 className="w-4 h-4 mr-1" />
+                      Modifier
                     </Button>
                     
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setShowDeleteConfirm(coGestionnaire.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      title="Supprimer le co-gestionnaire"
                     >
-                      <FiTrash2 className="w-4 h-4" />
+                      <FiTrash2 className="w-4 h-4 mr-1" />
+                      Supprimer
                     </Button>
                   </div>
                 </div>
@@ -324,16 +330,27 @@ export default function CoGestionnairesPage() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Confirmer la suppression
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer ce co-gestionnaire ? Cette action est irréversible.
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <FiTrash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900">
+                Confirmer la suppression
+              </h3>
+            </div>
+            
+            <p className="text-gray-600 mb-2">
+              Êtes-vous sûr de vouloir supprimer ce co-gestionnaire ?
             </p>
+            <p className="text-sm text-red-600 font-medium mb-6">
+              ⚠️ Cette action est irréversible et supprimera définitivement tous les accès.
+            </p>
+            
             <div className="flex justify-end space-x-3">
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteConfirm(null)}
+                className="text-gray-600 hover:text-gray-700"
               >
                 Annuler
               </Button>
@@ -341,7 +358,8 @@ export default function CoGestionnairesPage() {
                 onClick={() => handleDelete(showDeleteConfirm)}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Supprimer
+                <FiTrash2 className="w-4 h-4 mr-2" />
+                Supprimer définitivement
               </Button>
             </div>
           </div>

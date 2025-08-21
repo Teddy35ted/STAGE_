@@ -3,6 +3,8 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCoGestionnaireDisplay } from '../../hooks/useCoGestionnaireDisplay';
+import { useFilteredMenu, MenuItem } from '../../hooks/useFilteredMenu';
+import { PermissionStatus } from '../permissions/PermissionStatus';
 import {
   Sidebar,
   SidebarContent,
@@ -34,90 +36,10 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const menuItems = [
-  {
-    title: 'Dashboard',
-    icon: FiHome,
-    href: '/dashboard',
-  },
-  {
-    title: 'Profil',
-    icon: FiUser,
-    href: '/dashboard/profile',
-    submenu: [
-      { title: 'Mon Profil', href: '/dashboard/profile' },
-      { title: 'Mes Boutiques', href: '/dashboard/boutiques' },
-      { title: 'Contribution', href: '/dashboard/profile/contribution' },
-      { title: 'Cogestionnaires', href: '/dashboard/profile/managers' },
-    ],
-  },
-  {
-    title: 'Mes Laalas',
-    icon: FiEdit3,
-    href: '/dashboard/laalas',
-    submenu: [
-      { title: 'Gérer Laalas', href: '/dashboard/laalas' },
-      { title: 'Contenu', href: '/dashboard/laalas/content' },
-      { title: 'Programmation', href: '/dashboard/laalas/schedule' },
-      { title: 'Booster', href: '/dashboard/laalas/boost' },
-      { title: 'Espaces Laala', href: '/dashboard/laalas/spaces' },
-    ],
-  },
-  {
-    title: 'Fans/Friends',
-    icon: FiUsers,
-    href: '/dashboard/fans',
-    submenu: [
-      { title: 'Voir Fans/Friends', href: '/dashboard/fans' },
-      { title: 'Activité Rentable', href: '/dashboard/fans/profitable' },
-      { title: 'Activité Active', href: '/dashboard/fans/active' },
-      { title: 'Nouveaux Fans', href: '/dashboard/fans/new' },
-      { title: 'Communications', href: '/dashboard/fans/communications' },
-      { title: 'Campagnes', href: '/dashboard/fans/campaigns' },
-      { title: 'Démographie', href: '/dashboard/fans/demographics' },
-    ],
-  },
-  {
-    title: 'Mes Gains',
-    icon: FiDollarSign,
-    href: '/dashboard/earnings',
-    submenu: [
-      { title: 'Demander Retrait', href: '/dashboard/retraits' },
-      { title: 'Revenus Directs', href: '/dashboard/earnings/direct' },
-      { title: 'Revenus Indirects', href: '/dashboard/earnings/indirect' },
-      { title: 'Couris', href: '/dashboard/earnings/couris' },
-      { title: 'Publicité', href: '/dashboard/earnings/ads' },
-      { title: 'Historique', href: '/dashboard/earnings/history' },
-    ],
-  },
-  {
-    title: 'Publicités',
-    icon: FiTarget,
-    href: '/dashboard/ads',
-    submenu: [
-      { title: 'Nouvelles Propositions', href: '/dashboard/ads/proposals' },
-      { title: 'Activités', href: '/dashboard/ads/activities' },
-      { title: 'Gérer Pubs', href: '/dashboard/ads/manage' },
-      { title: 'Anciennes Pubs', href: '/dashboard/ads/history' },
-    ],
-  },
-  {
-    title: 'Statistiques',
-    icon: FiBarChart,
-    href: '/dashboard/stats',
-    submenu: [
-      { title: 'Laalas', href: '/dashboard/stats/laalas' },
-      { title: 'Contenu', href: '/dashboard/stats/content' },
-      { title: 'Revenus', href: '/dashboard/stats/revenue' },
-      { title: 'Profil', href: '/dashboard/stats/profile' },
-      { title: 'Publicité', href: '/dashboard/stats/ads' },
-    ],
-  },
-];
-
 export const DashboardSidebar: React.FC = () => {
   const { user, logout } = useAuth();
   const { getDisplayEmail, getDisplayRole } = useCoGestionnaireDisplay();
+  const { filteredMenu, loading } = useFilteredMenu();
   const pathname = usePathname();
 
   const handleLogout = async () => {
@@ -148,7 +70,17 @@ export const DashboardSidebar: React.FC = () => {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {loading ? (
+                // Skeleton pendant le chargement des permissions
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-8 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                filteredMenu.map((item: MenuItem) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
@@ -178,7 +110,8 @@ export const DashboardSidebar: React.FC = () => {
                     </div>
                   )}
                 </SidebarMenuItem>
-              ))}
+                ))
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -201,11 +134,15 @@ export const DashboardSidebar: React.FC = () => {
               </p>
             </div>
           </div>
+          
+          {/* Statut des permissions */}
+          <PermissionStatus />
+          
           <Button
             onClick={handleLogout}
             variant="outline"
             size="sm"
-            className="w-full justify-start text-gray-600 hover:text-[#f01919] hover:border-[#f01919]"
+            className="w-full justify-start text-gray-600 hover:text-[#f01919] hover:border-[#f01919] mx-4 mb-2"
           >
             <FiLogOut className="w-4 h-4 mr-2" />
             Déconnexion

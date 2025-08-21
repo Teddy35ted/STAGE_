@@ -7,6 +7,7 @@ import { Textarea } from '../../../components/ui/textarea';
 import { SimpleMediaUpload } from '../../../components/ui/simple-media-upload';
 import { FileSelector } from '../../../components/ui/file-selector';
 import { UniversalMedia } from '../../../components/media/UniversalMedia';
+import { PageGuard, ActionGuard } from '../../../components/permissions/PermissionGuard';
 import { useApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useCRUDNotifications } from '../../../contexts/NotificationContext';
@@ -441,7 +442,8 @@ export default function LaalasPage() {
   const totalLikes = laalas.reduce((sum, l) => sum + (l.likes || 0), 0);
 
   return (
-    <div className="space-y-6">
+    <PageGuard resource="laalas">
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -450,13 +452,15 @@ export default function LaalasPage() {
             Gérez vos espaces de contenu et votre communauté
           </p>
         </div>
-        <Button 
-          onClick={() => setShowCreateModal(true)}
-          className="bg-[#f01919] hover:bg-[#d01515] text-white"
-        >
-          <FiPlus className="w-4 h-4 mr-2" />
-          Nouveau Laala
-        </Button>
+        <ActionGuard resource="laalas" action="create">
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-[#f01919] hover:bg-[#d01515] text-white"
+          >
+            <FiPlus className="w-4 h-4 mr-2" />
+            Nouveau Laala
+          </Button>
+        </ActionGuard>
       </div>
 
       <>
@@ -1423,6 +1427,7 @@ export default function LaalasPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PageGuard>
   );
 }

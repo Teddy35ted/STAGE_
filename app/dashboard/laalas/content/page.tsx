@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Textarea } from '../../../../components/ui/textarea';
+import { PageGuard, ActionGuard } from '../../../../components/permissions/PermissionGuard';
+import { UniversalMedia } from '../../../../components/media/UniversalMedia';
 import { useApi } from '../../../../lib/api';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useMediaUpload } from '../../../../hooks/useMediaUpload';
@@ -237,7 +239,8 @@ export default function ContentPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <PageGuard resource="contenus">
+      <div className="space-y-6">
       {/* Header moderne avec gradient */}
       <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-purple-700 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between">
@@ -250,24 +253,26 @@ export default function ContentPage() {
               <p className="text-purple-100 mt-1">Créez et gérez vos contenus multimédias</p>
             </div>
           </div>
-          <Button
-            onClick={() => {
-              setNewContent({
-                nom: '',
-                description: '',
-                type: 'image',
-                idLaala: '',
-                allowComment: true,
-                src: '' // Reset de l'URL
-              });
-              setError(null);
-              setShowCreateModal(true);
-            }}
-            className="bg-white text-purple-600 hover:bg-purple-50 font-medium"
-          >
-            <FiPlus className="w-4 h-4 mr-2" />
-            Nouveau Contenu
-          </Button>
+          <ActionGuard resource="contenus" action="create">
+            <Button
+              onClick={() => {
+                setNewContent({
+                  nom: '',
+                  description: '',
+                  type: 'image',
+                  idLaala: '',
+                  allowComment: true,
+                  src: '' // Reset de l'URL
+                });
+                setError(null);
+                setShowCreateModal(true);
+              }}
+              className="bg-white text-purple-600 hover:bg-purple-50 font-medium"
+            >
+              <FiPlus className="w-4 h-4 mr-2" />
+              Nouveau Contenu
+            </Button>
+          </ActionGuard>
         </div>
       </div>
 
@@ -805,6 +810,7 @@ export default function ContentPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PageGuard>
   );
 }

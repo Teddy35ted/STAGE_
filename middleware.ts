@@ -5,6 +5,8 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  console.log('🔍 Middleware checking:', pathname);
+  
   // Routes protégées nécessitant une authentification
   const protectedRoutes = [
     '/dashboard',
@@ -30,21 +32,21 @@ export function middleware(request: NextRequest) {
       }
     }
     
-    // Pour les pages dashboard, laisser le composant gérer la redirection
-    // (plus flexible avec le contexte React)
     console.log('🔍 Route protégée accédée:', pathname);
   }
 
   return NextResponse.next();
 }
 
-// Configuration pour que le middleware s'exécute sur les routes spécifiées
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/api/co-gestionnaires/:path*',
-    '/api/laalas/:path*', 
-    '/api/contenus/:path*',
-    '/api/audit-logs/:path*'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
   ],
 };
