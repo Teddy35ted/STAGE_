@@ -1,50 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LaalaService } from '../../Backend/services/collections/LaalaService';
 import { UserService } from '../../Backend/services/collections/UserService';
-import { permissionMiddleware } from '../../Backend/middleware/PermissionMiddleware';
+import { verifyAuth } from '../../Backend/utils/authVerifier';
 
 const laalaService = new LaalaService();
 const userService = new UserService();
 
 export async function POST(request: NextRequest) {
-  // Vérifier les permissions pour créer un laala
-  const permissionCheck = await permissionMiddleware.verifyPermission(request, 'laalas', 'create');
-  if (!permissionCheck.isAuthorized || !permissionCheck.context) {
-    return NextResponse.json(
-      { error: permissionCheck.error || 'Permission refusée' },
-      { status: 403 }
-    );
+  console.log('POST /api/laalas appelé');
+  
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    console.log('Authentification échouée');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
+    console.log('Création laala avec authentification...');
+    
     const data = await request.json();
-    const context = permissionCheck.context;
-
-    console.log(`📝 Création laala par ${context.isCoGestionnaire ? 'co-gestionnaire' : 'propriétaire'}`);
-
-    // Récupérer les informations du créateur (toujours le propriétaire principal)
-    const creatorInfo = await userService.getCreatorInfo(context.proprietaireId);
+    console.log('Données reçues:', data);
+    
+    // Récupérer les informations du créateur
+    const creatorInfo = await userService.getCreatorInfo(auth.uid);
 
     if (!creatorInfo) {
       return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
     }
 
-    // Créer le laala avec l'ID du propriétaire principal
+    // Créer le laala
     const id = await laalaService.createLaala(
-      { ...data, idCreateur: context.proprietaireId },
+      { ...data, idCreateur: auth.uid },
       creatorInfo
     );
 
-    // Log d'audit pour les co-gestionnaires
-    await permissionMiddleware.logCoGestionnaireAction(
-      context,
-      'laalas',
-      'create',
-      id,
-      request,
-      true
-    );
-
+    console.log('Laala créé avec ID:', id);
+    
     return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
     console.error('❌ Erreur création laala:', error);
@@ -53,50 +44,31 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  // Vérifier les permissions pour lire les laalas
-  const permissionCheck = await permissionMiddleware.verifyPermission(request, 'laalas', 'read');
-  if (!permissionCheck.isAuthorized || !permissionCheck.context) {
-    return NextResponse.json(
-      { error: permissionCheck.error || 'Permission refusée' },
-      { status: 403 }
-    );
+  console.log('GET /api/laalas appelé');
+  
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    console.log('Authentification échouée');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const context = permissionCheck.context;
-    console.log(`📋 Récupération laalas par ${context.isCoGestionnaire ? 'co-gestionnaire' : 'propriétaire'}`);
+    console.log('Récupération laalas avec authentification...');
     
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
     const creatorId = searchParams.get('creatorId');
 
-    if (id) {
-      const laala = await laalaService.getById(id);
-      if (laala) {
-        // Vérifier que l'utilisateur a accès à ce laala
-        const hasAccess = await permissionMiddleware.validateDataAccess(context, laala.idCreateur);
-        if (!hasAccess) {
-          return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-        }
-        return NextResponse.json(laala);
-      } else {
-        return NextResponse.json({ error: 'Laala not found' }, { status: 404 });
-      }
-    } else if (creatorId) {
-      // Vérifier que l'utilisateur demande les laalas du bon propriétaire
-      const hasAccess = await permissionMiddleware.validateDataAccess(context, creatorId);
-      if (!hasAccess) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-      }
+    if (creatorId) {
+      console.log('Récupération laalas pour créateur:', creatorId);
       const laalas = await laalaService.getByCreator(creatorId);
       return NextResponse.json(laalas);
     } else {
-      // Par défaut, retourner uniquement les laalas du propriétaire principal
-      const laalas = await laalaService.getByCreator(context.proprietaireId);
-      console.log(`✅ ${laalas.length} laalas récupérés`);
+      console.log('Récupération laalas pour utilisateur connecté:', auth.uid);
+      const laalas = await laalaService.getByCreator(auth.uid);
       return NextResponse.json(laalas);
     }
   } catch (error) {
+    console.error('❌ Erreur récupération laalas:', error);
     return NextResponse.json({ error: 'Failed to fetch laalas' }, { status: 500 });
   }
 }

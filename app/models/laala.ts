@@ -17,6 +17,9 @@ export interface LaalaCore {
   choosevideo: boolean;
   chooselive: boolean;
   
+  // === MÉDIAS OPTIONNELS ===
+  cover?: string; // URL de l'image de couverture personnalisée
+  
   // === DATES (optionnelles pour planification) ===
   date_fin?: string;
   jour_fin?: number;
@@ -127,8 +130,7 @@ export function generateLaalaAutoFields(
     alaune: false,
     isSignaler: false,
     
-    // Médias par défaut
-    cover: generateDefaultCover(),
+    // Médias par défaut (cover sera fourni par laalaCore maintenant)
     miniature: generateDefaultMiniature(),
     video480: "",
     
@@ -172,7 +174,7 @@ function generateLaalaId(): string {
   return `${now.getDate()}${now.getMonth() + 1}${now.getFullYear()}Laala${random}${timestamp.toString().slice(-6)}`;
 }
 
-function generateDefaultCover(): string {
+export function generateDefaultCover(): string {
   return "https://firebasestorage.googleapis.com/v0/b/la-a-la.appspot.com/o/assets%2Fdefault-cover.png?alt=media";
 }
 

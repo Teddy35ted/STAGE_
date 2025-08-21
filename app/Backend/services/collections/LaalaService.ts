@@ -1,5 +1,5 @@
 import { BaseService } from '../base/BaseService';
-import { LaalaDashboard, LaalaCore, generateLaalaAutoFields } from '../../../models/laala';
+import { LaalaDashboard, LaalaCore, generateLaalaAutoFields, generateDefaultCover } from '../../../models/laala';
 import { COLLECTIONS, dbUtils } from '../../config/database';
 import { ServiceError } from '../../utils/errors';
 
@@ -15,14 +15,20 @@ export class LaalaService extends BaseService<LaalaDashboard> {
     try {
       console.log('📝 Création laala avec données:', laalaCore);
       
+      // Assurer qu'il y a une valeur cover par défaut si aucune n'est fournie
+      const laalaWithCover: LaalaCore = {
+        ...laalaCore,
+        cover: laalaCore.cover || generateDefaultCover()
+      };
+      
       // Générer les champs automatiques SANS l'ID (Firestore le générera)
-      const autoFields = generateLaalaAutoFields(laalaCore, creatorInfo);
+      const autoFields = generateLaalaAutoFields(laalaWithCover, creatorInfo);
       
       // Enlever l'ID généré automatiquement car Firestore va créer le sien
       const { id: _, ...autoFieldsWithoutId } = autoFields;
       
       const completeLaala = {
-        ...laalaCore,
+        ...laalaWithCover,
         ...autoFieldsWithoutId,
         createdAt: dbUtils.timestamp(),
         updatedAt: dbUtils.timestamp(),

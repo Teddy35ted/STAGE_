@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { MediaUpload } from '../ui/media-upload';
-import { FiX, FiUpload, FiImage, FiVideo, FiFileText, FiHash, FiUser } from 'react-icons/fi';
+import { FiX, FiUpload, FiImage, FiVideo } from 'react-icons/fi';
 import { ContenuCore } from '../../app/models/contenu';
 import { MediaUploadResult } from '../../lib/appwrite/media-service';
 
@@ -39,13 +39,10 @@ export default function ContenuCreateForm({
   const [isUploading, setIsUploading] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string>('');
   const [coverUrl, setCoverUrl] = useState<string>('');
-  const [hashtagInput, setHashtagInput] = useState<string>('');
 
   const contentTypes = [
     { value: 'image', label: 'Image', icon: FiImage },
-    { value: 'video', label: 'Vidéo', icon: FiVideo },
-    { value: 'texte', label: 'Texte', icon: FiFileText },
-    { value: 'album', label: 'Album', icon: FiImage }
+    { value: 'video', label: 'Vidéo', icon: FiVideo }
   ];
 
   const handleInputChange = (field: keyof ContenuCore, value: any) => {
@@ -63,13 +60,6 @@ export default function ContenuCreateForm({
     }
   };
 
-  const handleHashtagChange = (value: string) => {
-    setHashtagInput(value);
-    // Convertir la chaîne en tableau de hashtags
-    const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-    handleInputChange('htags', tags);
-  };
-
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -84,7 +74,7 @@ export default function ContenuCreateForm({
     }
 
     // Validation selon le type de contenu
-    if (formData.type !== 'texte' && !formData.src && !mediaUrl) {
+    if (!formData.src && !mediaUrl) {
       newErrors.src = 'Un fichier est requis pour ce type de contenu';
     }
 
@@ -120,47 +110,24 @@ export default function ContenuCreateForm({
       });
       setMediaUrl('');
       setCoverUrl('');
-      setHashtagInput('');
       setErrors({});
       onClose();
     }
   };
 
   const renderMediaUpload = () => {
-    if (formData.type === 'texte') {
-      return (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Contenu texte *
-          </label>
-          <textarea
-            value={formData.src}
-            onChange={(e) => handleInputChange('src', e.target.value)}
-            placeholder="Écrivez votre contenu ici..."
-            rows={6}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] ${
-              errors.src ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
-          {errors.src && (
-            <p className="text-red-500 text-sm mt-1">{errors.src}</p>
-          )}
-        </div>
-      );
-    }
-
     return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          {formData.type === 'image' ? 'Image' : formData.type === 'video' ? 'Vidéo' : 'Fichiers'} *
+          {formData.type === 'image' ? 'Image' : 'Vidéo'} *
         </label>
         <MediaUpload
           category="contenu-media"
           userId={creatorId}
           entityId={formData.idLaala}
-          acceptedTypes={formData.type === 'image' ? 'image/*' : formData.type === 'video' ? 'video/*' : 'image/*,video/*'}
+          acceptedTypes={formData.type === 'image' ? 'image/*' : 'video/*'}
           maxSize={formData.type === 'image' ? 10 * 1024 * 1024 : 100 * 1024 * 1024}
-          label={`Sélectionner ${formData.type === 'image' ? 'une image' : formData.type === 'video' ? 'une vidéo' : 'des fichiers'}`}
+          label={`Sélectionner ${formData.type === 'image' ? 'une image' : 'une vidéo'}`}
           description={`Fichier ${formData.type} pour votre contenu`}
           onUploadSuccess={(result: MediaUploadResult) => {
             setMediaUrl(result.url);
@@ -282,25 +249,6 @@ export default function ContenuCreateForm({
               />
             </div>
           )}
-
-          {/* Hashtags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Hashtags
-            </label>
-            <div className="relative">
-              <FiHash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                value={hashtagInput}
-                onChange={(e) => handleHashtagChange(e.target.value)}
-                placeholder="#exemple, #contenu, #laala"
-                className="pl-10"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Séparez les hashtags par des virgules
-            </p>
-          </div>
 
           {/* Paramètres */}
           <div className="space-y-4">

@@ -67,6 +67,18 @@ export default function LaalasPage() {
   const { apiFetch } = useApi();
   const { user } = useAuth();
 
+  // Debug pour les images de couverture
+  useEffect(() => {
+    if (selectedLaala?.cover) {
+      console.log('🖼️ DEBUG Laala Cover:', {
+        cover: selectedLaala.cover,
+        coverType: typeof selectedLaala.cover,
+        iscoverVideo: selectedLaala.iscoverVideo,
+        laalaName: selectedLaala.nom
+      });
+    }
+  }, [selectedLaala]);
+
   // Récupération des laalas depuis l'API
   const fetchLaalas = async () => {
     try {
@@ -167,13 +179,16 @@ export default function LaalasPage() {
         nom: newLaala.nom,
         description: newLaala.description,
         type: newLaala.type,
+        categorie: 'général', // Valeur par défaut requise
+        isLaalaPublic: newLaala.type === 'public',
+        ismonetise: false, // Valeur par défaut
+        choosetext: true, // Valeurs par défaut requises
+        chooseimg: true,
+        choosevideo: true,
+        chooselive: false,
         htags: newLaala.htags,
-        coverUrl: finalCoverUrl,
-        coverType: coverMediaType,
-        personnes: [],
-        idCreateur: user?.uid || 'anonymous',
-        dateCreation: new Date().toISOString(),
-        statut: 'actif'
+        cover: finalCoverUrl || undefined, // Utiliser cover au lieu de coverUrl
+        idCreateur: user?.uid || 'anonymous'
       };
       
       await apiFetch('/api/laalas', {

@@ -6,22 +6,22 @@ import { Input } from '../../../../components/ui/input';
 import { Textarea } from '../../../../components/ui/textarea';
 import { useApi } from '../../../../lib/api';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useMediaUpload } from '../../../../hooks/useMediaUpload';
 import { ContenuDashboard } from '../../../models/contenu';
 import { 
   FiFileText, 
   FiImage,
   FiVideo,
-  FiMusic,
   FiX,
   FiEdit3,
   FiTrash2,
   FiPlus,
   FiRefreshCw,
   FiEye,
-  FiHeart,
-  FiShare2,
-  FiCalendar,
-  FiAlertTriangle
+  FiAlertTriangle,
+  FiUpload,
+  FiCheck,
+  FiSettings
 } from 'react-icons/fi';
 
 interface ContenuExtended extends ContenuDashboard {
@@ -32,10 +32,8 @@ interface ContenuExtended extends ContenuDashboard {
 }
 
 const contentTypes = [
-  { id: 'texte', name: 'Texte', icon: FiFileText, color: 'bg-blue-100 text-blue-800' },
   { id: 'image', name: 'Image', icon: FiImage, color: 'bg-green-100 text-green-800' },
-  { id: 'video', name: 'Vidéo', icon: FiVideo, color: 'bg-red-100 text-red-800' },
-  { id: 'audio', name: 'Audio', icon: FiMusic, color: 'bg-purple-100 text-purple-800' }
+  { id: 'video', name: 'Vidéo', icon: FiVideo, color: 'bg-red-100 text-red-800' }
 ];
 
 export default function ContentPage() {
@@ -49,801 +47,756 @@ export default function ContentPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedContent, setSelectedContent] = useState<ContenuExtended | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingLaalas, setLoadingLaalas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Formulaire de création
   const [newContent, setNewContent] = useState({
     nom: '',
     description: '',
-    type: 'texte',
-    src: '',
+    type: 'image',
     idLaala: '',
     allowComment: true,
-    htags: [] as string[],
-    newTag: ''
+    src: '' // URL de l'image uploadée
   });
 
   const { apiFetch } = useApi();
   const { user } = useAuth();
 
-  // Récupération des laalas depuis l'API
-  const fetchLaalas = async () => {
-    try {
-      setLoadingLaalas(true);
-      
-      if (!user) {
-        console.log('👤 Utilisateur non connecté, arrêt du chargement des laalas');
-        setLoadingLaalas(false);
-        return;
-      }
-      
-      console.log('🔍 Récupération des laalas pour utilisateur:', user.uid);
-      const laalasData = await apiFetch('/api/laalas');
-      
-      if (!Array.isArray(laalasData)) {
-        console.warn('⚠️ Réponse API inattendue pour laalas:', laalasData);
-        setLaalas([]);
-        return;
-      }
-      
-      setLaalas(laalasData);
-      console.log('✅ Laalas récupérés:', laalasData.length);
-      
-      // Sélectionner automatiquement le premier laala s'il y en a un
-      if (laalasData.length > 0 && !newContent.idLaala) {
-        setNewContent(prev => ({ ...prev, idLaala: laalasData[0].id }));
-      }
-      
-    } catch (err) {
-      console.error('❌ Erreur récupération laalas:', err);
-      setLaalas([]);
-    } finally {
-      setLoadingLaalas(false);
+  // Upload de médias
+  const mediaUpload = useMediaUpload({
+    category: 'contenu-media',
+    userId: user?.uid,
+    onSuccess: (result) => {
+      setNewContent(prev => ({ ...prev, src: result.url }));
+      console.log('✅ Média uploadé:', result.url);
+    },
+    onError: (error) => {
+      setError(`Erreur upload: ${error}`);
+      console.error('❌ Erreur upload média:', error);
     }
-  };
+  });
 
-  // Récupération des contenus depuis l'API
-  const fetchContents = async () => {
+  // Chargement des données initiales
+  useEffect(() => {
+    loadContents();
+    loadLaalas();
+  }, []);
+
+  const loadContents = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      if (!user) {
-        console.log('👤 Utilisateur non connecté, arrêt du chargement');
-        setLoading(false);
-        return;
-      }
-      
-      console.log('🔍 Récupération des contenus pour utilisateur:', user.uid);
-      const contentsData = await apiFetch('/api/contenus');
-      
-      if (!Array.isArray(contentsData)) {
-        console.warn('⚠️ Réponse API inattendue:', contentsData);
-        setContents([]);
-        return;
-      }
-      
-      // Transformer les contenus pour l'affichage
-      const transformedContents: ContenuExtended[] = contentsData.map((content: ContenuDashboard) => {
-        const laala = laalas.find(l => l.id === content.idLaala);
-        return {
+      const data = await apiFetch('/api/contenus');
+      if (Array.isArray(data)) {
+        const enrichedContents = data.map((content: ContenuDashboard) => ({
           ...content,
-          displayTitle: content.nom || 'Contenu sans titre',
-          displayDescription: content.nom || 'Aucune description', // utiliser nom comme description
-          displayStatus: content.allowComment ? 'published' : 'draft', // utiliser allowComment comme indicateur de statut
-          laalaName: laala?.nom || 'Laala inconnu'
-        };
-      });
-      
-      setContents(transformedContents);
-      console.log('✅ Contenus récupérés:', transformedContents.length);
-      
+          displayTitle: content.nom,
+          displayDescription: content.nom, // Utilise nom comme description
+          displayStatus: 'published' as const,
+          laalaName: laalas.find(l => l.id === content.idLaala)?.nom || 'Laala inconnue'
+        }));
+        setContents(enrichedContents);
+      }
     } catch (err) {
-      console.error('❌ Erreur récupération contenus:', err);
-      setError(`Erreur lors du chargement des contenus: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
-      setContents([]);
+      console.error('Erreur lors du chargement des contenus:', err);
+      setError('Erreur lors du chargement des contenus');
     } finally {
       setLoading(false);
     }
   };
 
-  // Création d'un nouveau contenu
+  const loadLaalas = async () => {
+    try {
+      const data = await apiFetch('/api/laalas');
+      if (Array.isArray(data)) {
+        setLaalas(data);
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des laalas:', err);
+    }
+  };
+
+  // Fonctions CRUD
   const createContent = async () => {
+    if (!newContent.nom.trim() || !newContent.idLaala) {
+      setError('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      
-      if (!newContent.nom.trim()) {
-        setError('Le nom du contenu est requis');
-        return;
-      }
 
-      if (!newContent.idLaala) {
-        setError('Vous devez sélectionner un laala pour ce contenu');
-        return;
-      }
-      
       const contentData = {
-        nom: newContent.nom,
-        description: newContent.description,
-        type: newContent.type,
-        src: newContent.src,
-        idLaala: newContent.idLaala,
-        allowComment: newContent.allowComment,
-        htags: newContent.htags,
-        personnes: [],
-        idCreateur: user?.uid || 'anonymous',
-        dateCreation: new Date().toISOString(),
-        statut: 'publié',
-        vues: 0,
-        likes: 0,
-        commentaires: 0
+        ...newContent,
+        idCreateur: user?.uid
+        // src est déjà inclus dans newContent grâce au callback onSuccess
       };
-      
+
       await apiFetch('/api/contenus', {
         method: 'POST',
         body: JSON.stringify(contentData)
       });
       
-      console.log('✅ Contenu créé avec succès');
-      
-      // Réinitialiser le formulaire
+      setShowCreateModal(false);
       setNewContent({
         nom: '',
         description: '',
-        type: 'texte',
-        src: '',
-        idLaala: laalas.length > 0 ? laalas[0].id : '',
+        type: 'image',
+        idLaala: '',
         allowComment: true,
-        htags: [],
-        newTag: ''
+        src: '' // Reset de l'URL de l'image
       });
-      
-      setShowCreateModal(false);
-      await fetchContents();
-      
+      await loadContents();
     } catch (err) {
-      console.error('❌ Erreur création contenu:', err);
+      console.error('Erreur création contenu:', err);
       setError('Erreur lors de la création du contenu');
     } finally {
       setLoading(false);
     }
   };
 
-  // Suppression d'un contenu
-  const deleteContent = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce contenu ?')) {
+  const updateContent = async () => {
+    if (!selectedContent || !newContent.nom.trim() || !newContent.idLaala) {
+      setError('Veuillez remplir tous les champs obligatoires');
       return;
     }
-    
-    try {
-      await apiFetch(`/api/contenus/${id}`, {
-        method: 'DELETE'
-      });
-      
-      console.log('✅ Contenu supprimé:', id);
-      await fetchContents();
-      
-    } catch (err) {
-      console.error('❌ Erreur suppression contenu:', err);
-      setError('Erreur lors de la suppression');
-    }
-  };
 
-  // Fonction pour voir les détails d'un contenu (READ)
-  const viewContentDetails = (content: ContenuExtended) => {
-    console.log('📖 Lecture contenu:', content.nom);
-    setSelectedContent(content);
-    setShowDetailModal(true);
-  };
-
-  // Fonction pour modifier un contenu (UPDATE)
-  const editContent = (content: ContenuExtended) => {
-    console.log('✏️ Modification contenu:', content.nom);
-    setSelectedContent(content);
-    
-    // Pré-remplir le formulaire avec les données du contenu
-    setNewContent({
-      nom: content.nom || '',
-      description: '', // Le modèle n'a pas de description, donc on laisse vide
-      type: content.type || 'texte',
-      src: content.src || '',
-      idLaala: content.idLaala || '',
-      allowComment: content.allowComment !== false,
-      htags: content.htags || [],
-      newTag: ''
-    });
-    
-    setShowEditModal(true);
-  };
-
-  // Mise à jour d'un contenu existant
-  const updateContent = async () => {
-    if (!selectedContent) return;
-    
     try {
       setLoading(true);
       setError(null);
-      
-      if (!newContent.nom.trim() || !newContent.description.trim() || !newContent.idLaala) {
-        setError('Le nom, la description et le laala sont requis');
-        return;
-      }
-      
-      const contentData = {
-        nom: newContent.nom,
-        description: newContent.description,
-        type: newContent.type,
-        src: newContent.src,
-        idLaala: newContent.idLaala,
-        allowComment: newContent.allowComment,
-        htags: newContent.htags,
-        dateModification: new Date().toISOString()
-      };
-      
+
       await apiFetch(`/api/contenus/${selectedContent.id}`, {
         method: 'PUT',
-        body: JSON.stringify(contentData)
+        body: JSON.stringify(newContent)
       });
       
-      console.log('✅ Contenu mis à jour avec succès');
-      
-      // Réinitialiser les états
-      setSelectedContent(null);
       setShowEditModal(false);
-      
-      // Réinitialiser le formulaire
-      setNewContent({
-        nom: '',
-        description: '',
-        type: 'texte',
-        src: '',
-        idLaala: '',
-        allowComment: true,
-        htags: [],
-        newTag: ''
-      });
-      
-      await fetchContents();
-      
+      setSelectedContent(null);
+      await loadContents();
     } catch (err) {
-      console.error('❌ Erreur mise à jour contenu:', err);
+      console.error('Erreur mise à jour contenu:', err);
       setError('Erreur lors de la mise à jour du contenu');
     } finally {
       setLoading(false);
     }
   };
 
-  // Ajout d'un hashtag
-  const addHashtag = () => {
-    if (newContent.newTag.trim() && !newContent.htags.includes(newContent.newTag.trim())) {
-      setNewContent(prev => ({
-        ...prev,
-        htags: [...prev.htags, prev.newTag.trim()],
-        newTag: ''
-      }));
-    }
-  };
-
-  // Suppression d'un hashtag
-  const removeHashtag = (tag: string) => {
-    setNewContent(prev => ({
-      ...prev,
-      htags: prev.htags.filter(t => t !== tag)
-    }));
-  };
-
-  // Ouverture du modal avec vérification des laalas
-  const handleOpenCreateModal = async () => {
-    await fetchLaalas();
-    if (laalas.length === 0) {
-      setError('Vous devez d\'abord créer un laala avant de pouvoir créer du contenu');
+  const deleteContent = async (content: ContenuExtended) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce contenu ?')) {
       return;
     }
-    setShowCreateModal(true);
+
+    try {
+      setLoading(true);
+      await apiFetch(`/api/contenus/${content.id}`, {
+        method: 'DELETE'
+      });
+      await loadContents();
+    } catch (err) {
+      console.error('Erreur suppression contenu:', err);
+      setError('Erreur lors de la suppression du contenu');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Chargement initial
-  useEffect(() => {
-    if (user) {
-      fetchLaalas().then(() => {
-        fetchContents();
-      });
+  // Gestionnaire d'upload
+  const handleFileUpload = async (file: File) => {
+    try {
+      await mediaUpload.upload(file);
+    } catch (err) {
+      console.error('Erreur upload:', err);
+      setError('Erreur lors de l\'upload du fichier');
     }
-  }, [user]);
+  };
 
+  // Filtrage des contenus
   const filteredContents = contents.filter(content => {
-    const matchesSearch = content.displayTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = content.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          content.displayDescription?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || content.type === filterType;
     return matchesSearch && matchesType;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'published': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'scheduled': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'published': return 'Publié';
-      case 'draft': return 'Brouillon';
-      case 'scheduled': return 'Programmé';
-      default: return status;
-    }
-  };
-
   const getTypeInfo = (type: string) => {
     return contentTypes.find(t => t.id === type) || contentTypes[0];
   };
 
-  // Stats calculations
-  const totalPublished = contents.filter(c => c.displayStatus === 'published').length;
-  const totalViews = contents.reduce((sum, c) => sum + (c.vues || 0), 0);
-  const totalLikes = contents.reduce((sum, c) => sum + (c.likes || 0), 0);
-  const totalComments = contents.reduce((sum, c) => sum + (Array.isArray(c.commentaires) ? c.commentaires.length : 0), 0);
+  const openEditModal = (content: ContenuExtended) => {
+    setSelectedContent(content);
+    setNewContent({
+      nom: content.nom,
+      description: content.displayDescription || '',
+      type: content.type || 'image',
+      idLaala: content.idLaala,
+      allowComment: content.allowComment ?? true,
+      src: content.src || '' // Inclure l'URL existante
+    });
+    setError(null);
+    setShowEditModal(true);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mes Contenus</h1>
-          <p className="text-gray-600 mt-1">
-            Gérez vos publications et créations
-          </p>
+      {/* Header moderne avec gradient */}
+      <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-purple-700 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+              <FiFileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Gestion des Contenus</h1>
+              <p className="text-purple-100 mt-1">Créez et gérez vos contenus multimédias</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => {
+              setNewContent({
+                nom: '',
+                description: '',
+                type: 'image',
+                idLaala: '',
+                allowComment: true,
+                src: '' // Reset de l'URL
+              });
+              setError(null);
+              setShowCreateModal(true);
+            }}
+            className="bg-white text-purple-600 hover:bg-purple-50 font-medium"
+          >
+            <FiPlus className="w-4 h-4 mr-2" />
+            Nouveau Contenu
+          </Button>
         </div>
-        <Button 
-          onClick={handleOpenCreateModal}
-          className="bg-[#f01919] hover:bg-[#d01515] text-white"
-          disabled={laalas.length === 0}
-        >
-          <FiPlus className="w-4 h-4 mr-2" />
-          Nouveau Contenu
-        </Button>
       </div>
 
-      {/* Alerte si aucun laala */}
-      {laalas.length === 0 && !loadingLaalas && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <FiAlertTriangle className="w-5 h-5 text-yellow-400 mr-2" />
-            <div>
-              <p className="text-yellow-800 font-medium">Aucun laala disponible</p>
-              <p className="text-yellow-700 text-sm mt-1">
-                Vous devez d'abord créer un laala avant de pouvoir créer du contenu. 
-                <a href="/dashboard/laalas" className="underline ml-1">Créer un laala</a>
-              </p>
+      {/* Section de filtres et recherche */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Rechercher un contenu..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div className="flex gap-3">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="all">Tous les types</option>
+              {contentTypes.map(type => (
+                <option key={type.id} value={type.id}>{type.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages d'erreur globaux */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+          <FiAlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="text-red-800 font-medium">Erreur</h4>
+            <p className="text-red-700 text-sm mt-1">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Liste des contenus */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Contenus ({filteredContents.length})
+          </h2>
+        </div>
+        
+        {loading ? (
+          <div className="p-8 text-center">
+            <FiRefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
+            <p className="text-gray-500">Chargement des contenus...</p>
+          </div>
+        ) : filteredContents.length === 0 ? (
+          <div className="p-8 text-center">
+            <FiFileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">Aucun contenu trouvé</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {searchTerm || filterType !== 'all' 
+                ? 'Essayez de modifier vos critères de recherche'
+                : 'Commencez par créer votre premier contenu'
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {filteredContents.map((content) => {
+              const typeInfo = getTypeInfo(content.type || 'image');
+              const IconComponent = typeInfo.icon;
+
+              return (
+                <div key={content.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className={`p-2 rounded-lg ${typeInfo.color}`}>
+                        <IconComponent className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-medium text-gray-900 truncate">
+                          {content.displayTitle}
+                        </h3>
+                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                          {content.displayDescription}
+                        </p>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                          <span>Type: {typeInfo.name}</span>
+                          <span>Laala: {content.laalaName}</span>
+                          <span>Commentaires: {content.allowComment ? 'Autorisés' : 'Désactivés'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedContent(content);
+                          setShowDetailModal(true);
+                        }}
+                      >
+                        <FiEye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditModal(content)}
+                      >
+                        <FiEdit3 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deleteContent(content)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de création moderne */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-50/90 via-indigo-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-0 w-full max-w-3xl max-h-[90vh] overflow-hidden">
+            {/* Header moderne */}
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                    <FiFileText className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Nouveau Contenu</h2>
+                    <p className="text-purple-100 text-sm">Créez et partagez votre contenu</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 hover:text-white"
+                >
+                  <FiX className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu du formulaire */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
+                  <FiAlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-red-800 font-medium">Erreur</h4>
+                    <p className="text-red-700 text-sm mt-1">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={(e) => { e.preventDefault(); createContent(); }} className="space-y-6">
+                {/* Informations de base */}
+                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiSettings className="w-5 h-5 mr-2 text-purple-600" />
+                    Informations de base
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom du contenu *
+                      </label>
+                      <Input
+                        id="nom"
+                        type="text"
+                        value={newContent.nom}
+                        onChange={(e) => setNewContent(prev => ({ ...prev, nom: e.target.value }))}
+                        placeholder="Donnez un nom à votre contenu"
+                        className="w-full"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+                        Type de contenu *
+                      </label>
+                      <select
+                        id="type"
+                        value={newContent.type}
+                        onChange={(e) => setNewContent(prev => ({ ...prev, type: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        required
+                      >
+                        {contentTypes.map(type => (
+                          <option key={type.id} value={type.id}>{type.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="idLaala" className="block text-sm font-medium text-gray-700 mb-2">
+                        Laala associée *
+                      </label>
+                      <select
+                        id="idLaala"
+                        value={newContent.idLaala}
+                        onChange={(e) => setNewContent(prev => ({ ...prev, idLaala: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Sélectionner une laala</option>
+                        {laalas.map(laala => (
+                          <option key={laala.id} value={laala.id}>{laala.nom}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                        Description *
+                      </label>
+                      <Textarea
+                        id="description"
+                        value={newContent.description}
+                        onChange={(e) => setNewContent(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Décrivez votre contenu..."
+                        rows={4}
+                        className="w-full"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload de médias */}
+                <div className="bg-blue-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiUpload className="w-5 h-5 mr-2 text-blue-600" />
+                    Fichier multimédia
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Télécharger un fichier ({newContent.type})
+                      </label>
+                      <input
+                        type="file"
+                        accept={newContent.type === 'image' ? 'image/*' : 'video/*'}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file);
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={mediaUpload.isUploading}
+                      />
+                      {mediaUpload.isUploading && (
+                        <div className="mt-2">
+                          <div className="bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${mediaUpload.progress}%` }}
+                            />
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Upload en cours... {mediaUpload.progress}%</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Options */}
+                <div className="bg-green-50 rounded-xl p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <FiCheck className="w-5 h-5 mr-2 text-green-600" />
+                    Options
+                  </h3>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="allowComment"
+                      checked={newContent.allowComment}
+                      onChange={(e) => setNewContent(prev => ({ ...prev, allowComment: e.target.checked }))}
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <label htmlFor="allowComment" className="text-sm text-gray-700">
+                      Autoriser les commentaires
+                    </label>
+                  </div>
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => setShowCreateModal(false)}
+                    disabled={loading}
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    disabled={loading || !newContent.nom.trim() || !newContent.description.trim() || !newContent.idLaala}
+                  >
+                    {loading ? (
+                      <>
+                        <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Publication...
+                      </>
+                    ) : (
+                      <>
+                        <FiPlus className="w-4 h-4 mr-2" />
+                        Publier
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
       )}
 
-      <>
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Contenus Publiés</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalPublished}</p>
-                  <p className="text-sm text-green-600 mt-1">En ligne</p>
-                </div>
-                <div className="p-3 rounded-lg bg-[#f01919]">
-                  <FiFileText className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Vues Totales</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalViews.toLocaleString()}</p>
-                  <p className="text-sm text-blue-600 mt-1">Audience</p>
-                </div>
-                <div className="p-3 rounded-lg bg-blue-500">
-                  <FiEye className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Likes</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalLikes.toLocaleString()}</p>
-                  <p className="text-sm text-pink-600 mt-1">Engagement</p>
-                </div>
-                <div className="p-3 rounded-lg bg-pink-500">
-                  <FiHeart className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Commentaires</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalComments.toLocaleString()}</p>
-                  <p className="text-sm text-purple-600 mt-1">Interactions</p>
-                </div>
-                <div className="p-3 rounded-lg bg-purple-500">
-                  <FiShare2 className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters et Actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Input
-                  placeholder="Rechercher un contenu..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div>
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                >
-                  <option value="all">Tous les types</option>
-                  {contentTypes.map(type => (
-                    <option key={type.id} value={type.id}>{type.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Button 
-                  onClick={fetchContents} 
-                  variant="outline" 
-                  className="w-full"
-                  disabled={loading}
-                >
-                  <FiRefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Actualiser
-                </Button>
-              </div>
-              <div>
-                <Button 
-                  onClick={handleOpenCreateModal}
-                  className="w-full bg-[#f01919] hover:bg-[#d01515] text-white"
-                  disabled={laalas.length === 0}
-                >
-                  <FiPlus className="w-4 h-4 mr-2" />
-                  Nouveau
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Messages d'erreur */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <FiX className="w-5 h-5 text-red-400 mr-2" />
-                <p className="text-red-800">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {/* État de chargement */}
-          {loading && (
-            <div className="text-center py-8">
-              <FiRefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
-              <p className="text-gray-600">Chargement des contenus...</p>
-            </div>
-          )}
-
-          {/* Contents List */}
-          {!loading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredContents.map((content) => {
-                const typeInfo = getTypeInfo(content.type || 'texte');
-                const IconComponent = typeInfo.icon;
-                
-                return (
-                  <div key={content.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <IconComponent className="w-5 h-5 text-gray-500" />
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {content.displayTitle}
-                          </h3>
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(content.displayStatus || 'draft')}`}>
-                            {getStatusLabel(content.displayStatus || 'draft')}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {content.displayDescription}
-                        </p>
-                        <p className="text-xs text-gray-500 mb-3">
-                          📍 Laala: {content.laalaName}
-                        </p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                          <span className="flex items-center">
-                            <FiEye className="w-4 h-4 mr-1" />
-                            {content.vues || 0}
-                          </span>
-                          <span className="flex items-center">
-                            <FiHeart className="w-4 h-4 mr-1" />
-                            {content.likes || 0}
-                          </span>
-                          <span className="flex items-center">
-                            <FiShare2 className="w-4 h-4 mr-1" />
-                            {content.commentaires || 0}
-                          </span>
-                        </div>
-                        {content.htags && content.htags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {content.htags.slice(0, 3).map((tag, index) => (
-                              <span key={index} className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                                #{tag}
-                              </span>
-                            ))}
-                            {content.htags.length > 3 && (
-                              <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                                +{content.htags.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${typeInfo.color}`}>
-                        {typeInfo.name}
-                      </span>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline">
-                          <FiEdit3 className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => deleteContent(content.id!)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* État vide */}
-          {!loading && filteredContents.length === 0 && (
-            <div className="text-center py-12">
-              <FiFileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchTerm || filterType !== 'all' 
-                  ? 'Aucun contenu trouvé' 
-                  : 'Aucun contenu'
-                }
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {searchTerm || filterType !== 'all'
-                  ? 'Aucun contenu ne correspond à vos critères de recherche.'
-                  : laalas.length === 0 
-                    ? 'Vous devez d\'abord créer un laala avant de pouvoir créer du contenu.'
-                    : 'Vous n\'avez pas encore créé de contenus. Créez votre première publication.'
-                }
-              </p>
-              {!searchTerm && filterType === 'all' && laalas.length > 0 && (
-                <Button 
-                  onClick={handleOpenCreateModal}
-                  className="bg-[#f01919] hover:bg-[#d01515] text-white"
-                >
-                  <FiPlus className="w-4 h-4 mr-2" />
-                  Créer votre premier contenu
-                </Button>
-              )}
-              {laalas.length === 0 && (
-                <Button 
-                  onClick={() => window.location.href = '/dashboard/laalas'}
-                  className="bg-[#f01919] hover:bg-[#d01515] text-white"
-                >
-                  <FiPlus className="w-4 h-4 mr-2" />
-                  Créer votre premier laala
-                </Button>
-              )}
-            </div>
-          )}
-        </>
-
-      {/* Modal de création */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      {/* Modal de détail */}
+      {showDetailModal && selectedContent && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Nouveau Contenu</h2>
-                <p className="text-gray-600 text-sm mt-1">Créez un nouveau contenu pour vos laalas</p>
+                <h2 className="text-xl font-bold text-gray-900">Détails du contenu</h2>
+                <p className="text-gray-600 text-sm mt-1">Informations complètes sur ce contenu</p>
               </div>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => setShowDetailModal(false)}
+              >
+                <FiX className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedContent.nom}</h3>
+                <p className="text-gray-600">{selectedContent.displayDescription}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Type</label>
+                  <p className="text-gray-900">{getTypeInfo(selectedContent.type || 'image').name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Laala</label>
+                  <p className="text-gray-900">{selectedContent.laalaName}</p>
+                </div>
+              </div>
+
+              {selectedContent.src && (selectedContent.type === 'image' || selectedContent.type === 'video') && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Médias</label>
+                  {selectedContent.type === 'image' ? (
+                    <img 
+                      src={selectedContent.src} 
+                      alt={selectedContent.nom}
+                      className="mt-2 max-w-full h-auto rounded-lg border"
+                    />
+                  ) : (
+                    <video 
+                      src={selectedContent.src} 
+                      controls
+                      className="mt-2 max-w-full h-auto rounded-lg border"
+                    />
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Commentaires</label>
+                <p className="text-gray-900">{selectedContent.allowComment ? 'Autorisés' : 'Désactivés'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification */}
+      {showEditModal && selectedContent && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Modifier le contenu</h2>
+                <p className="text-gray-600 text-sm mt-1">Mettez à jour les informations de ce contenu</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowEditModal(false)}
               >
                 <FiX className="w-4 h-4" />
               </Button>
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <p className="text-red-800 text-sm">{error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
+                <FiAlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-red-800 font-medium">Erreur</h4>
+                  <p className="text-red-700 text-sm mt-1">{error}</p>
+                </div>
               </div>
             )}
 
-            <form onSubmit={(e) => { e.preventDefault(); createContent(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); updateContent(); }} className="space-y-4">
               <div>
-                <label htmlFor="idLaala" className="block text-sm font-medium text-gray-700 mb-1">
-                  Laala associé <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="idLaala"
-                  value={newContent.idLaala}
-                  onChange={(e) => setNewContent(prev => ({ ...prev, idLaala: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                  required
-                >
-                  <option value="">Sélectionner un laala</option>
-                  {laalas.map(laala => (
-                    <option key={laala.id} value={laala.id}>
-                      {laala.nom} ({laala.categorie})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Le contenu sera publié dans ce laala
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1">
-                  Titre du contenu <span className="text-red-500">*</span>
+                <label htmlFor="edit-nom" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom du contenu *
                 </label>
                 <Input
-                  id="nom"
+                  id="edit-nom"
                   type="text"
                   value={newContent.nom}
                   onChange={(e) => setNewContent(prev => ({ ...prev, nom: e.target.value }))}
-                  placeholder="Ex: Mon article"
+                  placeholder="Nom du contenu"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description *
                 </label>
                 <Textarea
-                  id="description"
+                  id="edit-description"
                   value={newContent.description}
                   onChange={(e) => setNewContent(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Décrivez votre contenu..."
-                  rows={3}
+                  placeholder="Description du contenu"
+                  rows={4}
+                  required
                 />
               </div>
 
-              <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                  Type de contenu
-                </label>
-                <select
-                  id="type"
-                  value={newContent.type}
-                  onChange={(e) => setNewContent(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                >
-                  {contentTypes.map(type => (
-                    <option key={type.id} value={type.id}>{type.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="src" className="block text-sm font-medium text-gray-700 mb-1">
-                  URL/Source (optionnel)
-                </label>
-                <Input
-                  id="src"
-                  type="url"
-                  value={newContent.src}
-                  onChange={(e) => setNewContent(prev => ({ ...prev, src: e.target.value }))}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hashtags
-                </label>
-                <div className="flex space-x-2 mb-2">
-                  <Input
-                    value={newContent.newTag}
-                    onChange={(e) => setNewContent(prev => ({ ...prev, newTag: e.target.value }))}
-                    placeholder="Ajouter un hashtag"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addHashtag())}
-                  />
-                  <Button type="button" onClick={addHashtag} variant="outline">
-                    <FiPlus className="w-4 h-4" />
-                  </Button>
-                </div>
-                {newContent.htags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {newContent.htags.map((tag, index) => (
-                      <span key={index} className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                        #{tag}
-                        <button
-                          type="button"
-                          onClick={() => removeHashtag(tag)}
-                          className="ml-1 text-blue-600 hover:text-blue-800"
-                        >
-                          <FiX className="w-3 h-3" />
-                        </button>
-                      </span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="edit-type" className="block text-sm font-medium text-gray-700 mb-2">
+                    Type *
+                  </label>
+                  <select
+                    id="edit-type"
+                    value={newContent.type}
+                    onChange={(e) => setNewContent(prev => ({ ...prev, type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    {contentTypes.map(type => (
+                      <option key={type.id} value={type.id}>{type.name}</option>
                     ))}
-                  </div>
-                )}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="edit-idLaala" className="block text-sm font-medium text-gray-700 mb-2">
+                    Laala *
+                  </label>
+                  <select
+                    id="edit-idLaala"
+                    value={newContent.idLaala}
+                    onChange={(e) => setNewContent(prev => ({ ...prev, idLaala: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Sélectionner une laala</option>
+                    {laalas.map(laala => (
+                      <option key={laala.id} value={laala.id}>{laala.nom}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="allowComment"
+                  id="edit-allowComment"
                   checked={newContent.allowComment}
                   onChange={(e) => setNewContent(prev => ({ ...prev, allowComment: e.target.checked }))}
-                  className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
+                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                 />
-                <label htmlFor="allowComment" className="text-sm text-gray-700">
+                <label htmlFor="edit-allowComment" className="text-sm text-gray-700">
                   Autoriser les commentaires
                 </label>
-              </div>
-
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <FiFileText className="w-4 h-4 inline mr-1" />
-                  Votre contenu sera publié dans le laala sélectionné et visible par votre communauté.
-                </p>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
                 <Button 
                   type="button"
                   variant="outline" 
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => setShowEditModal(false)}
                   disabled={loading}
                 >
                   Annuler
                 </Button>
                 <Button 
                   type="submit"
-                  className="bg-[#f01919] hover:bg-[#d01515] text-white"
-                  disabled={loading || !newContent.nom.trim() || !newContent.idLaala}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  disabled={loading || !newContent.nom.trim() || !newContent.description.trim() || !newContent.idLaala}
                 >
                   {loading ? (
                     <>
                       <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Création...
+                      Mise à jour...
                     </>
                   ) : (
                     <>
-                      <FiPlus className="w-4 h-4 mr-2" />
-                      Publier
+                      <FiEdit3 className="w-4 h-4 mr-2" />
+                      Mettre à jour
                     </>
                   )}
                 </Button>
