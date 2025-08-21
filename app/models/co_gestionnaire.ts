@@ -1,6 +1,6 @@
 // Types pour les permissions granulaires
 export type PermissionAction = 'create' | 'read' | 'update' | 'delete';
-export type PermissionResource = 'laalas' | 'contenus' | 'communications' | 'campaigns';
+export type PermissionResource = 'laalas' | 'contenus';
 
 export interface ResourcePermission {
   resource: PermissionResource;
@@ -60,7 +60,5 @@ export interface CoGestionnaireExtended extends CoGestionnaire {
     canAccess?: {
         laalas: PermissionAction[];
         contenus: PermissionAction[];
-        communications: PermissionAction[];
-        campaigns: PermissionAction[];
     };
 }

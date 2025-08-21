@@ -7,15 +7,20 @@ const coGestionnaireService = new CoGestionnaireService();
 const authService = new CoGestionnaireAuthService();
 
 export async function POST(request: NextRequest) {
+  console.log('POST /api/co-gestionnaires appelé');
+  
   const auth = await verifyAuth(request);
   if (!auth) {
+    console.log('Authentification échouée');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('📝 Création co-gestionnaire avec authentification...');
+    console.log('Création co-gestionnaire avec authentification...');
     
     const data = await request.json();
+    console.log('Données reçues:', data);
+    
     const { password, ...coGestionnaireData } = data;
     
     // Validation
@@ -36,10 +41,12 @@ export async function POST(request: NextRequest) {
       role: 'assistant' as const
     };
 
+    console.log('Données complètes:', completeData);
+
     // Créer le co-gestionnaire avec authentification
     const id = await authService.createCoGestionnaire(completeData, password);
     
-    console.log('✅ Co-gestionnaire créé avec ID:', id);
+    console.log('Co-gestionnaire créé avec ID:', id);
     
     return NextResponse.json({ 
       success: true,
@@ -48,7 +55,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
     
   } catch (error) {
-    console.error('❌ Erreur création co-gestionnaire:', error);
+    console.error('Erreur création co-gestionnaire:', error);
     
     return NextResponse.json({ 
       error: 'Échec de la création du co-gestionnaire',
@@ -65,7 +72,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('📋 Récupération des co-gestionnaires pour utilisateur:', auth.uid);
+    console.log('Récupération des co-gestionnaires pour utilisateur:', auth.uid);
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -86,7 +93,7 @@ export async function GET(request: NextRequest) {
       const coGestionnaires = await coGestionnaireService.query([
         { field: 'idProprietaire', operator: '==', value: auth.uid }
       ]);
-      console.log(`✅ ${coGestionnaires.length} co-gestionnaires récupérés`);
+      console.log(`${coGestionnaires.length} co-gestionnaires récupérés`);
       return NextResponse.json(coGestionnaires);
     }
   } catch (error) {

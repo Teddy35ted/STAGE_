@@ -11,8 +11,6 @@ export interface CoGestionnaireAuthContext {
   permissions: {
     laalas: PermissionAction[];
     contenus: PermissionAction[];
-    communications: PermissionAction[];
-    campaigns: PermissionAction[];
   };
   coGestionnaireInfo?: CoGestionnaire;
 }
@@ -163,9 +161,7 @@ export class CoGestionnaireAuthService {
         proprietaireId: decodedToken.uid,
         permissions: {
           laalas: ['create', 'read', 'update', 'delete'],
-          contenus: ['create', 'read', 'update', 'delete'],
-          communications: ['create', 'read', 'update', 'delete'],
-          campaigns: ['create', 'read', 'update', 'delete']
+          contenus: ['create', 'read', 'update', 'delete']
         }
       };
     }
@@ -192,19 +188,20 @@ export class CoGestionnaireAuthService {
   private formatPermissions(permissions: any[]): {
     laalas: PermissionAction[];
     contenus: PermissionAction[];
-    communications: PermissionAction[];
-    campaigns: PermissionAction[];
   } {
     const formatted = {
       laalas: [] as PermissionAction[],
-      contenus: [] as PermissionAction[],
-      communications: [] as PermissionAction[],
-      campaigns: [] as PermissionAction[]
+      contenus: [] as PermissionAction[]
     };
 
     permissions.forEach(permission => {
       if (permission.resource && permission.actions) {
-        formatted[permission.resource as PermissionResource] = permission.actions;
+        // Seulement traiter les ressources autorisées
+        if (permission.resource === 'laalas') {
+          formatted.laalas = permission.actions;
+        } else if (permission.resource === 'contenus') {
+          formatted.contenus = permission.actions;
+        }
       }
     });
 

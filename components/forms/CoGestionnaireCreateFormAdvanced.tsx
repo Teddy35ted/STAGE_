@@ -15,9 +15,7 @@ export interface CoGestionnaireFormData extends Omit<CoGestionnaireCore, 'teleph
 
 const RESOURCES: { key: PermissionResource; label: string; description: string }[] = [
   { key: 'laalas', label: 'Laalas', description: 'Gestion des événements et activités' },
-  { key: 'contenus', label: 'Contenus', description: 'Gestion des contenus multimédias' },
-  { key: 'communications', label: 'Communications', description: 'Gestion des messages et notifications' },
-  { key: 'campaigns', label: 'Campagnes', description: 'Gestion des campagnes marketing' }
+  { key: 'contenus', label: 'Contenus', description: 'Gestion des contenus multimédias' }
 ];
 
 const ACTIONS: { key: PermissionAction; label: string; color: string }[] = [
@@ -46,6 +44,8 @@ export default function CoGestionnaireCreateForm({
     permissions: []
   });
 
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
 
@@ -58,6 +58,8 @@ export default function CoGestionnaireCreateForm({
     if (!formData.tel.trim()) newErrors.tel = 'Le téléphone est requis';
     if (!formData.password.trim()) newErrors.password = 'Le mot de passe est requis';
     if (formData.password.length < 6) newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
+    if (!confirmPassword.trim()) newErrors.confirmPassword = 'La confirmation du mot de passe est requise';
+    if (formData.password !== confirmPassword) newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     
     // Validation email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -158,19 +160,6 @@ export default function CoGestionnaireCreateForm({
         {/* Form */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Alerte - Formulaire unique */}
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
-              <div className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                <div>
-                  <h3 className="text-green-800 font-medium">✅ FORMULAIRE UNIQUE ET COMPLET</h3>
-                  <p className="text-green-700 text-sm">
-                    <strong>Email et mot de passe sont saisis ENSEMBLE dans ce même formulaire</strong> - Aucune étape séparée
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Informations personnelles */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -256,12 +245,23 @@ export default function CoGestionnaireCreateForm({
                   </div>
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
-              </div>
 
-              <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-                <p className="text-blue-800 text-sm font-medium">
-                  ✅ Email et mot de passe saisis ENSEMBLE dans ce formulaire unique - Plus besoin d'étapes séparées !
-                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Lock className="w-4 h-4 inline mr-2" />
+                    🔒 Confirmer le mot de passe *
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Confirmez le mot de passe"
+                  />
+                  {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+                </div>
               </div>
 
               <div className="mt-3">

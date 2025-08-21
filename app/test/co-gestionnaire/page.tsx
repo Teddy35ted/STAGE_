@@ -110,7 +110,7 @@ export default function TestCoGestionnaireForm() {
               <h3 className="font-medium text-gray-900 mb-2">🛡️ Permissions</h3>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• CRUD granulaire par ressource</li>
-                <li>• Laalas, Contenus, Communications, Campagnes</li>
+                <li>• Laalas, Contenus</li>
                 <li>• Accès interdit au profil et gains</li>
                 <li>• Logs d'audit automatiques</li>
               </ul>
@@ -121,8 +121,6 @@ export default function TestCoGestionnaireForm() {
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Laalas (événements)</li>
                 <li>• Contenus (médias)</li>
-                <li>• Communications (messages)</li>
-                <li>• Campagnes (marketing)</li>
               </ul>
             </div>
 
