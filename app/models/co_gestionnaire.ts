@@ -21,6 +21,7 @@ export interface CoGestionnaire {
     permissions: ResourcePermission[]; // Permissions granulaires par ressource
     description?: string;
     idProprietaire: string; // ID du propriétaire principal
+    createdBy?: string; // Email de l'animateur qui a créé ce co-gestionnaire
     dateCreation: string;
     statut: 'actif' | 'inactif' | 'pending' | 'suspended';
     dateInvitation: string;
@@ -50,6 +51,7 @@ export interface CoGestionnaireCore {
     ACCES: 'gerer' | 'consulter' | 'Ajouter';
     permissions: ResourcePermission[]; // Permissions granulaires par ressource
     description?: string;
+    createdBy?: string; // Email de l'animateur qui a créé ce co-gestionnaire
     password: string; // Mot de passe requis pour la création
 }
 

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     console.log('Données reçues:', data);
     
-    const { password, ...coGestionnaireData } = data;
+    const { password, animatorEmail, ...coGestionnaireData } = data;
     
     // Validation
     if (!password) {
@@ -31,10 +31,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Préparer les données complètes
+    // Convertir l'ACCES en permissions spécifiques
+    const convertAccessToPermissions = (acces: string) => {
+      const allActions = ['create', 'read', 'update', 'delete'];
+      
+      switch (acces) {
+        case 'consulter':
+          return [
+            { resource: 'laalas', actions: ['read'] },
+            { resource: 'contenus', actions: ['read'] }
+          ];
+        case 'gerer':
+          return [
+            { resource: 'laalas', actions: ['read', 'update'] },
+            { resource: 'contenus', actions: ['read', 'update'] }
+          ];
+        case 'Ajouter':
+          return [
+            { resource: 'laalas', actions: ['create', 'read', 'update'] },
+            { resource: 'contenus', actions: ['create', 'read', 'update'] }
+          ];
+        default:
+          return [
+            { resource: 'laalas', actions: ['read'] },
+            { resource: 'contenus', actions: ['read'] }
+          ];
+      }
+    };
+
+    // Préparer les données complètes avec l'email de l'animateur créateur
     const completeData = {
       ...coGestionnaireData,
+      permissions: convertAccessToPermissions(coGestionnaireData.ACCES),
       idProprietaire: auth.uid,
+      createdBy: animatorEmail || 'animateur@laala.app', // Email de l'animateur qui crée
       dateCreation: new Date().toISOString(),
       dateInvitation: new Date().toISOString(),
       statut: 'actif' as const,

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { CoGestionnaire } from '../../app/models/co_gestionnaire';
 import { useApi } from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield, FiUserPlus, FiEye, FiEdit2, FiLock, FiCheck } from 'react-icons/fi';
@@ -43,6 +44,7 @@ export function CoGestionnaireForm({
   const handleClose = onClose || (() => setInternalOpen(false));
 
   const { apiFetch } = useApi();
+  const { user } = useAuth();
 
   const accessLevels = [
     { value: 'consulter', label: 'Consulter', description: 'Peut uniquement consulter les données' },
@@ -139,7 +141,8 @@ export function CoGestionnaireForm({
       let dataToSend;
       if (mode === 'create') {
         dataToSend = {
-          ...formData
+          ...formData,
+          animatorEmail: user?.email || 'animateur@laala.app' // Inclure l'email de l'animateur
         };
       } else if (mode === 'edit') {
         // En mode édition, exclure email et mot de passe

@@ -78,7 +78,7 @@ export function ForcePasswordChange({ isOpen, onClose, onSuccess, userId }: Forc
       });
       
       onSuccess();
-      onClose();
+      // Ne pas appeler onClose() car le modal doit être fermé seulement après succès complet
       
       setFormData({
         currentPassword: '',
@@ -117,10 +117,16 @@ export function ForcePasswordChange({ isOpen, onClose, onSuccess, userId }: Forc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header obligatoire */}
-        <div className="bg-slate-600 text-white p-6 rounded-t-lg">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.stopPropagation()} // Empêche la fermeture par clic
+    >
+      <div 
+        className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()} // Empêche la fermeture par clic
+      >
+        {/* Header obligatoire - AUCUN bouton de fermeture */}
+        <div className="bg-red-600 text-white p-6 rounded-t-lg">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
               <FiLock className="w-5 h-5 text-white" />
@@ -130,7 +136,7 @@ export function ForcePasswordChange({ isOpen, onClose, onSuccess, userId }: Forc
                 Changement de mot de passe obligatoire
               </h2>
               <p className="text-red-100 text-sm">
-                Pour des raisons de sécurité, vous devez modifier votre mot de passe
+                ATTENTION : Vous devez impérativement modifier votre mot de passe pour continuer
               </p>
             </div>
           </div>

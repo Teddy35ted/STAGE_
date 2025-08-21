@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCoGestionnairePermissions } from '../../hooks/useCoGestionnairePermissions';
 import {
   Sidebar,
   SidebarContent,
@@ -33,7 +34,19 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const menuItems = [
+interface MenuItem {
+  title: string;
+  icon: React.ComponentType<any>;
+  href: string;
+  requiredPermission?: 'laalas' | 'contenus'; // Permission requise pour voir cette section
+  submenu?: Array<{
+    title: string;
+    href: string;
+    requiredPermission?: 'laalas' | 'contenus';
+  }>;
+}
+
+const menuItems: MenuItem[] = [
   {
     title: 'Dashboard',
     icon: FiHome,
@@ -54,12 +67,13 @@ const menuItems = [
     title: 'Mes Laalas',
     icon: FiEdit3,
     href: '/dashboard/laalas',
+    requiredPermission: 'laalas', // Section nécessite permission laalas
     submenu: [
-      { title: 'Gérer Laalas', href: '/dashboard/laalas' },
-      { title: 'Contenu', href: '/dashboard/laalas/content' },
-      { title: 'Programmation', href: '/dashboard/laalas/schedule' },
-      { title: 'Booster', href: '/dashboard/laalas/boost' },
-      { title: 'Espaces Laala', href: '/dashboard/laalas/spaces' },
+      { title: 'Gérer Laalas', href: '/dashboard/laalas', requiredPermission: 'laalas' },
+      { title: 'Contenu', href: '/dashboard/laalas/content', requiredPermission: 'contenus' },
+      { title: 'Programmation', href: '/dashboard/laalas/schedule', requiredPermission: 'laalas' },
+      { title: 'Booster', href: '/dashboard/laalas/boost', requiredPermission: 'laalas' },
+      { title: 'Espaces Laala', href: '/dashboard/laalas/spaces', requiredPermission: 'laalas' },
     ],
   },
   {
@@ -105,8 +119,8 @@ const menuItems = [
     icon: FiBarChart,
     href: '/dashboard/stats',
     submenu: [
-      { title: 'Laalas', href: '/dashboard/stats/laalas' },
-      { title: 'Contenu', href: '/dashboard/stats/content' },
+      { title: 'Laalas', href: '/dashboard/stats/laalas', requiredPermission: 'laalas' },
+      { title: 'Contenu', href: '/dashboard/stats/content', requiredPermission: 'contenus' },
       { title: 'Revenus', href: '/dashboard/stats/revenue' },
       { title: 'Profil', href: '/dashboard/stats/profile' },
       { title: 'Publicité', href: '/dashboard/stats/ads' },
@@ -116,6 +130,7 @@ const menuItems = [
 
 export const DashboardSidebar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { hasPermission, isCoGestionnaire, getUserDisplayEmail, loading } = useCoGestionnairePermissions();
   const pathname = usePathname();
 
   const handleLogout = async () => {
@@ -126,6 +141,50 @@ export const DashboardSidebar: React.FC = () => {
     }
   };
 
+  // Fonction pour vérifier si un menu item doit être affiché
+  const shouldShowMenuItem = (item: MenuItem): boolean => {
+    // Si pas de permission requise, toujours afficher
+    if (!item.requiredPermission) return true;
+    
+    // Si l'utilisateur n'est pas un co-gestionnaire (donc animateur principal), toujours afficher
+    if (!isCoGestionnaire()) return true;
+    
+    // Si l'utilisateur est un co-gestionnaire, vérifier ses permissions
+    return hasPermission(item.requiredPermission);
+  };
+
+  // Fonction pour filtrer les sous-menus
+  const getFilteredSubmenu = (submenu?: MenuItem['submenu']) => {
+    if (!submenu) return undefined;
+    
+    return submenu.filter(subItem => {
+      if (!subItem.requiredPermission) return true;
+      if (!isCoGestionnaire()) return true;
+      return hasPermission(subItem.requiredPermission);
+    });
+  };
+
+  // Filtrer les menu items selon les permissions
+  const filteredMenuItems = menuItems.filter(shouldShowMenuItem);
+
+  if (loading) {
+    return (
+      <Sidebar className="bg-white border-r border-gray-200">
+        <SidebarHeader className="p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-[#f01919] rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">L</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">La-a-La</h2>
+              <p className="text-sm text-gray-600">Chargement...</p>
+            </div>
+          </div>
+        </SidebarHeader>
+      </Sidebar>
+    );
+  }
+
   return (
     <Sidebar className="bg-white border-r border-gray-200">
       <SidebarHeader className="p-4">
@@ -135,7 +194,9 @@ export const DashboardSidebar: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900">La-a-La</h2>
-            <p className="text-sm text-gray-600">Animateur Pro</p>
+            <p className="text-sm text-gray-600">
+              {isCoGestionnaire() ? 'Co-gestionnaire' : 'Animateur Pro'}
+            </p>
           </div>
         </div>
       </SidebarHeader>
@@ -146,37 +207,41 @@ export const DashboardSidebar: React.FC = () => {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    className="w-full justify-start"
-                  >
-                    <Link href={item.href} className="flex items-center space-x-3">
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {item.submenu && pathname && pathname.startsWith(item.href) && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {item.submenu.map((subItem) => (
-                        <SidebarMenuButton
-                          key={subItem.href}
-                          asChild
-                          isActive={pathname === subItem.href}
-                          size="sm"
-                          className="w-full justify-start text-gray-600"
-                        >
-                          <Link href={subItem.href}>
-                            <span>{subItem.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      ))}
-                    </div>
-                  )}
-                </SidebarMenuItem>
-              ))}
+              {filteredMenuItems.map((item) => {
+                const filteredSubmenu = getFilteredSubmenu(item.submenu);
+                
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.href}
+                      className="w-full justify-start"
+                    >
+                      <Link href={item.href} className="flex items-center space-x-3">
+                        <item.icon className="w-5 h-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {filteredSubmenu && pathname && pathname.startsWith(item.href) && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {filteredSubmenu.map((subItem) => (
+                          <SidebarMenuButton
+                            key={subItem.href}
+                            asChild
+                            isActive={pathname === subItem.href}
+                            size="sm"
+                            className="w-full justify-start text-gray-600"
+                          >
+                            <Link href={subItem.href}>
+                              <span>{subItem.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        ))}
+                      </div>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -192,9 +257,11 @@ export const DashboardSidebar: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.email || 'Utilisateur'}
+                {getUserDisplayEmail()}
               </p>
-              <p className="text-xs text-gray-500">Animateur Pro</p>
+              <p className="text-xs text-gray-500">
+                {isCoGestionnaire() ? 'Co-gestionnaire' : 'Animateur Pro'}
+              </p>
             </div>
           </div>
           <Button
