@@ -13,6 +13,7 @@ export function middleware(request: NextRequest) {
     '/api/co-gestionnaires',
     '/api/laalas', 
     '/api/contenus',
+    '/api/retraits',
     '/api/audit-logs'
   ];
 

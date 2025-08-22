@@ -9,6 +9,7 @@ import { RetraitDetails } from '../../../components/forms/RetraitDetails';
 import { RetraitEditForm } from '../../../components/forms/RetraitEditForm';
 import { SoldeCard } from '../../../components/dashboard/SoldeCard';
 import { Retrait } from '../../models/retrait';
+import { auth } from '../../firebase/config';
 
 // Composant Card simple
 const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -126,7 +127,24 @@ export default function RetraitsPage() {
       setLoading(true);
       console.log('Chargement des retraits depuis l\'API...'); // Debug
       
-      const response = await fetch('/api/retraits');
+      // Obtenir le token Firebase
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('👤 Utilisateur non connecté');
+        setRetraits([]);
+        setLoading(false);
+        return;
+      }
+
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/api/retraits', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (response.ok) {
         const data = await response.json();
         console.log('Retraits reçus de l\'API:', data); // Debug
@@ -135,7 +153,8 @@ export default function RetraitsPage() {
         const retraitsArray = Array.isArray(data) ? data : [];
         setRetraits(retraitsArray);
       } else {
-        console.error('Erreur de réponse API:', response.status);
+        const errorData = await response.json();
+        console.error('❌ Erreur de réponse API:', response.status, errorData);
         setRetraits([]);
       }
     } catch (error) {

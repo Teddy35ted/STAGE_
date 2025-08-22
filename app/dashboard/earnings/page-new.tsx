@@ -10,6 +10,7 @@ import { RetraitForm } from '../../../components/forms/RetraitForm';
 import { RetraitActions } from '../../../components/forms/RetraitActions';
 import { RetraitDetails } from '../../../components/forms/RetraitDetails';
 import { Retrait } from '../../models/retrait';
+import { auth } from '../../firebase/config';
 
 interface EarningItem {
   id: string;
@@ -67,13 +68,29 @@ export default function EarningsPage() {
   useEffect(() => {
     const loadRetraits = async () => {
       try {
-        const response = await fetch('/api/retraits');
+        // Obtenir le token Firebase
+        const user = auth.currentUser;
+        if (!user) {
+          console.log('👤 Utilisateur non connecté');
+          return;
+        }
+
+        const token = await user.getIdToken();
+
+        const response = await fetch('/api/retraits', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
         if (response.ok) {
           const data = await response.json();
           console.log('Retraits chargés:', data);
           setRetraits(data || []);
         } else {
-          console.error('Erreur lors du chargement des retraits');
+          const errorData = await response.json();
+          console.error('❌ Erreur lors du chargement des retraits:', errorData);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des retraits:', error);
@@ -111,17 +128,36 @@ export default function EarningsPage() {
   const handleDeleteRetrait = async (retraitId: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce retrait ?')) {
       try {
+        console.log('🗑️ Suppression du retrait:', retraitId);
+        
+        // Récupérer le token d'authentification
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          alert('Erreur: Non authentifié');
+          return;
+        }
+
         const response = await fetch(`/api/retraits/${retraitId}`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
         
         if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Retrait supprimé:', result);
           setRetraits(prev => prev.filter(r => r.id !== retraitId));
+          alert('Retrait supprimé avec succès');
         } else {
-          console.error('Erreur lors de la suppression');
+          const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
+          console.error('❌ Erreur API:', errorData);
+          alert(`Erreur lors de la suppression: ${errorData.error || 'Erreur inconnue'}`);
         }
       } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
+        console.error('❌ Erreur lors de la suppression:', error);
+        alert(`Erreur lors de la suppression: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
       }
     }
   };
@@ -455,7 +491,19 @@ export default function EarningsPage() {
             // Recharger les retraits
             const loadRetraits = async () => {
               try {
-                const response = await fetch('/api/retraits');
+                // Obtenir le token Firebase
+                const user = auth.currentUser;
+                if (!user) return;
+
+                const token = await user.getIdToken();
+
+                const response = await fetch('/api/retraits', {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                });
+                
                 if (response.ok) {
                   const data = await response.json();
                   setRetraits(data || []);

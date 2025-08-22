@@ -6,6 +6,7 @@ import { useSoldeAnimateur } from '../../hooks/useSoldeAnimateur';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { AlertCircle, Wallet, CheckCircle } from 'lucide-react';
+import { auth } from '../../app/firebase/config';
 import {
   Dialog,
   DialogContent,
@@ -82,17 +83,28 @@ export function RetraitEditForm({ retrait, isOpen, onClose, onSuccess }: Retrait
     }
 
     try {
-      // Modifier le retrait
+      // Obtenir le token Firebase
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      const token = await user.getIdToken();
+
+      // Modifier le retrait avec authentification
       const response = await fetch(`/api/retraits/${retrait.id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ montant, tel, operateur }),
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la modification');
+        const errorData = await response.json();
+        console.error('❌ Erreur API modification:', errorData);
+        throw new Error(errorData.error || 'Erreur lors de la modification');
       }
 
       // Ajuster le solde selon la différence

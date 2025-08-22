@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Retraits</title>
+</head>
+<body>
+    <h1>Test API Retraits avec authentification</h1>
+    <button onclick="testGetRetraits()">Test GET /api/retraits</button>
+    <button onclick="testDeleteRetrait()">Test DELETE /api/retraits/test-id</button>
+    <div id="result"></div>
+
+    <script>
+        // Test GET retraits (devrait échouer sans token)
+        async function testGetRetraits() {
+            try {
+                const response = await fetch('/api/retraits');
+                const result = await response.text();
+                document.getElementById('result').innerHTML = `
+                    <h3>GET /api/retraits</h3>
+                    <p>Status: ${response.status}</p>
+                    <pre>${result}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>Erreur GET</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        // Test DELETE retrait (devrait échouer sans token)
+        async function testDeleteRetrait() {
+            try {
+                const response = await fetch('/api/retraits/test-id', {
+                    method: 'DELETE'
+                });
+                const result = await response.text();
+                document.getElementById('result').innerHTML = `
+                    <h3>DELETE /api/retraits/test-id</h3>
+                    <p>Status: ${response.status}</p>
+                    <pre>${result}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>Erreur DELETE</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

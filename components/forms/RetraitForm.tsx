@@ -6,6 +6,7 @@ import { useSoldeAnimateur } from '../../hooks/useSoldeAnimateur';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { AlertCircle, Wallet, CheckCircle } from 'lucide-react';
+import { auth } from '../../app/firebase/config';
 import {
   Dialog,
   DialogContent,
@@ -68,10 +69,19 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
     try {
       console.log('Création du retrait via API...'); // Debug
       
-      // Créer le retrait via l'API
+      // Obtenir le token Firebase
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      const token = await user.getIdToken();
+      
+      // Créer le retrait via l'API avec authentification
       const response = await fetch('/api/retraits', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
@@ -84,7 +94,9 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la création du retrait');
+        const errorData = await response.json();
+        console.error('❌ Erreur API création:', errorData);
+        throw new Error(errorData.error || 'Erreur lors de la création du retrait');
       }
 
       const result = await response.json();

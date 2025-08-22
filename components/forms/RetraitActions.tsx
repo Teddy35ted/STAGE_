@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Trash2, Edit, Eye } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useSoldeAnimateur } from '../../hooks/useSoldeAnimateur';
+import { auth } from '../../app/firebase/config';
 
 interface RetraitActionsProps {
   retrait: {
@@ -31,9 +32,21 @@ export function RetraitActions({ retrait, onDeleteSuccess, onEditClick, onViewCl
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      // Supprimer le retrait via API
+      // Obtenir le token Firebase
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      const token = await user.getIdToken();
+
+      // Supprimer le retrait via API avec authentification
       const response = await fetch(`/api/retraits/${retrait.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
@@ -44,11 +57,15 @@ export function RetraitActions({ retrait, onDeleteSuccess, onEditClick, onViewCl
         onDeleteSuccess();
         
         setShowDeleteConfirm(false);
+        console.log('✅ Retrait supprimé avec succès');
       } else {
-        throw new Error('Erreur lors de la suppression');
+        const errorData = await response.json();
+        console.error('❌ Erreur API:', errorData);
+        throw new Error(errorData.error || 'Erreur lors de la suppression');
       }
     } catch (error) {
       console.error('Erreur lors de la suppression du retrait:', error);
+      alert(error instanceof Error ? error.message : 'Erreur lors de la suppression');
     } finally {
       setIsDeleting(false);
     }

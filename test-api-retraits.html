@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Retraits</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe6e6; border: 1px solid #ff9999; }
+        .success { background: #e6ffe6; border: 1px solid #99ff99; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 5px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Test API Retraits - Debug</h1>
+    
+    <div>
+        <h3>Tester l'API des retraits</h3>
+        <input type="text" id="retraitId" placeholder="ID du retrait (optionnel)" />
+        <br>
+        <button onclick="testGetAllRetraits()">GET Tous les retraits</button>
+        <button onclick="testGetRetrait()">GET Retrait spécifique</button>
+        <button onclick="testDeleteRetrait()">DELETE Retrait</button>
+    </div>
+
+    <div id="result" class="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        
+        function displayResult(data, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result ' + (isError ? 'error' : 'success');
+            resultDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+
+        async function getAuthToken() {
+            // Simule la récupération du token (à remplacer par le vrai token)
+            return localStorage.getItem('authToken') || prompt('Entrez votre token d\'authentification:');
+        }
+
+        async function testGetAllRetraits() {
+            try {
+                const token = await getAuthToken();
+                const response = await fetch(`${API_BASE}/retraits`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                displayResult({
+                    status: response.status,
+                    data: data
+                }, !response.ok);
+            } catch (error) {
+                displayResult({ error: error.message }, true);
+            }
+        }
+
+        async function testGetRetrait() {
+            const id = document.getElementById('retraitId').value;
+            if (!id) {
+                alert('Veuillez entrer un ID de retrait');
+                return;
+            }
+
+            try {
+                const token = await getAuthToken();
+                const response = await fetch(`${API_BASE}/retraits/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                displayResult({
+                    status: response.status,
+                    data: data
+                }, !response.ok);
+            } catch (error) {
+                displayResult({ error: error.message }, true);
+            }
+        }
+
+        async function testDeleteRetrait() {
+            const id = document.getElementById('retraitId').value;
+            if (!id) {
+                alert('Veuillez entrer un ID de retrait');
+                return;
+            }
+
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce retrait ?')) {
+                return;
+            }
+
+            try {
+                const token = await getAuthToken();
+                const response = await fetch(`${API_BASE}/retraits/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                displayResult({
+                    status: response.status,
+                    data: data
+                }, !response.ok);
+            } catch (error) {
+                displayResult({ error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>
