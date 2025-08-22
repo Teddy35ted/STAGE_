@@ -8,6 +8,7 @@ import {
   LaalaCore,
   LaalaDashboard,
   generateLaalaAutoFields,
+  generateDefaultCover,
   ContenuCore,
   ContenuDashboard,
   generateContenuAutoFields
@@ -101,12 +102,18 @@ export class LaalaService {
     // Validation des données essentielles
     this.validateLaalaCore(laalaData);
     
+    // S'assurer qu'un cover est défini
+    const laalaWithCover = {
+      ...laalaData,
+      cover: laalaData.cover || generateDefaultCover()
+    };
+    
     // Génération des champs automatiques
-    const autoFields = generateLaalaAutoFields(laalaData, creatorInfo);
+    const autoFields = generateLaalaAutoFields(laalaWithCover, creatorInfo);
     
     // Combinaison des données
     const completeLaala: LaalaDashboard = {
-      ...laalaData,
+      ...laalaWithCover,
       ...autoFields
     };
     

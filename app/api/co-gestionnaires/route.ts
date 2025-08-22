@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convertir l'ACCES en permissions spécifiques
+    // Convertir l'ACCES en permissions spécifiques SEULEMENT si aucune permission n'est fournie
     const convertAccessToPermissions = (acces: string) => {
       const allActions = ['create', 'read', 'update', 'delete'];
       
@@ -59,10 +59,18 @@ export async function POST(request: NextRequest) {
       }
     };
 
+    // Utiliser les permissions du formulaire si elles existent, sinon utiliser la conversion ACCES
+    const finalPermissions = coGestionnaireData.permissions && coGestionnaireData.permissions.length > 0 
+      ? coGestionnaireData.permissions 
+      : convertAccessToPermissions(coGestionnaireData.ACCES);
+
+    console.log('📋 Permissions du formulaire:', coGestionnaireData.permissions);
+    console.log('🔧 Permissions finales utilisées:', finalPermissions);
+
     // Préparer les données complètes avec l'email de l'animateur créateur
     const completeData = {
       ...coGestionnaireData,
-      permissions: convertAccessToPermissions(coGestionnaireData.ACCES),
+      permissions: finalPermissions,
       idProprietaire: auth.uid,
       createdBy: animatorEmail || 'animateur@laala.app', // Email de l'animateur qui crée
       dateCreation: new Date().toISOString(),

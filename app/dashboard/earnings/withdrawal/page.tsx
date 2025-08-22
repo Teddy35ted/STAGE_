@@ -29,11 +29,10 @@ interface RetraitExtended extends Retrait {
   displayStatus?: 'pending' | 'processing' | 'completed' | 'rejected';
   displayMethod?: string;
   description?: string;
-  dateCreation?: string;
   iban?: string;
   email?: string;
-  statut?: string;
   methode?: string;
+  rib?: string;
 }
 
 const paymentMethods = [

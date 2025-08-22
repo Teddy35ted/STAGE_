@@ -5,6 +5,7 @@ import { Button } from '../../../../components/ui/button';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { CoGestionnaire } from '../../../models/co_gestionnaire';
 import CoGestionnaireCreateFormAdvanced, { CoGestionnaireFormData } from '../../../../components/forms/CoGestionnaireCreateFormAdvanced';
+import { CoGestionnaireForm } from '../../../../components/forms/CoGestionnaireForm';
 import { 
   FiUsers, 
   FiUserPlus,
@@ -30,6 +31,7 @@ export default function ManagersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedManager, setSelectedManager] = useState<CoGestionnaireExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -371,13 +373,27 @@ export default function ManagersPage() {
                           }}
                           variant="outline"
                           size="sm"
+                          title="Voir les détails"
                         >
                           <FiEye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setSelectedManager(manager);
+                            setShowEditModal(true);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          title="Modifier"
+                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                        >
+                          <FiEdit3 className="w-4 h-4" />
                         </Button>
                         <Button
                           onClick={() => deleteManager(manager.id)}
                           variant="outline"
                           size="sm"
+                          title="Supprimer"
                           className="text-red-600 border-red-300 hover:bg-red-50"
                         >
                           <FiTrash2 className="w-4 h-4" />
@@ -496,6 +512,24 @@ export default function ManagersPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal d'édition de co-gestionnaire */}
+      {showEditModal && selectedManager && (
+        <CoGestionnaireForm
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedManager(null);
+          }}
+          coGestionnaire={selectedManager}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedManager(null);
+            fetchManagers(); // Recharger la liste
+          }}
+          mode="edit"
+        />
       )}
     </div>
   );

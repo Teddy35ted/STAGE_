@@ -141,6 +141,12 @@ export const CompleteRegistrationForm: React.FC<CompleteRegistrationFormProps> =
       console.log('✅ Profil créé:', result);
       console.log('🚀 Redirection vers le dashboard...');
       
+      // IMPORTANT: Stocker le rôle animateur pour les nouveaux comptes
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userRole', 'animateur');
+        localStorage.setItem('selectedRole', 'animateur');
+      }
+      
       // Redirection vers le dashboard
       router.replace('/dashboard');
       

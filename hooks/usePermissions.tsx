@@ -53,95 +53,111 @@ export function usePermissions(): {
       return;
     }
 
-    // VÉRIFICATION IMPORTANTE : Déterminer qui est le vrai propriétaire
-    const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL || 'teddy@laala.app'; // À configurer
-    const isRealOwner = user.email === OWNER_EMAIL;
-    
-    console.log('🔍 Owner check:', { userEmail: user.email, ownerEmail: OWNER_EMAIL, isRealOwner });
+    // NOUVELLE LOGIQUE: Vérifier le rôle sélectionné lors de l'authentification
+    const selectedRole = typeof window !== 'undefined' ? localStorage.getItem('selectedRole') : null;
+    console.log('🔍 Selected role from localStorage:', selectedRole);
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      const token = await getAuthToken();
-      if (!token) {
-        throw new Error('Token d\'authentification manquant');
-      }
-
-      const response = await fetch('/api/co-gestionnaires/permissions', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+    // Si l'utilisateur s'est connecté en tant qu'animateur
+    if (selectedRole === 'animateur') {
+      console.log('✅ User selected ANIMATEUR role - granting full access');
+      setPermissions({
+        isCoGestionnaire: false,
+        permissions: {
+          laalas: true,
+          contenus: true
         }
       });
+      setLoading(false);
+      return;
+    }
 
-      console.log('🔍 API Response status:', response.status);
+    // Si l'utilisateur s'est connecté en tant que co-gestionnaire
+    if (selectedRole === 'cogestionnaire') {
+      console.log('🔍 User selected CO-GESTIONNAIRE role - checking permissions in database');
+      
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (response.status === 404) {
-        // L'utilisateur n'est pas un co-gestionnaire
-        if (isRealOwner) {
-          console.log('✅ User is REAL OWNER - granting full access');
+        const token = await getAuthToken();
+        if (!token) {
+          throw new Error('Token d\'authentification manquant');
+        }
+
+        const response = await fetch('/api/co-gestionnaires/permissions', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('🔍 API Response status:', response.status);
+
+        if (response.status === 404) {
+          console.log('🚫 User selected co-gestionnaire but not found in database - denying access');
           setPermissions({
-            isCoGestionnaire: false,
-            permissions: {
-              laalas: true,
-              contenus: true
-            }
-          });
-        } else {
-          console.log('🚫 User is NOT owner and NOT co-gestionnaire - denying access');
-          setPermissions({
-            isCoGestionnaire: false,
+            isCoGestionnaire: true,
             permissions: {
               laalas: false,
               contenus: false
             }
           });
+        } else if (response.ok) {
+          // L'utilisateur est un vrai co-gestionnaire
+          const data = await response.json();
+          console.log('🔍 Co-gestionnaire data received:', data);
+          setPermissions({
+            id: data.id,
+            email: data.email,
+            isCoGestionnaire: true,
+            permissions: data.permissions,
+            animatorEmail: data.animatorEmail
+          });
+        } else {
+          throw new Error('Erreur lors de la récupération des permissions');
         }
-      } else if (response.ok) {
-        // L'utilisateur est un co-gestionnaire
-        const data = await response.json();
-        console.log('🔍 Co-gestionnaire data received:', data);
+      } catch (err) {
+        console.error('❌ Erreur permissions co-gestionnaire:', err);
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
         setPermissions({
-          id: data.id,
-          email: data.email,
           isCoGestionnaire: true,
-          permissions: data.permissions,
-          animatorEmail: data.animatorEmail
-        });
-      } else {
-        throw new Error('Erreur lors de la récupération des permissions');
-      }
-    } catch (err) {
-      console.error('❌ Erreur permissions:', err);
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
-      
-      // SÉCURITÉ : En cas d'erreur, vérifier si c'est le vrai propriétaire
-      const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL || 'teddy@laala.app';
-      const isRealOwner = user?.email === OWNER_EMAIL;
-      
-      if (isRealOwner) {
-        console.log('⚠️ Error occurred but user is real owner - granting access');
-        setPermissions({
-          isCoGestionnaire: false,
-          permissions: {
-            laalas: true,
-            contenus: true
-          }
-        });
-      } else {
-        console.log('🚫 Error occurred and user is not owner - denying access');
-        setPermissions({
-          isCoGestionnaire: false,
           permissions: {
             laalas: false,
             contenus: false
           }
         });
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+      return;
     }
+
+    // VÉRIFICATION IMPORTANTE : Déterminer qui est le vrai propriétaire (fallback)
+    const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL || 'teddy@laala.app';
+    const isRealOwner = user.email === OWNER_EMAIL;
+    
+    console.log('🔍 Fallback owner check:', { userEmail: user.email, ownerEmail: OWNER_EMAIL, isRealOwner });
+
+    if (isRealOwner) {
+      console.log('✅ User is REAL OWNER (fallback) - granting full access');
+      setPermissions({
+        isCoGestionnaire: false,
+        permissions: {
+          laalas: true,
+          contenus: true
+        }
+      });
+    } else {
+      console.log('🚫 Unknown user - denying access');
+      setPermissions({
+        isCoGestionnaire: false,
+        permissions: {
+          laalas: false,
+          contenus: false
+        }
+      });
+    }
+    setLoading(false);
   };
 
   useEffect(() => {

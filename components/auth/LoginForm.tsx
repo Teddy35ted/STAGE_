@@ -43,6 +43,12 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
         return;
       }
       
+      // IMPORTANT: Stocker le rôle animateur dans localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userRole', 'animateur');
+        localStorage.setItem('selectedRole', 'animateur');
+      }
+      
       // Redirection vers le dashboard après connexion réussie
       window.location.href = '/dashboard';
     } catch (error: any) {

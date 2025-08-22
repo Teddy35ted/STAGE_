@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { CoGestionnaire } from '../../app/models/co_gestionnaire';
+import React, { useState, useEffect } from 'react';
+import { CoGestionnaire, ResourcePermission, PermissionAction, PermissionResource } from '../../app/models/co_gestionnaire';
 import { useApi } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield, FiUserPlus, FiEye, FiEdit2, FiLock, FiCheck } from 'react-icons/fi';
+import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiShield, FiUserPlus, FiEye, FiEdit2, FiLock, FiCheck, FiCheckCircle } from 'react-icons/fi';
 
 interface CoGestionnaireFormProps {
   isOpen?: boolean;
@@ -15,6 +15,18 @@ interface CoGestionnaireFormProps {
   onSuccess: () => void;
   mode?: 'view' | 'edit' | 'create';
 }
+
+const RESOURCES: { key: PermissionResource; label: string; description: string }[] = [
+  { key: 'laalas', label: 'Laalas', description: 'Gestion des événements et activités' },
+  { key: 'contenus', label: 'Contenus', description: 'Gestion des contenus multimédias' }
+];
+
+const ACTIONS: { key: PermissionAction; label: string; color: string }[] = [
+  { key: 'create', label: 'Créer', color: 'bg-green-100 text-green-800' },
+  { key: 'read', label: 'Consulter', color: 'bg-blue-100 text-blue-800' },
+  { key: 'update', label: 'Modifier', color: 'bg-yellow-100 text-yellow-800' },
+  { key: 'delete', label: 'Supprimer', color: 'bg-red-100 text-red-800' }
+];
 
 export function CoGestionnaireForm({ 
   isOpen, 
@@ -38,6 +50,9 @@ export function CoGestionnaireForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [internalOpen, setInternalOpen] = useState(false);
+  const [permissions, setPermissions] = useState<ResourcePermission[]>(
+    coGestionnaire?.permissions || []
+  );
 
   // Use internal state if no external control
   const modalOpen = isOpen !== undefined ? isOpen : internalOpen;
@@ -46,11 +61,49 @@ export function CoGestionnaireForm({
   const { apiFetch } = useApi();
   const { user } = useAuth();
 
+  // Mettre à jour les permissions quand le coGestionnaire change
+  useEffect(() => {
+    if (coGestionnaire?.permissions) {
+      setPermissions(coGestionnaire.permissions);
+    }
+  }, [coGestionnaire]);
+
   const accessLevels = [
     { value: 'consulter', label: 'Consulter', description: 'Peut uniquement consulter les données' },
     { value: 'gerer', label: 'Gérer', description: 'Peut modifier et gérer le contenu' },
     { value: 'Ajouter', label: 'Ajouter', description: 'Peut ajouter de nouveaux éléments' }
   ];
+
+  const handlePermissionChange = (resource: PermissionResource, action: PermissionAction, granted: boolean) => {
+    setPermissions(prev => {
+      if (granted) {
+        const existingResource = prev.find(p => p.resource === resource);
+        if (existingResource) {
+          if (!existingResource.actions.includes(action)) {
+            return prev.map(p => 
+              p.resource === resource 
+                ? { ...p, actions: [...p.actions, action] }
+                : p
+            );
+          }
+        } else {
+          return [...prev, { resource, actions: [action] }];
+        }
+      } else {
+        return prev.map(p => 
+          p.resource === resource 
+            ? { ...p, actions: p.actions.filter(a => a !== action) }
+            : p
+        ).filter(p => p.actions.length > 0);
+      }
+      return prev;
+    });
+  };
+
+  const isPermissionGranted = (resource: PermissionResource, action: PermissionAction): boolean => {
+    const resourcePermission = permissions.find(p => p.resource === resource);
+    return resourcePermission?.actions.includes(action) || false;
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -142,12 +195,16 @@ export function CoGestionnaireForm({
       if (mode === 'create') {
         dataToSend = {
           ...formData,
+          permissions,
           animatorEmail: user?.email || 'animateur@laala.app' // Inclure l'email de l'animateur
         };
       } else if (mode === 'edit') {
         // En mode édition, exclure email et mot de passe
         const { email, password, confirmPassword, ...editableData } = formData;
-        dataToSend = editableData;
+        dataToSend = {
+          ...editableData,
+          permissions
+        };
       }
       
       await apiFetch(url, {
@@ -171,6 +228,7 @@ export function CoGestionnaireForm({
           password: '',
           confirmPassword: ''
         });
+        setPermissions([]);
       }
       setErrors({});
     } catch (err) {
@@ -494,16 +552,17 @@ export function CoGestionnaireForm({
             </div>
           )}
 
-          {/* Niveau d'accès */}
-          <div className="space-y-4">
+          {/* Permissions granulaires */}
+          <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-900 flex items-center">
               <FiShield className="w-5 h-5 text-[#f01919] mr-2" />
-              Permissions
+              Permissions d'accès
             </h3>
             
+            {/* Niveau d'accès legacy (pour compatibilité) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Niveau d'accès *
+                Niveau d'accès général *
               </label>
               <div className="relative">
                 <FiShield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -528,6 +587,59 @@ export function CoGestionnaireForm({
                 </p>
               </div>
             </div>
+
+            {/* Permissions granulaires par ressource */}
+            <div className="space-y-4">
+              <h4 className="text-md font-medium text-gray-900">
+                Permissions détaillées par ressource
+              </h4>
+              
+              {RESOURCES.map(resource => (
+                <div key={resource.key} className="border border-gray-200 rounded-lg p-4">
+                  <div className="mb-3">
+                    <h5 className="font-medium text-gray-900">{resource.label}</h5>
+                    <p className="text-sm text-gray-600">{resource.description}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {ACTIONS.map(action => {
+                      const isGranted = isPermissionGranted(resource.key, action.key);
+                      return (
+                        <label key={action.key} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isGranted}
+                            onChange={(e) => handlePermissionChange(resource.key, action.key, e.target.checked)}
+                            className="rounded border-gray-300 text-[#f01919] focus:ring-[#f01919]"
+                            disabled={mode === 'view'}
+                          />
+                          <span className={`text-xs px-2 py-1 rounded-full ${action.color}`}>
+                            {action.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Résumé des permissions */}
+            {permissions.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h5 className="font-medium text-blue-900 mb-2">Résumé des permissions accordées</h5>
+                <div className="space-y-1">
+                  {permissions.map(perm => (
+                    <div key={perm.resource} className="text-sm text-blue-800">
+                      <span className="font-medium capitalize">{perm.resource}</span>: {' '}
+                      {perm.actions.map(action => 
+                        ACTIONS.find(a => a.key === action)?.label
+                      ).join(', ')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Informations complémentaires */}

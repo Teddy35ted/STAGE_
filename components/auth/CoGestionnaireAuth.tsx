@@ -69,9 +69,11 @@ export const CoGestionnaireAuth: React.FC<CoGestionnaireAuthProps> = ({ onBack }
       
       await signInWithCustomToken(firebaseAuth, data.data.token);
 
-      // Stocker les informations du co-gestionnaire
+      // Stocker les informations du co-gestionnaire ET le rôle sélectionné
       if (typeof window !== 'undefined') {
         localStorage.setItem('coGestionnaireInfo', JSON.stringify(data.data.user));
+        localStorage.setItem('userRole', 'cogestionnaire'); // IMPORTANT: Stocker le rôle
+        localStorage.setItem('selectedRole', 'cogestionnaire'); // Pour la cohérence
       }
 
       console.log('✅ Token Firebase configuré pour co-gestionnaire');

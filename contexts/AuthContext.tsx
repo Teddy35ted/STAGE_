@@ -116,7 +116,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await signOut(auth);
-      console.log('Logout successful');
+      
+      // IMPORTANT: Nettoyer les informations de rôle lors de la déconnexion
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('selectedRole');
+        localStorage.removeItem('coGestionnaireInfo');
+      }
+      
+      console.log('Logout successful - role data cleared');
     } catch (error: any) {
       console.error('Logout error:', error);
       throw new Error('Erreur lors de la déconnexion');
