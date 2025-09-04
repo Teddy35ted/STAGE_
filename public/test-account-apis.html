@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API - Demandes de compte</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { border: 1px solid #ccc; margin: 20px 0; padding: 15px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 15px; margin: 5px; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test des APIs - Demandes de compte</h1>
+    
+    <div class="test-section">
+        <h2>1. Test création de demande</h2>
+        <input type="email" id="emailInput" placeholder="Email" value="test@example.com">
+        <button onclick="testCreateRequest()">Créer demande</button>
+        <div id="createResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test récupération des demandes (Admin)</h2>
+        <input type="text" id="tokenInput" placeholder="Token admin" value="test-admin-token">
+        <button onclick="testGetRequests()">Récupérer demandes</button>
+        <div id="getResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test authentification admin</h2>
+        <input type="email" id="adminEmail" placeholder="Email admin" value="tedkouevi701@gmail.com">
+        <input type="password" id="adminPassword" placeholder="Mot de passe" value="feiderus">
+        <button onclick="testAdminLogin()">Connexion admin</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <script>
+        async function testCreateRequest() {
+            const email = document.getElementById('emailInput').value;
+            const resultDiv = document.getElementById('createResult');
+            
+            resultDiv.innerHTML = 'Test en cours...';
+            
+            try {
+                console.log('🔍 Test création demande pour:', email);
+                
+                const response = await fetch('/api/auth/request-account', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h4>Résultat création:</h4>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Success:</strong> ${data.success}</p>
+                    <p><strong>Message:</strong> ${data.message || data.error}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                console.log('📊 Résultat création:', data);
+                
+            } catch (error) {
+                console.error('❌ Erreur:', error);
+                resultDiv.innerHTML = `<p style="color: red;">Erreur: ${error.message}</p>`;
+            }
+        }
+        
+        async function testGetRequests() {
+            const token = document.getElementById('tokenInput').value;
+            const resultDiv = document.getElementById('getResult');
+            
+            resultDiv.innerHTML = 'Test en cours...';
+            
+            try {
+                console.log('🔍 Test récupération demandes avec token:', token.substring(0, 10) + '...');
+                
+                const response = await fetch('/api/admin/account-requests', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h4>Résultat récupération:</h4>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Success:</strong> ${data.success}</p>
+                    <p><strong>Nombre de demandes:</strong> ${data.requests?.length || 0}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                console.log('📊 Résultat récupération:', data);
+                
+            } catch (error) {
+                console.error('❌ Erreur:', error);
+                resultDiv.innerHTML = `<p style="color: red;">Erreur: ${error.message}</p>`;
+            }
+        }
+        
+        async function testAdminLogin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            resultDiv.innerHTML = 'Test en cours...';
+            
+            try {
+                console.log('🔍 Test connexion admin pour:', email);
+                
+                const response = await fetch('/api/admin/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h4>Résultat connexion admin:</h4>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Success:</strong> ${data.success}</p>
+                    <p><strong>Token:</strong> ${data.token ? data.token.substring(0, 20) + '...' : 'Aucun'}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                // Si connexion réussie, mettre à jour le token
+                if (data.success && data.token) {
+                    document.getElementById('tokenInput').value = data.token;
+                }
+                
+                console.log('📊 Résultat connexion admin:', data);
+                
+            } catch (error) {
+                console.error('❌ Erreur:', error);
+                resultDiv.innerHTML = `<p style="color: red;">Erreur: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

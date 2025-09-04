@@ -17,14 +17,20 @@ class FirebaseAdmin {
       const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
       const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-      if (!projectId || !clientEmail || !privateKey) {
-        throw new Error('Variables d\'environnement Firebase Admin manquantes');
-      }
-
       console.log('🔧 Initialisation Firebase Admin...');
       console.log('📋 Project ID:', projectId);
-      console.log('📧 Client Email:', clientEmail ? '✅' : '❌');
-      console.log('🔑 Private Key:', privateKey ? '✅' : '❌');
+      console.log('📧 Client Email:', clientEmail ? '✅ Configuré' : '❌ Non configuré');
+      console.log('🔑 Private Key:', privateKey ? '✅ Configuré' : '❌ Non configuré');
+
+      if (!projectId || !clientEmail || !privateKey) {
+        console.warn('⚠️ Variables d\'environnement Firebase Admin incomplètes');
+        console.warn('📝 Instructions:');
+        console.warn('   1. Allez sur Firebase Console');
+        console.warn('   2. Projet Settings > Service Accounts');
+        console.warn('   3. Generate new private key');
+        console.warn('   4. Copiez les valeurs dans .env.local');
+        throw new Error('Configuration Firebase Admin incomplète - consultez la console pour les instructions');
+      }
 
       // Configuration complète Firebase Admin
       const firebaseAdminConfig = {

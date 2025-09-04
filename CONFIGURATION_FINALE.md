@@ -1,32 +1,142 @@
-# Configuration Finale - Bucket "medias" Appwrite
+# 🔧 CONFIGURATION FINALE - GUIDE COMPLET JWT & EMAIL
 
-Tous les formulaires ont été modifiés pour utiliser votre bucket unique **"medias"**. Voici ce qui a été fait et ce qu'il vous reste à configurer.
+## 📋 **Variables d'environnement - État actuel (.env.local)**
 
-## ✅ **Ce qui a été modifié**
-
-### 1. **Services et Composants**
-- ✅ `lib/appwrite/media-service.ts` - Service principal adapté au bucket unique
-- ✅ `components/ui/media-upload.tsx` - Composant d'upload mis à jour
-- ✅ `hooks/useMediaUpload.ts` - Hooks React adaptés
-
-### 2. **Formulaires Modifiés**
-- ✅ `LaalaCreateForm.tsx` - Upload de couverture (image/vidéo)
-- ✅ `ContenuCreateForm.tsx` - Upload de médias selon le type
-- ✅ `UserAvatarUpload.tsx` - Upload d'avatar utilisateur
-- ✅ `BoutiqueCreateForm.tsx` - Upload d'images de boutique
-
-### 3. **Scripts de Configuration**
-- ✅ `scripts/setup-medias-bucket.js` - Vérification du bucket
-- ✅ Commandes npm ajoutées
-
-## 🔧 **Configuration Requise**
-
-### 1. **Vérifiez votre bucket "medias"**
-
-```bash
-# Vérifier la configuration du bucket
-npm run medias:check
+### ✅ **JWT_SECRET - CONFIGURÉ :**
+```env
+# JWT Secret pour l'authentification (généré automatiquement)
+JWT_SECRET=a247cb7efc997015f8fb0360144061e09738e88c7141cfc0ac26d20a7587d77a
 ```
+
+### ✅ **Firebase Configuration (configuré) :**
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyBms2zGcbwbmJyj-9u8dYK7EaTWQ5kW-HE
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=etudenotaire-9e21c.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=etudenotaire-9e21c
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=etudenotaire-9e21c.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=1086718015486
+NEXT_PUBLIC_FIREBASE_APP_ID=1:1086718015486:web:c6d96d0ab1a1c4f7e4e20b
+```
+
+### ✅ **AppWrite Configuration (configuré) :**
+```env
+NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=676e45200036b4c4b59e
+NEXT_PUBLIC_APPWRITE_DATABASE_ID=676e453f002f6c1e4c72
+NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID=676e490a000bc25e9bb7
+```
+
+### ⚠️ **Configuration Email (À finaliser) :**
+```env
+# Email Configuration pour notifications (Gmail)
+EMAIL_USER=votre-email@gmail.com          # ⚠️ À remplacer
+EMAIL_PASSWORD=votre-mot-de-passe-app      # ⚠️ Mot de passe d'application Gmail
+```
+
+---
+
+## 🚀 **JWT_SECRET - Configuration terminée**
+
+### ✅ **Ce qui a été fait :**
+1. **Génération sécurisée** : Clé de 64 caractères (hex) avec crypto.randomBytes(32)
+2. **Mise à jour .env.local** : JWT_SECRET configuré automatiquement
+3. **Sécurité** : Clé unique et robuste pour la signature des tokens JWT
+
+### 🔧 **Utilisation :**
+- **Authentification admin** : Tokens JWT signés avec cette clé
+- **Sessions sécurisées** : Validation automatique des tokens
+- **Middleware** : Protection des routes admin
+
+---
+
+## 📧 **Configuration Email finale**
+
+### **Étape 1 : Activer l'authentification à 2 facteurs Gmail**
+1. Allez sur [myaccount.google.com](https://myaccount.google.com)
+2. **Sécurité** → **Validation en 2 étapes** → **Activer**
+
+### **Étape 2 : Générer un mot de passe d'application**
+1. Allez sur [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+2. **Nom de l'application** : "Stage Notaire Email"
+3. **Copiez le mot de passe** (format : xxxx xxxx xxxx xxxx)
+
+### **Étape 3 : Mettre à jour .env.local**
+```env
+EMAIL_USER=votre-email@gmail.com
+EMAIL_PASSWORD=xxxx xxxx xxxx xxxx  # Le mot de passe d'app généré
+```
+
+---
+
+## 🧪 **Tests de configuration**
+
+### **Test JWT (déjà fonctionnel) :**
+```bash
+# Connexion admin
+# Email: tedkouevi701@gmail.com
+# Mot de passe: feiderus
+```
+
+### **Test Email (après config Gmail) :**
+```bash
+# Démarrer le serveur
+npm run dev
+
+# Test configuration
+http://localhost:3000/api/admin/test-email
+```
+
+---
+
+## ✅ **Checklist finale**
+
+### **Authentification & JWT :**
+- [x] JWT_SECRET généré et configuré (64 caractères sécurisés)
+- [x] Authentification admin opérationnelle
+- [x] Dashboard admin avec auto-refresh
+- [x] Middleware de protection des routes
+
+### **Système Email :**
+- [x] EmailService avec templates personnalisés
+- [x] Preview email avec édition en temps réel
+- [x] APIs d'approbation/rejet des comptes
+- [x] Gestion d'erreurs robuste
+- [ ] Configuration Gmail (EMAIL_USER/EMAIL_PASSWORD)
+
+### **Base de données :**
+- [x] Firebase configuré et fonctionnel
+- [x] AppWrite configuré et fonctionnel
+- [x] Collections et permissions configurées
+
+---
+
+## 🆘 **Dépannage**
+
+### **Problèmes JWT :**
+- ✅ **Résolu** : JWT_SECRET configuré automatiquement
+- **Si erreur** : Redémarrer le serveur après modification .env.local
+
+### **Problèmes Email :**
+- **Diagnostic** : `node diagnostic-email-apis.js`
+- **Test API** : `/api/admin/test-email`
+- **Logs** : Console du navigateur et terminal
+
+### **Scripts utiles :**
+```bash
+# Générer nouveau JWT_SECRET
+node generate-jwt-secret.js
+
+# Diagnostic email
+node diagnostic-email-apis.js
+
+# Vérification complète
+npm run dev
+```
+
+---
+
+**Configuration JWT terminée ✅**  
+**Prochaine étape : Configuration Gmail pour les emails** 📧
 
 ### 2. **Configuration dans Appwrite Console**
 

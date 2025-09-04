@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Création Admin Rapide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            line-height: 1.6;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .credentials {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid #FFC107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Création Admin Rapide</h1>
+        
+        <div class="info">
+            <strong>🎯 Instructions :</strong><br>
+            1. Assurez-vous que votre serveur Next.js est démarré<br>
+            2. Cliquez sur "Créer l'Administrateur"<br>
+            3. Connectez-vous avec les identifiants affichés
+        </div>
+
+        <form id="adminForm">
+            <div class="form-group">
+                <label for="serverUrl">🌐 URL du serveur :</label>
+                <input type="text" id="serverUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+            </div>
+
+            <div class="form-group">
+                <label for="email">📧 Email admin :</label>
+                <input type="email" id="email" value="tedkouevi701@gmail.com" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="password">🔑 Mot de passe :</label>
+                <input type="text" id="password" value="feiderus" readonly>
+            </div>
+
+            <button type="submit" id="createBtn">
+                <span class="emoji">🚀</span>
+                Créer l'Administrateur
+            </button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div class="credentials">
+            <strong>🔑 Identifiants de connexion :</strong><br>
+            📧 Email : tedkouevi701@gmail.com<br>
+            🔑 Mot de passe : feiderus<br>
+            🌐 URL : <a href="http://localhost:3000/login" target="_blank" style="color: #FFC107;">http://localhost:3000/login</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('adminForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('createBtn');
+            const result = document.getElementById('result');
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            // Désactiver le bouton
+            button.disabled = true;
+            button.innerHTML = '<span class="emoji">⏳</span>Création en cours...';
+            
+            // Masquer le résultat précédent
+            result.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${serverUrl}/api/admin/init`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'tedkouevi701@gmail.com',
+                        password: 'feiderus',
+                        name: 'Administrateur Principal'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ Administrateur créé avec succès !</strong><br>
+                        ${data.message || 'Admin initialisé'}<br><br>
+                        🎉 Vous pouvez maintenant vous connecter !
+                    `;
+                } else if (response.status === 409) {
+                    result.className = 'result info';
+                    result.innerHTML = `
+                        <strong>ℹ️ L'administrateur existe déjà</strong><br>
+                        C'est normal ! Vous pouvez directement vous connecter.
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <strong>⚠️ Erreur ${response.status}</strong><br>
+                        ${data.error || data.message || 'Erreur inconnue'}
+                    `;
+                }
+                
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `
+                    <strong>❌ Erreur de connexion</strong><br>
+                    ${error.message}<br><br>
+                    💡 Vérifiez que le serveur est démarré avec :<br>
+                    <code>npm run dev</code>
+                `;
+            }
+            
+            // Réactiver le bouton
+            button.disabled = false;
+            button.innerHTML = '<span class="emoji">🚀</span>Créer l\'Administrateur';
+            
+            // Afficher le résultat
+            result.style.display = 'block';
+        });
+
+        // Détecter automatiquement le port si le serveur est sur 3001
+        window.addEventListener('load', async function() {
+            const ports = [3000, 3001, 3002];
+            
+            for (const port of ports) {
+                try {
+                    const response = await fetch(`http://localhost:${port}/api/health`, {
+                        method: 'GET',
+                        timeout: 2000
+                    });
+                    
+                    if (response.ok) {
+                        document.getElementById('serverUrl').value = `http://localhost:${port}`;
+                        break;
+                    }
+                } catch (e) {
+                    // Continuer avec le port suivant
+                }
+            }
+        });
+    </script>
+</body>
+</html>
