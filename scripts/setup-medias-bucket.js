@@ -8,8 +8,8 @@
 const { Client, Storage, Permission, Role } = require('appwrite');
 
 // Configuration
-const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
-const APPWRITE_PROJECT_ID = '688fa4c00025e643934d';
+const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1';
+const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID;
 const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY; // Clé API admin requise
 
 // Configuration du bucket "medias" existant

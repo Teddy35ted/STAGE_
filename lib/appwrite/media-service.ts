@@ -25,7 +25,7 @@ export type MediaCategory = 'user-avatar' | 'laala-cover' | 'contenu-media' | 'b
 
 export class AppwriteMediaService {
   // Un seul bucket pour tous les médias (ID unique du bucket existant)
-  static readonly BUCKET_ID = '688fa6db0002434c0735';
+  static readonly BUCKET_ID: string = process.env.APPWRITE_BUCKET_ID || '';
   
   // Organisation par dossiers dans le bucket
   static readonly FOLDERS = {
