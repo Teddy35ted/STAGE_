@@ -1,5 +1,17 @@
 // API pour rejeter une demande de compte
+// SYSTÈME DÉSACTIVÉ - RETOUR À L'ANCIEN SYSTÈME DIRECT
 import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    error: 'Système de rejet administratif désactivé',
+    info: 'L\'ancien système direct est maintenant utilisé - les comptes sont créés automatiquement lors de la demande',
+    redirect: '/admin/dashboard'
+  }, { status: 410 }); // 410 Gone - Cette fonctionnalité n'est plus disponible
+}
+
+/* ANCIEN CODE COMMENTÉ - SYSTÈME DE REJET ADMINISTRATIF
 import { AccountRequestService } from '../../../../Backend/services/collections/AccountRequestService';
 import jwt from 'jsonwebtoken';
 
@@ -90,3 +102,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+*/

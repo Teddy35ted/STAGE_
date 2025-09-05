@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '../../../Backend/services/collections/UserService';
+import { AccountRequestService } from '../../../Backend/services/collections/AccountRequestService';
 
 const userService = new UserService();
+const accountRequestService = new AccountRequestService();
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,6 +23,16 @@ export async function POST(request: NextRequest) {
     );
     
     if (!authResult) {
+      // Vérifier si l'utilisateur a une demande approuvée avec mot de passe temporaire
+      const accountRequest = await accountRequestService.getByEmail(email.toLowerCase().trim());
+      
+      if (accountRequest && accountRequest.status === 'approved' && accountRequest.temporaryPassword && accountRequest.isFirstLogin) {
+        return NextResponse.json({
+          error: 'Vous avez un mot de passe temporaire. Utilisez la page de connexion temporaire pour créer votre compte.',
+          hasTemporaryPassword: true
+        }, { status: 401 });
+      }
+      
       return NextResponse.json(
         { error: 'Email ou mot de passe incorrect' },
         { status: 401 }

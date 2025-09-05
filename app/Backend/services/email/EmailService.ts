@@ -381,6 +381,83 @@ export class EmailService {
   }
 
   /**
+   * Envoyer un email de bienvenue avec mot de passe temporaire (ancien système direct)
+   */
+  async sendWelcomeEmailWithTemporaryPassword(
+    userEmail: string, 
+    temporaryPassword: string
+  ): Promise<void> {
+    const subject = 'Bienvenue sur La-a-La - Votre compte a été créé';
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+          .header { background-color: #f01919; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #f9f9f9; }
+          .credentials { background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 15px 0; }
+          .password { font-family: monospace; font-size: 16px; font-weight: bold; color: #2d5016; }
+          .footer { padding: 20px; text-align: center; color: #666; }
+          .warning { background-color: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>La-a-La</h1>
+            <h2>Bienvenue !</h2>
+          </div>
+          
+          <div class="content">
+            <p>Bonjour,</p>
+            
+            <p>Votre compte La-a-La a été créé avec succès ! 🎉</p>
+            
+            <div class="credentials">
+              <h3>Vos identifiants de connexion :</h3>
+              <p><strong>Email :</strong> ${userEmail}</p>
+              <p><strong>Mot de passe temporaire :</strong> <span class="password">${temporaryPassword}</span></p>
+            </div>
+            
+            <div class="warning">
+              <p><strong>⚠️ Important :</strong></p>
+              <ul>
+                <li>Ce mot de passe est temporaire et doit être changé lors de votre première connexion</li>
+                <li>Gardez ces informations confidentielles</li>
+                <li>Connectez-vous dès que possible pour compléter votre profil et sécuriser votre compte</li>
+              </ul>
+            </div>
+            
+            <p>
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/login-temporary" 
+                 style="background-color: #f01919; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
+                Se connecter maintenant
+              </a>
+            </p>
+            
+            <p>Merci de vous être inscrit sur La-a-La !</p>
+          </div>
+          
+          <div class="footer">
+            <p>Cet email a été généré automatiquement.</p>
+            <p>Si vous n'avez pas demandé de compte, contactez-nous immédiatement.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.sendEmail({
+      to: userEmail,
+      subject,
+      html
+    });
+  }
+
+  /**
    * Vérifier la configuration email
    */
   async verifyConnection(): Promise<boolean> {

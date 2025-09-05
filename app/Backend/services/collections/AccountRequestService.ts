@@ -48,14 +48,15 @@ export class AccountRequestService extends BaseService<AccountRequest> {
       const documentId = await this.create(autoFields);
       console.log('✅ Document créé avec ID:', documentId);
       
+      // COMMENTÉ - ANCIEN SYSTÈME DE CONFIRMATION ADMINISTRATIVE
       // Notifier les administrateurs - ne pas faire échouer si la notification échoue
-      try {
+      /* try {
         console.log('📢 Envoi notification aux admins...');
         await this.notificationService.notifyAdminsNewAccountRequest(requestData.email, documentId);
         console.log('✅ Notification envoyée');
       } catch (notifError) {
         console.warn('⚠️ Erreur notification (non bloquante):', notifError);
-      }
+      } */
       
       return documentId;
     } catch (error) {
@@ -209,8 +210,9 @@ export class AccountRequestService extends BaseService<AccountRequest> {
 
   /**
    * Approuver une demande et générer un mot de passe temporaire
+   * COMMENTÉ - ANCIEN SYSTÈME DE CONFIRMATION ADMINISTRATIVE
    */
-  async approveRequest(
+  /* async approveRequest(
     requestId: string, 
     adminId: string, 
     adminComment?: string
@@ -265,12 +267,13 @@ export class AccountRequestService extends BaseService<AccountRequest> {
     }
 
     return { temporaryPassword };
-  }
+  } */
 
   /**
    * Approuver une demande avec données personnalisées pour l'email
+   * COMMENTÉ - ANCIEN SYSTÈME DE CONFIRMATION ADMINISTRATIVE
    */
-  async approveRequestWithCustomData(
+  /* async approveRequestWithCustomData(
     requestId: string, 
     adminId: string, 
     adminComment?: string,
@@ -333,12 +336,13 @@ export class AccountRequestService extends BaseService<AccountRequest> {
     }
 
     return { temporaryPassword };
-  }
+  } */
 
   /**
    * Rejeter une demande
+   * COMMENTÉ - ANCIEN SYSTÈME DE CONFIRMATION ADMINISTRATIVE
    */
-  async rejectRequest(requestId: string, adminId: string, adminComment: string): Promise<void> {
+  /* async rejectRequest(requestId: string, adminId: string, adminComment: string): Promise<void> {
     const request = await this.getById(requestId);
     if (!request) {
       throw new Error('Demande introuvable');
@@ -374,12 +378,13 @@ export class AccountRequestService extends BaseService<AccountRequest> {
     } catch (emailError) {
       console.warn('⚠️ Erreur envoi email (non bloquante):', emailError);
     }
-  }
+  } */
 
   /**
    * Rejeter une demande avec données personnalisées pour l'email
+   * COMMENTÉ - ANCIEN SYSTÈME DE CONFIRMATION ADMINISTRATIVE
    */
-  async rejectRequestWithCustomData(
+  /* async rejectRequestWithCustomData(
     requestId: string, 
     adminId: string, 
     adminComment: string,
@@ -422,7 +427,7 @@ export class AccountRequestService extends BaseService<AccountRequest> {
     } catch (emailError) {
       console.warn('⚠️ Erreur envoi email (non bloquante):', emailError);
     }
-  }
+  } */
 
   /**
    * Générer un mot de passe temporaire sécurisé

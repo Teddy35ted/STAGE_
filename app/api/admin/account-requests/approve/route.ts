@@ -1,4 +1,5 @@
 // API pour approuver une demande de compte
+// SYSTÈME DÉSACTIVÉ - RETOUR À L'ANCIEN SYSTÈME DIRECT
 import { NextRequest, NextResponse } from 'next/server';
 import { AccountRequestService } from '../../../../Backend/services/collections/AccountRequestService';
 import jwt from 'jsonwebtoken';
@@ -7,6 +8,15 @@ const accountRequestService = new AccountRequestService();
 
 export async function POST(request: NextRequest) {
   try {
+    // SYSTÈME D'APPROBATION ADMINISTRATIVE DÉSACTIVÉ
+    return NextResponse.json({
+      success: false,
+      error: 'Système d\'approbation administrative désactivé',
+      info: 'L\'ancien système direct est maintenant utilisé - les comptes sont créés automatiquement lors de la demande',
+      redirect: '/admin/dashboard'
+    }, { status: 410 }); // 410 Gone - Cette fonctionnalité n'est plus disponible
+
+    /* ANCIEN CODE COMMENTÉ - SYSTÈME D'APPROBATION ADMINISTRATIVE
     // Vérifier l'authentification admin
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -52,11 +62,19 @@ export async function POST(request: NextRequest) {
       message: 'Demande approuvée avec succès. Un email avec le mot de passe temporaire a été envoyé.',
       temporaryPassword: result.temporaryPassword
     });
+    */
 
   } catch (error: any) {
     console.error('❌ Erreur approbation demande:', error);
     console.error('❌ Stack trace:', error.stack);
 
+    return NextResponse.json({
+      success: false,
+      error: 'Système d\'approbation administrative désactivé',
+      originalError: error.message
+    }, { status: 410 });
+
+    /* GESTION D'ERREURS COMMENTÉE
     // Gestion d'erreurs spécifiques
     if (error.message?.includes('Demande introuvable')) {
       return NextResponse.json({
@@ -81,7 +99,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: false,
-      error: error.message || 'Erreur lors de l\'approbation de la demande'
+      error: 'Erreur lors de l\'approbation de la demande'
     }, { status: 500 });
+    */
   }
 }

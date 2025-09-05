@@ -9,13 +9,9 @@ import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 export const TemporaryLoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showTempPassword, setShowTempPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [isFirstLogin, setIsFirstLogin] = useState(true);
 
   const router = useRouter();
 
@@ -27,20 +23,6 @@ export const TemporaryLoginForm: React.FC = () => {
     if (!temporaryPassword.trim()) {
       setError('Le mot de passe temporaire est requis');
       return false;
-    }
-    if (isFirstLogin) {
-      if (!newPassword) {
-        setError('Le nouveau mot de passe est requis');
-        return false;
-      }
-      if (newPassword.length < 6) {
-        setError('Le nouveau mot de passe doit contenir au moins 6 caractères');
-        return false;
-      }
-      if (newPassword !== confirmPassword) {
-        setError('Les mots de passe ne correspondent pas');
-        return false;
-      }
     }
     return true;
   };
@@ -63,14 +45,18 @@ export const TemporaryLoginForm: React.FC = () => {
         },
         body: JSON.stringify({
           email,
-          temporaryPassword,
-          newPassword: isFirstLogin ? newPassword : undefined
+          temporaryPassword
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
+        // Stocker les informations utilisateur pour l'authentification
+        if (data.user) {
+          localStorage.setItem('tempUser', JSON.stringify(data.user));
+        }
+        
         if (data.requiresProfileCompletion) {
           // Rediriger vers la completion du profil
           router.push('/complete-profile');
@@ -95,12 +81,10 @@ export const TemporaryLoginForm: React.FC = () => {
         <p className="text-gray-600 mt-2">Connexion avec mot de passe temporaire</p>
       </div>
 
-      {isFirstLogin && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded text-sm">
-          <p><strong>Première connexion :</strong></p>
-          <p className="mt-1">Vous devez changer votre mot de passe temporaire pour des raisons de sécurité.</p>
-        </div>
-      )}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded text-sm">
+        <p><strong>Étape 1 :</strong> Validation de votre mot de passe temporaire</p>
+        <p className="mt-1">Après validation, vous pourrez compléter votre profil et définir votre nouveau mot de passe.</p>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
@@ -142,50 +126,12 @@ export const TemporaryLoginForm: React.FC = () => {
           </button>
         </div>
 
-        {isFirstLogin && (
-          <>
-            <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                type={showNewPassword ? 'text' : 'password'}
-                placeholder="Nouveau mot de passe (min. 6 caractères)"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="pl-10 pr-10"
-                required
-                disabled={loading}
-                minLength={6}
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showNewPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
-            </div>
-
-            <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                type="password"
-                placeholder="Confirmer le nouveau mot de passe"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pl-10"
-                required
-                disabled={loading}
-              />
-            </div>
-          </>
-        )}
-
         <Button
           type="submit"
           disabled={loading}
           className="w-full bg-[#f01919] hover:bg-[#d01515] text-white disabled:opacity-50"
         >
-          {loading ? 'Connexion...' : (isFirstLogin ? 'Créer mon compte' : 'Se connecter')}
+          {loading ? 'Valider le mot de passe temporaire' : 'Valider'}
         </Button>
       </form>
 

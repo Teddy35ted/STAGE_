@@ -113,7 +113,18 @@ export const UnifiedLoginForm: React.FC = () => {
           localStorage.setItem('userToken', JSON.stringify(data.user));
           router.push('/dashboard');
         } else {
-          setError(data.error || 'Email ou mot de passe incorrect');
+          // Redirection automatique si mot de passe temporaire détecté
+          if (data.hasTemporaryPassword) {
+            alert('Redirection vers la page de connexion temporaire...');
+            router.push('/login-temporary');
+            return;
+          }
+          
+          // Message d'erreur plus informatif pour les mots de passe temporaires
+          const errorMessage = data.error === 'Email ou mot de passe incorrect' 
+            ? 'Email ou mot de passe incorrect. Si vous avez un mot de passe temporaire, utilisez la page de connexion temporaire.'
+            : data.error || 'Email ou mot de passe incorrect';
+          setError(errorMessage);
         }
       }
     } catch (error) {
@@ -357,10 +368,10 @@ export const UnifiedLoginForm: React.FC = () => {
                     Faire une demande
                   </button>
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Vous avez un mot de passe temporaire ?{' '}
-                  <a href="/login-temporary" className="text-blue-600 hover:underline">
-                    Cliquez ici
+                <p className="text-sm text-gray-600 mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <strong>Mot de passe temporaire ?</strong>{' '}
+                  <a href="/login-temporary" className="text-blue-600 hover:underline font-semibold">
+                    Cliquez ici pour vous connecter
                   </a>
                 </p>
               </div>
