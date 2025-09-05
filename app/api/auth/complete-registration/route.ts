@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '../../../Backend/services/collections/UserService';
+import { UserCore } from '../../../models/user';
 
 const userService = new UserService();
 
@@ -7,8 +8,19 @@ export async function POST(request: NextRequest) {
   try {
     console.log('📝 Finalisation de l\'inscription utilisateur...');
     
+    // Vérifier l'authentification
+    const { verifyAuth } = await import('../../../Backend/utils/authVerifier');
+    const auth = await verifyAuth(request);
+    
+    if (!auth) {
+      return NextResponse.json({
+        success: false,
+        error: 'Non authentifié'
+      }, { status: 401 });
+    }
+
     const userData = await request.json();
-    console.log('📋 Données utilisateur reçues:', { ...userData, newPassword: userData.newPassword ? '***' : undefined });
+    console.log('📋 Données utilisateur reçues:', userData);
 
     // Validation des données requises
     if (!userData.nom || !userData.prenom || !userData.email) {
@@ -18,70 +30,89 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validation du nouveau mot de passe
-    if (!userData.newPassword || userData.newPassword.length < 6) {
+    // Vérifier si l'utilisateur existe déjà
+    const existingUser = await userService.getById(auth.uid);
+    if (existingUser) {
+      console.log('👤 Utilisateur existant trouvé, mise à jour...');
+      
+      // Mettre à jour avec les vraies données
+      await userService.update(auth.uid, {
+        nom: userData.nom,
+        prenom: userData.prenom,
+        email: userData.email,
+        tel: userData.tel || '00000000',
+        date_de_naissance: userData.date_de_naissance || '1990-01-01',
+        sexe: userData.sexe || 'Masculin',
+        pays: userData.pays || 'Togo',
+        ville: userData.ville || 'Lomé',
+        quartier: userData.quartier || '',
+        region: userData.region || '',
+        codePays: userData.codePays || '+228'
+      });
+      
+      const updatedUser = await userService.getById(auth.uid);
+      
       return NextResponse.json({
-        success: false,
-        error: 'Un nouveau mot de passe d\'au moins 6 caractères est requis'
-      }, { status: 400 });
+        success: true,
+        message: 'Profil mis à jour avec succès',
+        user: {
+          id: updatedUser?.id,
+          nom: updatedUser?.nom,
+          prenom: updatedUser?.prenom,
+          email: updatedUser?.email,
+          avatar: updatedUser?.avatar,
+          iscert: updatedUser?.iscert
+        },
+        action: 'updated'
+      });
     }
 
-    // Trouver l'utilisateur par email
-    const existingUser = await userService.getByEmail(userData.email);
-    if (!existingUser) {
-      return NextResponse.json({
-        success: false,
-        error: 'Utilisateur non trouvé'
-      }, { status: 404 });
-    }
+    console.log('🆕 Création nouveau profil utilisateur...');
 
-    console.log('👤 Utilisateur trouvé, mise à jour du profil et mot de passe...');
-    
-    // Préparer les données de mise à jour
-    const updateData: any = {
+    // Créer les données complètes pour l'utilisateur
+    const completeUserData: UserCore = {
       nom: userData.nom,
       prenom: userData.prenom,
+      email: userData.email,
       tel: userData.tel || '00000000',
+      password: 'firebase-auth', // Mot de passe géré par Firebase Auth
       date_de_naissance: userData.date_de_naissance || '1990-01-01',
       sexe: userData.sexe || 'Masculin',
       pays: userData.pays || 'Togo',
       ville: userData.ville || 'Lomé',
       quartier: userData.quartier || '',
       region: userData.region || '',
-      codePays: userData.codePays || '+228',
-      requiresPasswordChange: false // Plus besoin de changer le mot de passe
+      codePays: userData.codePays || '+228'
     };
-    
-    // Hasher et inclure le nouveau mot de passe
-    console.log('🔐 Mise à jour du mot de passe...');
-    const bcrypt = await import('bcryptjs');
-    updateData.password = await bcrypt.hash(userData.newPassword, 10);
-    console.log('✅ Mot de passe mis à jour et hashé');
-    
-    // Mettre à jour avec les vraies données
-    await userService.update(existingUser.id!, updateData);
-    
-    const updatedUser = await userService.getById(existingUser.id!);
-    
+
+    // Créer l'utilisateur avec les vraies données
+    const userId = await userService.createUser(completeUserData, auth.uid);
+    console.log('✅ Profil utilisateur créé avec ID:', userId);
+
+    // Récupérer l'utilisateur créé
+    const newUser = await userService.getById(userId);
+
     return NextResponse.json({
       success: true,
-      message: 'Profil complété avec succès',
+      message: 'Profil créé avec succès',
       user: {
-        id: updatedUser?.id,
-        nom: updatedUser?.nom,
-        prenom: updatedUser?.prenom,
-        email: updatedUser?.email,
-        avatar: updatedUser?.avatar,
-        iscert: updatedUser?.iscert
+        id: newUser?.id,
+        nom: newUser?.nom,
+        prenom: newUser?.prenom,
+        email: newUser?.email,
+        avatar: newUser?.avatar,
+        iscert: newUser?.iscert
       },
-      action: 'completed'
+      action: 'created'
     });
 
-  } catch (error: any) {
-    console.error('❌ Erreur lors de la finalisation:', error);
+  } catch (error) {
+    console.error('❌ Erreur finalisation inscription:', error);
+    
     return NextResponse.json({
       success: false,
-      error: 'Erreur lors de la finalisation du profil'
+      error: error instanceof Error ? error.message : 'Erreur inconnue',
+      details: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import { adminDb, dbUtils } from '../../config/database';
-import { CollectionReference, DocumentData, Query, WhereFilterOp, FieldValue } from 'firebase-admin/firestore';
+import { CollectionReference, DocumentData, Query, WhereFilterOp } from 'firebase-admin/firestore';
 import { ServiceError } from '../../utils/errors';
 
 export interface QueryFilter {
@@ -186,27 +186,13 @@ export abstract class BaseService<T extends DocumentData & { id?: string }> {
         throw new ServiceError(`Document ${id} non trouvé dans ${this.collectionName} pour mise à jour`);
       }
       
-      // Nettoyer les données (enlever les champs non modifiables et traiter undefined)
+      // Nettoyer les données (enlever les champs non modifiables)
       const { id: _, createdAt, ...cleanData } = data as any;
       
-      // Traiter les valeurs undefined : les convertir en FieldValue.delete()
-      const updateData: any = {
+      const updateData = {
+        ...cleanData,
         updatedAt: dbUtils.timestamp(),
       };
-      
-      // Parcourir les données et traiter les valeurs undefined
-      Object.keys(cleanData).forEach(key => {
-        const value = cleanData[key];
-        if (value === undefined) {
-          // Supprimer le champ de Firestore
-          updateData[key] = FieldValue.delete();
-          console.log(`🗑️ Suppression du champ '${key}' (était undefined)`);
-        } else {
-          updateData[key] = value;
-        }
-      });
-      
-      console.log(`📝 Données finales pour Firestore:`, updateData);
       
       await this.collection.doc(id).update(updateData);
       console.log(`✅ Mise à jour réussie pour ${id} dans ${this.collectionName}`);

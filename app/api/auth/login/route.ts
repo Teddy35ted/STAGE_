@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '../../../Backend/services/collections/UserService';
-import { AccountRequestService } from '../../../Backend/services/collections/AccountRequestService';
 
 const userService = new UserService();
-const accountRequestService = new AccountRequestService();
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,42 +14,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Utiliser la nouvelle méthode d'authentification avec gestion des mots de passe temporaires
-    const authResult = await userService.authenticateWithTemporaryPassword(
-      email.toLowerCase().trim(),
-      password
-    );
-    
-    if (!authResult) {
-      // Vérifier si l'utilisateur a une demande approuvée avec mot de passe temporaire
-      const accountRequest = await accountRequestService.getByEmail(email.toLowerCase().trim());
-      
-      if (accountRequest && accountRequest.status === 'approved' && accountRequest.temporaryPassword && accountRequest.isFirstLogin) {
-        return NextResponse.json({
-          error: 'Vous avez un mot de passe temporaire. Utilisez la page de connexion temporaire pour créer votre compte.',
-          hasTemporaryPassword: true
-        }, { status: 401 });
-      }
-      
+    // Récupérer l'utilisateur par email
+    const user = await userService.getByEmail(email);
+    if (!user) {
       return NextResponse.json(
-        { error: 'Email ou mot de passe incorrect' },
+        { error: 'Utilisateur non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // Vérifier le mot de passe
+    const isValidPassword = await userService.verifyPassword(password, user.password);
+    if (!isValidPassword) {
+      return NextResponse.json(
+        { error: 'Mot de passe incorrect' },
         { status: 401 }
       );
     }
 
-    // Retourner les informations de l'utilisateur (sans le mot de passe) et les flags
-    const { password: _, ...userWithoutPassword } = authResult.user;
-    
+    // Retourner les informations de l'utilisateur (sans le mot de passe)
+    const { password: _, ...userWithoutPassword } = user;
     return NextResponse.json({
       success: true,
-      user: userWithoutPassword,
-      requiresPasswordChange: authResult.requiresPasswordChange,
-      requiresProfileCompletion: authResult.requiresProfileCompletion,
-      nextStep: authResult.requiresPasswordChange 
-        ? 'change-password' 
-        : authResult.requiresProfileCompletion 
-          ? 'complete-profile' 
-          : 'dashboard'
+      user: userWithoutPassword
     });
 
   } catch (error) {

@@ -6,26 +6,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useApi } from '../../lib/api';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { FiUser, FiPhone, FiMapPin, FiCalendar, FiSave, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUser, FiPhone, FiMapPin, FiCalendar, FiSave } from 'react-icons/fi';
 
 export default function CompleteProfilePage() {
   const { user } = useAuth();
   const { apiFetch } = useApi();
   const router = useRouter();
-
-  // État pour l'utilisateur temporaire
-  const [tempUser, setTempUser] = useState<any>(null);
-
-  // Charger l'utilisateur temporaire depuis localStorage
-  React.useEffect(() => {
-    const storedTempUser = localStorage.getItem('tempUser');
-    if (storedTempUser) {
-      setTempUser(JSON.parse(storedTempUser));
-    } else {
-      // Si pas d'utilisateur temporaire, rediriger vers la connexion
-      router.push('/auth');
-    }
-  }, [router]);
 
   // Données du profil
   const [firstName, setFirstName] = useState('');
@@ -37,12 +23,6 @@ export default function CompleteProfilePage() {
   const [city, setCity] = useState('');
   const [district, setDistrict] = useState('');
   const [countryCode, setCountryCode] = useState('+228');
-
-  // Changement de mot de passe
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -65,21 +45,6 @@ export default function CompleteProfilePage() {
   };
 
   const validateForm = () => {
-    // Validation du nouveau mot de passe (obligatoire)
-    if (!newPassword) {
-      setError('Le nouveau mot de passe est requis');
-      return false;
-    }
-    if (newPassword.length < 6) {
-      setError('Le nouveau mot de passe doit contenir au moins 6 caractères');
-      return false;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
-      return false;
-    }
-    
-    // Validation des autres champs
     if (!firstName.trim()) {
       setError('Le prénom est requis');
       return false;
@@ -119,7 +84,7 @@ export default function CompleteProfilePage() {
       const profileData = {
         nom: lastName,
         prenom: firstName,
-        email: tempUser?.email || user?.email || '',
+        email: user?.email || '',
         tel: phone,
         date_de_naissance: birthDate,
         sexe: gender,
@@ -127,8 +92,7 @@ export default function CompleteProfilePage() {
         ville: city,
         quartier: district,
         region: '',
-        codePays: countryCode,
-        newPassword: newPassword // Ajouter le nouveau mot de passe
+        codePays: countryCode
       };
 
       const result = await apiFetch('/api/auth/complete-registration', {
@@ -180,57 +144,6 @@ export default function CompleteProfilePage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Changement de mot de passe */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-700 border-b pb-2">Définir votre nouveau mot de passe</h3>
-            <div className="p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded text-sm">
-              <p><strong>Sécurité :</strong> Votre mot de passe temporaire doit être remplacé par un mot de passe personnel.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4">
-              <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  type={showNewPassword ? 'text' : 'password'}
-                  placeholder="Nouveau mot de passe (min. 6 caractères) *"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  required
-                  disabled={loading}
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showNewPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
-              </div>
-              
-              <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirmer le nouveau mot de passe *"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  required
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Informations personnelles */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-700 border-b pb-2">Informations personnelles</h3>
