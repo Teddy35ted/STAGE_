@@ -16,8 +16,45 @@ export const UnifiedLoginForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showRequestAccount, setShowRequestAccount] = useState(false);
+  const [requestEmail, setRequestEmail] = useState('');
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
 
   const router = useRouter();
+
+  const handleAccountRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!requestEmail.trim()) {
+      setError('L\'email est requis');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/request-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: requestEmail }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setRequestSubmitted(true);
+        setRequestEmail('');
+      } else {
+        setError(data.error || 'Erreur lors de la soumission');
+      }
+    } catch (error) {
+      setError('Erreur de connexion. Veuillez réessayer.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +115,53 @@ export const UnifiedLoginForm: React.FC = () => {
   };
 
   if (showRequestAccount) {
+    if (requestSubmitted) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-8 shadow-2xl">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full mb-4">
+                  <FiUser className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900">Demande envoyée !</h1>
+                <p className="text-gray-600 mt-2">Votre demande a été transmise à un administrateur</p>
+              </div>
+
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded text-sm">
+                <p><strong>Prochaines étapes :</strong></p>
+                <ol className="mt-2 ml-4 list-decimal text-xs space-y-1">
+                  <li>Un administrateur va examiner votre demande</li>
+                  <li>Vous recevrez un email de confirmation</li>
+                  <li>Connectez-vous avec le mot de passe temporaire fourni</li>
+                </ol>
+              </div>
+
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => {
+                    setRequestSubmitted(false);
+                    setRequestEmail('');
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Faire une nouvelle demande
+                </Button>
+                
+                <Button
+                  onClick={() => setShowRequestAccount(false)}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                >
+                  Retour à la connexion
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
@@ -100,18 +184,32 @@ export const UnifiedLoginForm: React.FC = () => {
               </ol>
             </div>
 
-            <form className="space-y-4">
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleAccountRequest} className="space-y-4">
               <div className="relative">
                 <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input
                   type="email"
                   placeholder="Votre adresse email"
+                  value={requestEmail}
+                  onChange={(e) => setRequestEmail(e.target.value)}
                   className="pl-10"
+                  required
+                  disabled={loading}
                 />
               </div>
 
-              <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                Envoyer la demande
+              <Button 
+                type="submit"
+                disabled={loading || !requestEmail.trim()}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                {loading ? 'Envoi en cours...' : 'Envoyer la demande'}
               </Button>
             </form>
 

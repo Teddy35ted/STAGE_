@@ -31,17 +31,34 @@ export async function POST(request: NextRequest) {
     
     console.log('📊 Demande trouvée:', {
       found: !!accountRequest,
+      id: accountRequest?.id,
       status: accountRequest?.status,
       isFirstLogin: accountRequest?.isFirstLogin,
       hasTemporaryPassword: !!accountRequest?.temporaryPassword,
       temporaryPasswordMatch: accountRequest?.temporaryPassword === temporaryPassword
     });
     
-    if (!accountRequest || accountRequest.status !== 'approved') {
-      console.log('❌ Demande non trouvée ou non approuvée');
+    if (!accountRequest) {
+      console.log('❌ Aucune demande trouvée pour cet email');
       return NextResponse.json({
         success: false,
-        error: 'Aucune demande approuvée trouvée pour cet email'
+        error: 'Aucune demande trouvée pour cet email'
+      }, { status: 404 });
+    }
+
+    if (!accountRequest.id) {
+      console.error('❌ ID de demande manquant:', accountRequest);
+      return NextResponse.json({
+        success: false,
+        error: 'Erreur interne: ID de demande manquant'
+      }, { status: 500 });
+    }
+    
+    if (accountRequest.status !== 'approved') {
+      console.log('❌ Demande non approuvée, statut:', accountRequest.status);
+      return NextResponse.json({
+        success: false,
+        error: 'Demande non approuvée par un administrateur'
       }, { status: 404 });
     }
 
@@ -69,6 +86,29 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
+      // Vérifier si un utilisateur existe déjà (éviter doublons)
+      console.log('🔍 Vérification utilisateur existant...');
+      const existingUser = await userService.getByEmail(email);
+      if (existingUser) {
+        console.log('⚠️ Utilisateur déjà créé, marquer demande comme utilisée');
+        // L'utilisateur existe déjà, marquer la demande comme utilisée
+        await accountRequestService.update(accountRequest.id, {
+          isFirstLogin: false,
+          temporaryPassword: undefined // Supprimer le mot de passe temporaire
+        });
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Compte déjà créé. Connectez-vous avec vos identifiants.',
+          user: {
+            id: existingUser.id,
+            email: existingUser.email,
+            nom: existingUser.nom,
+            prenom: existingUser.prenom
+          }
+        });
+      }
+
       console.log('✅ Création du nouveau compte utilisateur');
       // Créer l'utilisateur avec le nouveau mot de passe
       const userData = {
@@ -90,11 +130,12 @@ export async function POST(request: NextRequest) {
       console.log('✅ Utilisateur créé avec ID:', userId);
 
       // Marquer la demande comme utilisée (première connexion terminée)
+      console.log('🔄 Mise à jour de la demande ID:', accountRequest.id);
       await accountRequestService.update(accountRequest.id, {
         isFirstLogin: false,
         temporaryPassword: undefined // Supprimer le mot de passe temporaire
       });
-      console.log('✅ Demande mise à jour');
+      console.log('✅ Demande mise à jour avec succès');
 
       return NextResponse.json({
         success: true,

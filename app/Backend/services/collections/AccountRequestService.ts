@@ -6,6 +6,7 @@ import { EmailService } from '../email/EmailService';
 import { PasswordGeneratorService } from '../utils/PasswordGeneratorService';
 import { AdminService } from './AdminService';
 import { UserService } from './UserService';
+import { COLLECTIONS } from '../../config/firebase-admin';
 import crypto from 'crypto';
 
 export class AccountRequestService extends BaseService<AccountRequest> {
@@ -15,7 +16,7 @@ export class AccountRequestService extends BaseService<AccountRequest> {
   private userService: UserService;
 
   constructor() {
-    super('account-requests');
+    super(COLLECTIONS.ACCOUNT_REQUESTS);
     this.notificationService = new NotificationService();
     this.emailService = new EmailService();
     this.adminService = new AdminService();
@@ -27,27 +28,36 @@ export class AccountRequestService extends BaseService<AccountRequest> {
    */
   async createRequest(requestData: AccountRequestCore): Promise<string> {
     try {
+      console.log('🔍 AccountRequestService.createRequest() - Démarrage');
+      console.log('📧 Email de la demande:', requestData.email);
+      
       // Vérifier si une demande existe déjà pour cet email
       const existingRequest = await this.getByEmail(requestData.email);
       if (existingRequest && existingRequest.status === 'pending') {
+        console.log('❌ Demande déjà existante pour:', requestData.email);
         throw new Error('Une demande est déjà en cours de traitement pour cet email');
       }
 
+      console.log('✅ Aucune demande existante, création...');
+      
+      // Générer les champs automatiques
       const autoFields = generateAccountRequestAutoFields(requestData);
-      const docRef = await this.collection.add(autoFields);
-      const completeRequest: AccountRequest = {
-        ...autoFields,
-        id: docRef.id
-      };
+      console.log('📝 Données à créer:', autoFields);
+      
+      // Utiliser la méthode create héritée de BaseService
+      const documentId = await this.create(autoFields);
+      console.log('✅ Document créé avec ID:', documentId);
       
       // Notifier les administrateurs - ne pas faire échouer si la notification échoue
       try {
-        await this.notificationService.notifyAdminsNewAccountRequest(requestData.email, docRef.id);
+        console.log('📢 Envoi notification aux admins...');
+        await this.notificationService.notifyAdminsNewAccountRequest(requestData.email, documentId);
+        console.log('✅ Notification envoyée');
       } catch (notifError) {
         console.warn('⚠️ Erreur notification (non bloquante):', notifError);
       }
       
-      return completeRequest.id;
+      return documentId;
     } catch (error) {
       console.error('❌ Erreur création demande:', error);
       throw error;
@@ -59,25 +69,52 @@ export class AccountRequestService extends BaseService<AccountRequest> {
    */
   async getByEmail(email: string): Promise<AccountRequest | null> {
     try {
+      console.log('🔍 AccountRequestService.getByEmail() - Recherche pour:', email);
+      
       const snapshot = await this.collection
         .where('email', '==', email)
         .orderBy('requestDate', 'desc')
         .limit(1)
         .get();
 
-      if (snapshot.empty) return null;
-      return snapshot.docs[0].data() as AccountRequest;
+      if (snapshot.empty) {
+        console.log('❌ Aucune demande trouvée pour:', email);
+        return null;
+      }
+      
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      const result = {
+        id: doc.id, // CRITIQUE: Mapper l'ID Firestore
+        ...data
+      } as AccountRequest;
+      
+      console.log('✅ Demande trouvée:', { id: result.id, email: result.email, status: result.status });
+      return result;
     } catch (error) {
       console.warn('⚠️ Erreur getByEmail (utilisation de requête simple):', error);
       // Fallback sans orderBy si l'index n'existe pas
       try {
+        console.log('🔄 Fallback getByEmail sans orderBy pour:', email);
         const snapshot = await this.collection
           .where('email', '==', email)
           .limit(1)
           .get();
 
-        if (snapshot.empty) return null;
-        return snapshot.docs[0].data() as AccountRequest;
+        if (snapshot.empty) {
+          console.log('❌ Fallback: Aucune demande trouvée pour:', email);
+          return null;
+        }
+        
+        const doc = snapshot.docs[0];
+        const data = doc.data();
+        const result = {
+          id: doc.id, // CRITIQUE: Mapper l'ID Firestore
+          ...data
+        } as AccountRequest;
+        
+        console.log('✅ Fallback: Demande trouvée:', { id: result.id, email: result.email });
+        return result;
       } catch (fallbackError) {
         console.warn('⚠️ Erreur fallback getByEmail:', fallbackError);
         return null;
