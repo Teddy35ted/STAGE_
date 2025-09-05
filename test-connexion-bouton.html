@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Bouton Connexion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Test du Bouton "Se connecter"</h1>
+    
+    <div class="test-container">
+        <h2>Test de Connexion</h2>
+        <p>Testez le bouton "Se connecter" avec différents types de comptes</p>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Type de compte:</label>
+                <select id="role">
+                    <option value="animateur">Animateur</option>
+                    <option value="cogestionnaire">Co-gestionnaire</option>
+                    <option value="admin">Administrateur</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="email" placeholder="votre@email.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Mot de passe:</label>
+                <input type="password" id="password" placeholder="Votre mot de passe" required>
+            </div>
+            
+            <button type="submit" id="loginButton">Se connecter</button>
+        </form>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>📋 Instructions de Test</h3>
+        <ol>
+            <li><strong>Animateur</strong>: Utilise l'API <code>/api/auth/login</code></li>
+            <li><strong>Co-gestionnaire</strong>: Utilise l'API <code>/api/co-gestionnaires/auth/login</code></li>
+            <li><strong>Admin</strong>: Utilise l'API <code>/api/admin/auth/login</code></li>
+        </ol>
+        
+        <h4>Comptes de test suggérés:</h4>
+        <ul>
+            <li><strong>Admin</strong>: admin@dashboard.com / admin123</li>
+            <li><strong>Animateur</strong>: victorienkouevi@gmail.com (si le compte existe)</li>
+        </ul>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const resultDiv = document.getElementById('result');
+        const loginButton = document.getElementById('loginButton');
+
+        function showResult(content, type = 'info') {
+            resultDiv.textContent = JSON.stringify(content, null, 2);
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const role = document.getElementById('role').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showResult({ error: 'Email et mot de passe requis' }, 'error');
+                return;
+            }
+
+            loginButton.disabled = true;
+            loginButton.textContent = 'Connexion...';
+
+            try {
+                let apiUrl;
+                
+                // Déterminer l'API selon le rôle
+                switch (role) {
+                    case 'admin':
+                        apiUrl = '/api/admin/auth/login';
+                        break;
+                    case 'cogestionnaire':
+                        apiUrl = '/api/co-gestionnaires/auth/login';
+                        break;
+                    default:
+                        apiUrl = '/api/auth/login';
+                }
+
+                console.log(`🔗 Appel API: ${apiUrl}`);
+                console.log(`📧 Email: ${email}`);
+                console.log(`👤 Rôle: ${role}`);
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+                
+                console.log(`📊 Status: ${response.status}`);
+                console.log(`📄 Réponse:`, result);
+
+                if (result.success) {
+                    showResult({
+                        message: '✅ Connexion réussie!',
+                        role: role,
+                        api: apiUrl,
+                        status: response.status,
+                        data: result
+                    }, 'success');
+                    
+                    // Simuler la redirection
+                    setTimeout(() => {
+                        let redirectUrl;
+                        switch (role) {
+                            case 'admin':
+                                redirectUrl = '/admin/dashboard';
+                                break;
+                            case 'cogestionnaire':
+                                redirectUrl = '/co-gestionnaire/dashboard';
+                                break;
+                            default:
+                                redirectUrl = '/dashboard';
+                        }
+                        showResult({
+                            message: `🔀 Redirection vers: ${redirectUrl}`,
+                            note: 'Cette redirection serait automatique dans l\'application'
+                        }, 'info');
+                    }, 2000);
+                } else {
+                    showResult({
+                        error: '❌ Échec de connexion',
+                        role: role,
+                        api: apiUrl,
+                        status: response.status,
+                        message: result.error || 'Erreur inconnue'
+                    }, 'error');
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur:', error);
+                showResult({
+                    error: '❌ Erreur de connexion',
+                    message: error.message,
+                    note: 'Vérifiez que le serveur fonctionne'
+                }, 'error');
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = 'Se connecter';
+            }
+        });
+
+        // Auto-remplissage pour tests rapides
+        document.getElementById('role').addEventListener('change', (e) => {
+            const role = e.target.value;
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            
+            switch (role) {
+                case 'admin':
+                    emailInput.value = 'admin@dashboard.com';
+                    passwordInput.value = 'admin123';
+                    break;
+                case 'animateur':
+                    emailInput.value = 'victorienkouevi@gmail.com';
+                    passwordInput.value = '';
+                    break;
+                default:
+                    emailInput.value = '';
+                    passwordInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>

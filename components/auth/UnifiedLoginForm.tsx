@@ -85,11 +85,36 @@ export const UnifiedLoginForm: React.FC = () => {
           setError(data.error || 'Erreur de connexion administrateur');
         }
       } else if (role === 'cogestionnaire') {
-        // Connexion co-gestionnaire (existant)
-        router.push('/auth/co-gestionnaire');
+        // Connexion co-gestionnaire
+        const response = await fetch('/api/co-gestionnaires/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          localStorage.setItem('coGestionnaireToken', data.token);
+          router.push('/co-gestionnaire/dashboard');
+        } else {
+          setError(data.error || 'Erreur de connexion co-gestionnaire');
+        }
       } else {
-        // Connexion animateur (existant) 
-        router.push('/auth');
+        // Connexion animateur normale
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Stocker les informations utilisateur
+          localStorage.setItem('userToken', JSON.stringify(data.user));
+          router.push('/dashboard');
+        } else {
+          setError(data.error || 'Email ou mot de passe incorrect');
+        }
       }
     } catch (error) {
       setError('Erreur de connexion. Veuillez réessayer.');
