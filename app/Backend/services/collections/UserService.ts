@@ -246,4 +246,144 @@ export class UserService extends BaseService<UserDashboard> {
       throw error;
     }
   }
+
+  // ========== GESTION MOTS DE PASSE TEMPORAIRES ET COMPLÉTION PROFIL ==========
+
+  async markAsRequirePasswordChange(userId: string): Promise<void> {
+    try {
+      await this.update(userId, {
+        requiresPasswordChange: true,
+        firstLogin: true
+      });
+      console.log('✅ Utilisateur marqué pour changement de mot de passe:', userId);
+    } catch (error) {
+      console.error('❌ Erreur marquage changement mot de passe:', error);
+      throw error;
+    }
+  }
+
+  async changeTemporaryPassword(
+    userId: string, 
+    newPassword: string
+  ): Promise<void> {
+    try {
+      console.log('🔑 Changement du mot de passe temporaire pour:', userId);
+      
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      await this.update(userId, {
+        password: hashedPassword,
+        requiresPasswordChange: false,
+        passwordChangedAt: new Date().toISOString()
+      });
+      
+      console.log('✅ Mot de passe temporaire changé avec succès');
+    } catch (error) {
+      console.error('❌ Erreur changement mot de passe temporaire:', error);
+      throw error;
+    }
+  }
+
+  async completeProfile(
+    userId: string, 
+    profileData: {
+      nom?: string;
+      prenom?: string;
+      tel?: string;
+      date_de_naissance?: string;
+      sexe?: 'Masculin' | 'Féminin' | 'Autre';
+      pays?: string;
+      ville?: string;
+      quartier?: string;
+      region?: string;
+      codePays?: string;
+    }
+  ): Promise<void> {
+    try {
+      console.log('👤 Complétion du profil pour:', userId);
+      
+      const updateData = {
+        ...profileData,
+        firstLogin: false,
+        profileCompleted: true,
+        profileCompletedAt: new Date().toISOString(),
+        updatedAt: new Date()
+      };
+      
+      await this.update(userId, updateData);
+      
+      console.log('✅ Profil complété avec succès');
+    } catch (error) {
+      console.error('❌ Erreur complétion profil:', error);
+      throw error;
+    }
+  }
+
+  async isFirstLogin(userId: string): Promise<boolean> {
+    try {
+      const user = await this.getById(userId);
+      return user?.firstLogin === true || user?.requiresPasswordChange === true;
+    } catch (error) {
+      console.error('❌ Erreur vérification premier login:', error);
+      return false;
+    }
+  }
+
+  async needsProfileCompletion(userId: string): Promise<boolean> {
+    try {
+      const user = await this.getById(userId);
+      if (!user) return false;
+      
+      // Vérifier si les champs essentiels sont remplis
+      const requiredFields = ['nom', 'prenom', 'tel', 'pays'];
+      const missingFields = requiredFields.filter(field => 
+        !user[field as keyof UserDashboard] || 
+        (user[field as keyof UserDashboard] as string)?.trim() === ''
+      );
+      
+      return missingFields.length > 0 || !user.profileCompleted;
+    } catch (error) {
+      console.error('❌ Erreur vérification complétion profil:', error);
+      return true; // En cas d'erreur, considérer qu'il faut compléter
+    }
+  }
+
+  async authenticateWithTemporaryPassword(
+    email: string, 
+    password: string
+  ): Promise<{ user: UserDashboard; requiresPasswordChange: boolean; requiresProfileCompletion: boolean } | null> {
+    try {
+      console.log('🔐 Authentification avec potentiel mot de passe temporaire:', email);
+      
+      const user = await this.getByEmail(email);
+      if (!user) {
+        console.log('❌ Utilisateur non trouvé');
+        return null;
+      }
+      
+      const isValidPassword = await this.verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        console.log('❌ Mot de passe incorrect');
+        return null;
+      }
+      
+      const requiresPasswordChange = user.requiresPasswordChange === true;
+      const requiresProfileCompletion = await this.needsProfileCompletion(user.id!);
+      
+      console.log('✅ Authentification réussie:', {
+        requiresPasswordChange,
+        requiresProfileCompletion
+      });
+      
+      return {
+        user,
+        requiresPasswordChange,
+        requiresProfileCompletion
+      };
+      
+    } catch (error) {
+      console.error('❌ Erreur authentification mot de passe temporaire:', error);
+      throw error;
+    }
+  }
 }

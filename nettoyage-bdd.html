@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗃️ Nettoyage Base de Données</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #721c24;
+        }
+        .btn {
+            background: #dc3545;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-test {
+            background: #007bff;
+        }
+        .btn-test:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .steps {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗃️ Nettoyage Base de Données</h1>
+            <p>Interface sécurisée pour nettoyer la base de données</p>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ AVERTISSEMENT CRITIQUE</h3>
+            <p><strong>Cette opération est IRRÉVERSIBLE !</strong></p>
+            <ul>
+                <li>✅ <strong>Conservé :</strong> Collection 'admins'</li>
+                <li>❌ <strong>Supprimé :</strong> users, laalas, contenus, co_gestionnaires, retraits, account_requests</li>
+                <li>💾 <strong>Recommandation :</strong> Sauvegardez vos données importantes avant de continuer</li>
+            </ul>
+        </div>
+
+        <div class="steps">
+            <h3>📋 Procédure Recommandée</h3>
+            <div class="step">
+                <strong>1️⃣ Test de Connexion</strong> - Vérifiez que l'API fonctionne
+            </div>
+            <div class="step">
+                <strong>2️⃣ Vérification des Données</strong> - Voyez ce qui sera supprimé
+            </div>
+            <div class="step">
+                <strong>3️⃣ Nettoyage</strong> - Exécutez la suppression
+            </div>
+            <div class="step">
+                <strong>4️⃣ Validation</strong> - Confirmez que le nettoyage a fonctionné
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="btn btn-test" onclick="testConnection()">🔍 1. Test Connexion</button>
+            <button class="btn btn-test" onclick="checkData()">📊 2. Vérifier Données</button>
+            <button class="btn" onclick="confirmAndClean()" id="cleanBtn">🧹 3. NETTOYER BDD</button>
+            <button class="btn btn-test" onclick="validateCleanup()">✅ 4. Valider Nettoyage</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        async function testConnection() {
+            showResult('🔄 Test de connexion à l\'API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ CONNEXION RÉUSSIE!\n\nStatut: ${data.status}\nServeur: ${data.message || 'Opérationnel'}`, 'success');
+                } else {
+                    showResult(`⚠️ API répondu mais avec erreur:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ ERREUR DE CONNEXION:\n\n${error.message}\n\nVérifiez que le serveur est démarré avec:\nnpm run dev`, 'error');
+            }
+        }
+
+        async function checkData() {
+            showResult('🔄 Vérification des données existantes...', 'info');
+            
+            try {
+                // Tester plusieurs endpoints pour voir les données
+                const endpoints = ['users', 'laalas', 'contenus', 'retraits'];
+                let report = '📊 ÉTAT ACTUEL DE LA BASE DE DONNÉES:\n\n';
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(`${API_BASE}/api/${endpoint}`);
+                        const data = await response.json();
+                        
+                        if (response.ok && Array.isArray(data)) {
+                            report += `✅ ${endpoint}: ${data.length} documents\n`;
+                        } else {
+                            report += `⚠️ ${endpoint}: Erreur d'accès\n`;
+                        }
+                    } catch (err) {
+                        report += `❌ ${endpoint}: Non accessible\n`;
+                    }
+                }
+                
+                report += '\n⚠️ Ces données seront SUPPRIMÉES lors du nettoyage !';
+                showResult(report, 'warning');
+                
+            } catch (error) {
+                showResult(`❌ ERREUR lors de la vérification:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function confirmAndClean() {
+            // Double confirmation
+            const confirm1 = confirm('⚠️ ATTENTION !\n\nVous êtes sur le point de SUPPRIMER DÉFINITIVEMENT toutes les données (sauf admins).\n\nÊtes-vous ABSOLUMENT SÛR de vouloir continuer ?');
+            
+            if (!confirm1) {
+                showResult('❌ Opération annulée par l\'utilisateur', 'info');
+                return;
+            }
+            
+            const confirm2 = prompt('Pour confirmer, tapez "SUPPRIMER" (en majuscules):');
+            
+            if (confirm2 !== 'SUPPRIMER') {
+                showResult('❌ Confirmation incorrecte. Opération annulée.', 'error');
+                return;
+            }
+            
+            // Exécuter le nettoyage
+            await cleanDatabase();
+        }
+
+        async function cleanDatabase() {
+            showResult('🧹 NETTOYAGE EN COURS...\n\nNE FERMEZ PAS CETTE PAGE !', 'warning');
+            
+            const cleanBtn = document.getElementById('cleanBtn');
+            cleanBtn.disabled = true;
+            cleanBtn.textContent = '🔄 Nettoyage en cours...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/cleanup-database`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    let report = '🎉 NETTOYAGE TERMINÉ AVEC SUCCÈS !\n\n';
+                    report += `📊 RÉSULTATS:\n`;
+                    
+                    if (data.deletedDocuments) {
+                        Object.keys(data.deletedDocuments).forEach(collection => {
+                            report += `- ${collection}: ${data.deletedDocuments[collection]} documents supprimés\n`;
+                        });
+                    }
+                    
+                    report += `\n✅ Total supprimé: ${data.totalDeleted || 'N/A'} documents`;
+                    report += `\n✅ Collections préservées: ${data.preservedCollections?.join(', ') || 'admins'}`;
+                    
+                    showResult(report, 'success');
+                } else {
+                    showResult(`❌ ÉCHEC DU NETTOYAGE:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult(`❌ ERREUR CRITIQUE:\n\n${error.message}`, 'error');
+            } finally {
+                cleanBtn.disabled = false;
+                cleanBtn.textContent = '🧹 3. NETTOYER BDD';
+            }
+        }
+
+        async function validateCleanup() {
+            showResult('🔄 Validation du nettoyage...', 'info');
+            
+            try {
+                const endpoints = ['users', 'laalas', 'contenus', 'retraits'];
+                let report = '✅ VALIDATION POST-NETTOYAGE:\n\n';
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(`${API_BASE}/api/${endpoint}`);
+                        const data = await response.json();
+                        
+                        if (response.ok && Array.isArray(data)) {
+                            const count = data.length;
+                            if (count === 0) {
+                                report += `✅ ${endpoint}: Vide (${count} documents) ✓\n`;
+                            } else {
+                                report += `⚠️ ${endpoint}: ${count} documents restants\n`;
+                            }
+                        } else {
+                            report += `ℹ️ ${endpoint}: Réponse inattendue\n`;
+                        }
+                    } catch (err) {
+                        report += `❌ ${endpoint}: Erreur d'accès\n`;
+                    }
+                }
+                
+                report += '\n🎯 Le nettoyage semble avoir réussi si toutes les collections sont vides.';
+                showResult(report, 'success');
+                
+            } catch (error) {
+                showResult(`❌ ERREUR lors de la validation:\n\n${error.message}`, 'error');
+            }
+        }
+
+        // Test automatique au chargement de la page
+        window.onload = function() {
+            setTimeout(testConnection, 1000);
+        };
+    </script>
+</body>
+</html>

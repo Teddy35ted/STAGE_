@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Système Complet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .section {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test du Système Complet</h1>
+        <p>Interface de test pour valider le nettoyage de la base et le système d'authentification</p>
+    </div>
+
+    <!-- Section 1: Nettoyage de la base -->
+    <div class="container">
+        <div class="section">
+            <h3>🧹 1. Nettoyage de la Base de Données</h3>
+            <p><strong>⚠️ ATTENTION:</strong> Cette action supprimera TOUS les documents de toutes les collections sauf <code>admins</code></p>
+            <button class="danger" onclick="cleanDatabase()">🗑️ Nettoyer la Base de Données</button>
+            <div id="cleanResult"></div>
+        </div>
+    </div>
+
+    <!-- Section 2: Test des demandes de compte -->
+    <div class="container">
+        <div class="section">
+            <h3>📝 2. Demandes de Création de Compte</h3>
+            <input type="email" id="requestEmail" placeholder="Email pour la demande">
+            <button onclick="createAccountRequest()">📤 Créer Demande</button>
+            <button onclick="listAccountRequests()">📋 Lister Demandes</button>
+            <div id="requestResult"></div>
+        </div>
+    </div>
+
+    <!-- Section 3: Traitement des demandes (Admin) -->
+    <div class="container">
+        <div class="section">
+            <h3>✅ 3. Traitement des Demandes (Admin)</h3>
+            <input type="text" id="processRequestId" placeholder="ID de la demande à traiter">
+            <select id="processAction">
+                <option value="approve">Approuver</option>
+                <option value="reject">Rejeter</option>
+            </select>
+            <input type="text" id="adminComment" placeholder="Commentaire admin (optionnel)">
+            <input type="password" id="customPassword" placeholder="Mot de passe personnalisé (optionnel)">
+            <button class="success" onclick="processAccountRequest()">⚖️ Traiter Demande</button>
+            <div id="processResult"></div>
+        </div>
+    </div>
+
+    <!-- Section 4: Test authentification -->
+    <div class="container">
+        <div class="section">
+            <h3>🔐 4. Test Authentification</h3>
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPassword" placeholder="Mot de passe">
+            <button onclick="testLogin()">🚪 Se Connecter</button>
+            <div id="loginResult"></div>
+        </div>
+    </div>
+
+    <!-- Section 5: Changement mot de passe temporaire -->
+    <div class="container">
+        <div class="section">
+            <h3>🔑 5. Changement Mot de Passe Temporaire</h3>
+            <input type="text" id="changeUserId" placeholder="ID Utilisateur">
+            <input type="password" id="newPassword" placeholder="Nouveau mot de passe">
+            <input type="password" id="confirmPassword" placeholder="Confirmer mot de passe">
+            <button onclick="changeTemporaryPassword()">🔄 Changer Mot de Passe</button>
+            <div id="changePasswordResult"></div>
+        </div>
+    </div>
+
+    <!-- Section 6: Complétion profil -->
+    <div class="container">
+        <div class="section">
+            <h3>👤 6. Complétion de Profil</h3>
+            <input type="text" id="profileUserId" placeholder="ID Utilisateur">
+            <input type="text" id="profileNom" placeholder="Nom">
+            <input type="text" id="profilePrenom" placeholder="Prénom">
+            <input type="tel" id="profileTel" placeholder="Téléphone">
+            <select id="profileSexe">
+                <option value="">Sélectionner le sexe</option>
+                <option value="Masculin">Masculin</option>
+                <option value="Féminin">Féminin</option>
+                <option value="Autre">Autre</option>
+            </select>
+            <input type="text" id="profilePays" placeholder="Pays">
+            <input type="text" id="profileVille" placeholder="Ville">
+            <button onclick="completeProfile()">✅ Compléter Profil</button>
+            <div id="profileResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+
+        async function cleanDatabase() {
+            if (!confirm('⚠️ ATTENTION: Cette action supprimera TOUS les documents de toutes les collections sauf admins. Êtes-vous sûr ?')) {
+                return;
+            }
+
+            showResult('cleanResult', '🔄 Nettoyage en cours...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/cleanup-database`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirmClean: true })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('cleanResult', `✅ NETTOYAGE RÉUSSI!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('cleanResult', `❌ ERREUR NETTOYAGE:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('cleanResult', `❌ ERREUR RÉSEAU:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function createAccountRequest() {
+            const email = document.getElementById('requestEmail').value;
+
+            if (!email) {
+                showResult('requestResult', '❌ Email requis', 'error');
+                return;
+            }
+
+            showResult('requestResult', '🔄 Création de la demande...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/account-requests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('requestResult', `✅ DEMANDE CRÉÉE!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('requestResult', `❌ ERREUR:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('requestResult', `❌ ERREUR RÉSEAU:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function listAccountRequests() {
+            showResult('requestResult', '🔄 Récupération des demandes...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/account-requests`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('requestResult', `📋 DEMANDES TROUVÉES:\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('requestResult', `❌ ERREUR:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('requestResult', `❌ ERREUR RÉSEAU:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function processAccountRequest() {
+            const requestId = document.getElementById('processRequestId').value;
+            const action = document.getElementById('processAction').value;
+            const adminComment = document.getElementById('adminComment').value;
+            const customPassword = document.getElementById('customPassword').value;
+
+            if (!requestId) {
+                showResult('processResult', '❌ ID de demande requis', 'error');
+                return;
+            }
+
+            showResult('processResult', '🔄 Traitement de la demande...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/account-requests/${requestId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action, 
+                        adminComment: adminComment || undefined,
+                        customPassword: customPassword || undefined
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('processResult', `✅ DEMANDE TRAITÉE!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('processResult', `❌ ERREUR:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('processResult', `❌ ERREUR RÉSEAU:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showResult('loginResult', '❌ Email et mot de passe requis', 'error');
+                return;
+            }
+
+            showResult('loginResult', '🔄 Tentative de connexion...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('loginResult', `✅ CONNEXION RÉUSSIE!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    
+                    // Pré-remplir les champs pour les étapes suivantes
+                    if (data.user && data.user.id) {
+                        document.getElementById('changeUserId').value = data.user.id;
+                        document.getElementById('profileUserId').value = data.user.id;
+                    }
+                } else {
+                    showResult('loginResult', `❌ ERREUR CONNEXION:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('loginResult', `❌ ERREUR RÉSEAU:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function changeTemporaryPassword() {
+            const userId = document.getElementById('changeUserId').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!userId || !newPassword || !confirmPassword) {
+                showResult('changePasswordResult', '❌ Tous les champs sont requis', 'error');
+                return;
+            }
+
+            showResult('changePasswordResult', '🔄 Changement du mot de passe...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/change-temporary-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, newPassword, confirmPassword })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('changePasswordResult', `✅ MOT DE PASSE CHANGÉ!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('changePasswordResult', `❌ ERREUR:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('changePasswordResult', `❌ ERREUR RÉSEAU:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function completeProfile() {
+            const userId = document.getElementById('profileUserId').value;
+            const profileData = {
+                nom: document.getElementById('profileNom').value,
+                prenom: document.getElementById('profilePrenom').value,
+                tel: document.getElementById('profileTel').value,
+                sexe: document.getElementById('profileSexe').value,
+                pays: document.getElementById('profilePays').value,
+                ville: document.getElementById('profileVille').value
+            };
+
+            if (!userId) {
+                showResult('profileResult', '❌ ID utilisateur requis', 'error');
+                return;
+            }
+
+            showResult('profileResult', '🔄 Complétion du profil...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/complete-profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, profileData })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult('profileResult', `✅ PROFIL COMPLÉTÉ!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('profileResult', `❌ ERREUR:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('profileResult', `❌ ERREUR RÉSEAU:\n\n${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -14,29 +14,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Récupérer l'utilisateur par email
-    const user = await userService.getByEmail(email);
-    if (!user) {
+    // Utiliser la nouvelle méthode d'authentification avec gestion des mots de passe temporaires
+    const authResult = await userService.authenticateWithTemporaryPassword(
+      email.toLowerCase().trim(),
+      password
+    );
+    
+    if (!authResult) {
       return NextResponse.json(
-        { error: 'Utilisateur non trouvé' },
-        { status: 404 }
-      );
-    }
-
-    // Vérifier le mot de passe
-    const isValidPassword = await userService.verifyPassword(password, user.password);
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Mot de passe incorrect' },
+        { error: 'Email ou mot de passe incorrect' },
         { status: 401 }
       );
     }
 
-    // Retourner les informations de l'utilisateur (sans le mot de passe)
-    const { password: _, ...userWithoutPassword } = user;
+    // Retourner les informations de l'utilisateur (sans le mot de passe) et les flags
+    const { password: _, ...userWithoutPassword } = authResult.user;
+    
     return NextResponse.json({
       success: true,
-      user: userWithoutPassword
+      user: userWithoutPassword,
+      requiresPasswordChange: authResult.requiresPasswordChange,
+      requiresProfileCompletion: authResult.requiresProfileCompletion,
+      nextStep: authResult.requiresPasswordChange 
+        ? 'change-password' 
+        : authResult.requiresProfileCompletion 
+          ? 'complete-profile' 
+          : 'dashboard'
     });
 
   } catch (error) {

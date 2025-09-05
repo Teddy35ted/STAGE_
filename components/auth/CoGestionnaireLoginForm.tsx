@@ -103,7 +103,7 @@ export function CoGestionnaireLoginForm({ onSuccess, onError }: CoGestionnaireLo
     setErrors({});
 
     try {
-      const response = await apiFetch('/api/auth/co-gestionnaire-login', {
+      const response = await apiFetch('/api/co-gestionnaires/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password })
       });

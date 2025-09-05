@@ -96,6 +96,13 @@ export interface UserDashboard extends UserCore {
   allowretrait: boolean;
   promo_recu: boolean;
   
+  // === GESTION AUTHENTIFICATION ET PROFIL ===
+  requiresPasswordChange?: boolean; // Mot de passe temporaire à changer
+  firstLogin?: boolean; // Premier login avec mot de passe temporaire
+  profileCompleted?: boolean; // Profil complété par l'utilisateur
+  profileCompletedAt?: string; // Date de complétion du profil
+  passwordChangedAt?: string; // Date du dernier changement de mot de passe
+  
   // === DURÉES ET FRAIS ===
   duree_bus: number;
   duree_anim: number;

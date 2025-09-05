@@ -40,7 +40,7 @@ export const CoGestionnaireAuth: React.FC<CoGestionnaireAuthProps> = ({ onBack }
 
     try {
       // Authentifier directement avec email + mot de passe
-      const response = await fetch('/api/auth/co-gestionnaire', {
+      const response = await fetch('/api/co-gestionnaires/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
