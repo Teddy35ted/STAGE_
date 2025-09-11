@@ -67,7 +67,7 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
     }
 
     try {
-      console.log('Création du retrait via API...'); // Debug
+      console.log('Création de la demande de retrait via API...'); // Debug
       
       // Obtenir le token Firebase
       const user = auth.currentUser;
@@ -77,7 +77,10 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
 
       const token = await user.getIdToken();
       
-      // Créer le retrait via l'API avec authentification
+      // Créer la demande de retrait (sans débiter le solde immédiatement)
+      const dateCreation = new Date();
+      const dateTraitement = new Date(dateCreation.getTime() + 5 * 60 * 1000); // +5 minutes
+      
       const response = await fetch('/api/retraits', {
         method: 'POST',
         headers: {
@@ -89,27 +92,23 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
           tel, 
           operateur,
           statut: 'En attente',
-          dateCreation: new Date().toISOString()
+          dateCreation: dateCreation.toISOString(),
+          dateTraitement: dateTraitement.toISOString(),
+          montantDebite: false // Important : le montant n'est pas encore débité
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         console.error('❌ Erreur API création:', errorData);
-        throw new Error(errorData.error || 'Erreur lors de la création du retrait');
+        throw new Error(errorData.error || 'Erreur lors de la création de la demande de retrait');
       }
 
       const result = await response.json();
-      console.log('Retrait créé avec succès:', result); // Debug
+      console.log('Demande de retrait créée avec succès:', result); // Debug
 
-      // Débiter le solde après succès de la demande
-      const debitReussi = debiterSolde(montant);
-      
-      if (!debitReussi) {
-        setError('Erreur lors de la mise à jour du solde');
-        setLoading(false);
-        return;
-      }
+      // NE PAS débiter le solde maintenant - le retrait est en attente de traitement
+      // Le solde sera débité automatiquement après 5 minutes via un processus en arrière-plan
 
       // Réinitialiser le formulaire
       setMontant(0);
@@ -138,6 +137,9 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
             <Wallet className="w-5 h-5" />
             Nouvelle Demande de Retrait
           </DialogTitle>
+          <p className="text-sm text-gray-600 mt-2">
+            Votre demande sera traitée automatiquement dans 5 minutes. Le montant sera débité de votre solde uniquement après approbation.
+          </p>
         </DialogHeader>
 
         {/* Affichage du solde disponible */}
@@ -243,7 +245,7 @@ export function RetraitForm({ onSuccess }: RetraitFormProps) {
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Confirmer le retrait
+                  Soumettre la demande
                 </>
               )}
             </Button>

@@ -12,21 +12,26 @@ export async function POST(request: NextRequest) {
     const id = `${Date.now()}Retrait${Math.floor(Math.random() * 10000)}`;
     
     // Créer l'objet retrait complet
+    const dateCreation = new Date(data.dateCreation || new Date().toISOString());
+    const dateTraitement = new Date(data.dateTraitement || (dateCreation.getTime() + 5 * 60 * 1000));
+    
     const nouveauRetrait = {
       id,
       montant: data.montant,
       tel: data.tel,
       operateur: data.operateur,
       statut: data.statut || 'En attente',
-      dateCreation: data.dateCreation || new Date().toISOString(),
+      dateCreation: dateCreation.toISOString(),
+      dateTraitement: dateTraitement.toISOString(),
+      montantDebite: data.montantDebite || false,
       // Champs optionnels pour compatibilité
-      operation: `Retrait de ${data.montant} FCFA via ${data.operateur}`,
+      operation: `Demande de retrait de ${data.montant} FCFA via ${data.operateur}`,
       nom: 'Animateur',
       islivreur: false,
-      date: new Date().toISOString().split('T')[0],
+      date: dateCreation.toISOString().split('T')[0],
       idcompte: 'animateur-' + Date.now(), // ID temporaire
       istraite: false,
-      heure: new Date().toTimeString().split(' ')[0].slice(0, 5),
+      heure: dateCreation.toTimeString().split(' ')[0].slice(0, 5),
       iskouri: false,
       isbusiness: false,
       isservice: false,

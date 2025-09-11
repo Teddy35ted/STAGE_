@@ -10,6 +10,7 @@ import { RetraitEditForm } from '../../../components/forms/RetraitEditForm';
 import { SoldeCard } from '../../../components/dashboard/SoldeCard';
 import { Retrait } from '../../models/retrait';
 import { auth } from '../../firebase/config';
+import { useRetraitAutoProcessor } from '../../../hooks/useRetraitAutoProcessor';
 
 // Composant Card simple
 const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -79,6 +80,19 @@ export default function RetraitsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Hook pour le traitement automatique des retraits
+  useRetraitAutoProcessor();
+
+  // Mise à jour du temps actuel chaque seconde pour les comptes à rebours
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const formatMontant = (montant: number): string => {
     return new Intl.NumberFormat('fr-FR', {
@@ -207,6 +221,7 @@ export default function RetraitsPage() {
     switch (statut) {
       case 'En attente': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
       case 'Approuvé': return 'text-green-600 bg-green-50 border-green-200';
+      case 'En cours de traitement': return 'text-blue-600 bg-blue-50 border-blue-200';
       case 'Refusé': return 'text-red-600 bg-red-50 border-red-200';
       default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -216,8 +231,32 @@ export default function RetraitsPage() {
     switch (statut) {
       case 'En attente': return <Clock className="w-4 h-4" />;
       case 'Approuvé': return <CheckCircle className="w-4 h-4" />;
+      case 'En cours de traitement': return <TrendingUp className="w-4 h-4" />;
       case 'Refusé': return <AlertCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const getTempsRestant = (retrait: Retrait): string => {
+    if (retrait.statut !== 'En attente' || !retrait.dateTraitement) {
+      return '';
+    }
+
+    const maintenant = new Date().getTime();
+    const dateTraitement = new Date(retrait.dateTraitement).getTime();
+    const tempsRestant = dateTraitement - maintenant;
+
+    if (tempsRestant <= 0) {
+      return 'Traitement en cours...';
+    }
+
+    const minutes = Math.floor(tempsRestant / (1000 * 60));
+    const secondes = Math.floor((tempsRestant % (1000 * 60)) / 1000);
+
+    if (minutes > 0) {
+      return `${minutes}min ${secondes}s`;
+    } else {
+      return `${secondes}s`;
     }
   };
 
@@ -368,6 +407,37 @@ export default function RetraitsPage() {
                         {retrait.statut}
                       </span>
                     </div>
+                    {/* Temps restant pour les retraits en attente */}
+                    {retrait.statut === 'En attente' && retrait.dateTraitement && (
+                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-yellow-800">
+                          <Clock className="w-4 h-4" />
+                          <span className="text-sm font-medium">
+                            Traitement automatique dans: {getTempsRestant(retrait)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-yellow-600 mt-1">
+                          Le montant sera débité de votre solde après approbation automatique
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Information pour les retraits approuvés */}
+                    {retrait.statut === 'Approuvé' && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-green-800">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">
+                            {retrait.montantDebite ? 'Montant débité et retrait traité' : 'Retrait approuvé - En cours de traitement'}
+                          </span>
+                        </div>
+                        {retrait.dateApprobation && (
+                          <p className="text-xs text-green-600 mt-1">
+                            Approuvé le {formatDate(retrait.dateApprobation)}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Corps de la card avec détails */}
