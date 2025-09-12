@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!retrait) {
       console.log('❌ Retrait non trouvé:', id);
       return NextResponse.json({ 
-        error: 'Retrait not found',
+        error: 'Retrait introuvable',
         details: `Aucun retrait trouvé avec l'ID ${id}`
       }, { status: 404 });
     }
@@ -98,7 +98,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error('❌ Erreur mise à jour retrait:', error);
     return NextResponse.json({ 
-      error: 'Failed to update retrait',
+      error: 'Erreur lors de la mise à jour du retrait',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
@@ -162,7 +162,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   } catch (error) {
     console.error('❌ Erreur suppression retrait:', error);
     return NextResponse.json({ 
-      error: 'Failed to delete retrait',
+      error: 'Erreur lors de la suppression du retrait',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

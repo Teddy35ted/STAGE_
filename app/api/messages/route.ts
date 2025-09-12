@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const id = await messageService.create({ ...data, idsender: auth.uid }, auth.uid);
     return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create message' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la création du message' }, { status: 500 });
   }
 }
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       if (conversation) {
         return NextResponse.json(conversation);
       } else {
-        return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Conversation introuvable' }, { status: 404 });
       }
     }
     
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Erreur GET /api/messages:', error);
     return NextResponse.json({ 
-      error: 'Failed to fetch messages',
+      error: 'Erreur lors du chargement des messages',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

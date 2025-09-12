@@ -192,9 +192,8 @@ export class ContenuService extends BaseService<ContenuDashboard> {
     try {
       console.log('📋 Récupération contenus pour Laala:', laalaId);
       
-      const query = this.collection
-        .where('idLaala', '==', laalaId)
-        .orderBy('position', 'asc');
+      // Requête simple sans orderBy pour éviter l'erreur d'index
+      const query = this.collection.where('idLaala', '==', laalaId);
       
       const snapshot = await query.get();
       
@@ -205,6 +204,9 @@ export class ContenuService extends BaseService<ContenuDashboard> {
           id: doc.id // S'assurer que l'ID Firestore est utilisé
         } as ContenuDashboard;
       });
+      
+      // Tri côté client par position
+      contenus.sort((a, b) => (a.position || 0) - (b.position || 0));
       
       console.log(`✅ ${contenus.length} contenus trouvés pour Laala ${laalaId}`);
       

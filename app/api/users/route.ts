@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const id = await userService.createUser(data, auth.uid);
     return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la création de l\'utilisateur' }, { status: 500 });
   }
 }
 
@@ -30,20 +30,20 @@ export async function GET(request: NextRequest) {
       if (user) {
         return NextResponse.json(user);
       } else {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 });
       }
     } else if (email) {
       const user = await userService.getByEmail(email);
       if (user) {
         return NextResponse.json(user);
       } else {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 });
       }
     } else {
       const users = await userService.getAll();
       return NextResponse.json(users);
     }
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors du chargement des utilisateurs' }, { status: 500 });
   }
 }

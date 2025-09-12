@@ -135,6 +135,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(coGestionnaires);
     }
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch co-gestionnaires' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors du chargement des co-gestionnaires' }, { status: 500 });
   }
 }

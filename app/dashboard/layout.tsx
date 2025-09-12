@@ -6,7 +6,6 @@ import { DashboardSidebar } from '../../components/dashboard/DashboardSidebar';
 import { MobileHeader } from '../../components/dashboard/MobileHeader';
 import { ForcePasswordChange } from '../../components/auth/ForcePasswordChange';
 import { RouteGuard } from '../../components/permissions/RouteGuard';
-import { PermissionsDebug } from '../../components/debug/PermissionsDebug';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePasswordChangeRequired } from '../../hooks/usePasswordChangeRequired';
 import { useRouter } from 'next/navigation';
@@ -70,9 +69,6 @@ export default function DashboardLayout({
           </main>
         </SidebarInset>
       </div>
-      
-      {/* Composant de débogage des permissions */}
-      <PermissionsDebug />
       
       {/* Modal de changement de mot de passe obligatoire */}
       {requiresPasswordChange && coGestionnaireId && !passwordChangeComplete && (

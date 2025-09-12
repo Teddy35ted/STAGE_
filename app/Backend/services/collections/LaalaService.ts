@@ -197,10 +197,9 @@ export class LaalaService extends BaseService<LaalaDashboard> {
     try {
       console.log('📋 Récupération laalas pour créateur:', creatorId);
       
-      // Requête temporaire sans orderBy en attendant la création de l'index composite
-      // TODO: Remettre .orderBy('date', 'desc') une fois l'index créé
-      const query = this.collection
-        .where('idCreateur', '==', creatorId);
+      // Requête simple sans orderBy pour éviter l'erreur d'index
+      // Le tri sera fait côté client
+      const query = this.collection.where('idCreateur', '==', creatorId);
       
       const snapshot = await query.get();
       
@@ -212,7 +211,7 @@ export class LaalaService extends BaseService<LaalaDashboard> {
         } as LaalaDashboard;
       });
       
-      // Tri côté client en attendant l'index composite Firestore
+      // Tri côté client par date (plus récent en premier)
       laalas.sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;

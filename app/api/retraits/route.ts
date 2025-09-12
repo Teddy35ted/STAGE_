@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: createdId, retrait: nouveauRetrait }, { status: 201 });
   } catch (error) {
     console.error('Erreur lors de la création du retrait:', error);
-    return NextResponse.json({ error: 'Failed to create retrait' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la création du retrait' }, { status: 500 });
   }
 }
 
@@ -79,6 +79,6 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('Erreur lors de la récupération des retraits:', error);
-    return NextResponse.json({ error: 'Failed to fetch retraits' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors du chargement des retraits' }, { status: 500 });
   }
 }

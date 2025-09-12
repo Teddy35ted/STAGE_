@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const id = await boutiqueService.create({ ...data, idCompte: auth.uid });
     return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create boutique' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la création de la boutique' }, { status: 500 });
   }
 }
 
@@ -29,13 +29,13 @@ export async function GET(request: NextRequest) {
       if (boutique) {
         return NextResponse.json(boutique);
       } else {
-        return NextResponse.json({ error: 'Boutique not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Boutique introuvable' }, { status: 404 });
       }
     } else {
       const boutiques = await boutiqueService.getAll();
       return NextResponse.json(boutiques);
     }
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch boutiques' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors du chargement des boutiques' }, { status: 500 });
   }
 }

@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error('❌ Erreur mise à jour contenu:', error);
     return NextResponse.json({ 
-      error: 'Failed to update contenu',
+      error: 'Erreur lors de la mise à jour du contenu',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
@@ -146,7 +146,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   } catch (error) {
     console.error('❌ Erreur suppression contenu:', error);
     return NextResponse.json({ 
-      error: 'Failed to delete contenu',
+      error: 'Erreur lors de la suppression du contenu',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

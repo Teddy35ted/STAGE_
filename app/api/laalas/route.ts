@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
     console.error('❌ Erreur création laala:', error);
-    return NextResponse.json({ error: 'Failed to create laala' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la création du laala' }, { status: 500 });
   }
 }
 
@@ -69,6 +69,6 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('❌ Erreur récupération laalas:', error);
-    return NextResponse.json({ error: 'Failed to fetch laalas' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors du chargement des laalas' }, { status: 500 });
   }
 }

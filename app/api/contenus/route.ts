@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Erreur création contenu:', error);
     return NextResponse.json({ 
-      error: 'Failed to create contenu',
+      error: 'Erreur lors de la création du contenu',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
     }, { status: 500 });
   }
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erreur lors de la récupération des contenus:', error);
     return NextResponse.json({ 
-      error: 'Failed to fetch contenus',
+      error: 'Erreur lors du chargement des contenus',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

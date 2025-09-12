@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error('❌ Erreur mise à jour co-gestionnaire:', error);
     return NextResponse.json({ 
-      error: 'Failed to update co-gestionnaire',
+      error: 'Erreur lors de la mise à jour du co-gestionnaire',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
@@ -203,7 +203,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   } catch (error) {
     console.error('❌ Erreur suppression co-gestionnaire:', error);
     return NextResponse.json({ 
-      error: 'Failed to delete co-gestionnaire',
+      error: 'Erreur lors de la suppression du co-gestionnaire',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

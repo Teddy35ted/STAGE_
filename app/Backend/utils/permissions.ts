@@ -68,11 +68,8 @@ export const DEFAULT_PERMISSIONS = {
 
 // Fonction principale de vérification des permissions
 export function checkPermission(context: PermissionContext): PermissionResult {
-  console.log('🔐 Vérification permission:', context);
-  
   // Pour le développement, on autorise tout par défaut
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔓 Mode développement - Permission accordée');
     return { allowed: true, reason: 'Mode développement' };
   }
   
@@ -114,7 +111,6 @@ export function checkPermission(context: PermissionContext): PermissionResult {
 function checkOwnershipPermission(context: PermissionContext): PermissionResult {
   // Si pas de données de ressource, on autorise (sera vérifié au niveau du service)
   if (!context.resourceData) {
-    console.log('⚠️ Pas de données de ressource - Permission accordée par défaut');
     return { allowed: true, reason: 'Vérification de propriété différée' };
   }
   
@@ -130,7 +126,6 @@ function checkOwnershipPermission(context: PermissionContext): PermissionResult 
   
   // Pour le développement, on autorise même si pas propriétaire
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔓 Mode développement - Permission accordée malgré non-propriété');
     return { allowed: true, reason: 'Mode développement - non-propriétaire autorisé' };
   }
   

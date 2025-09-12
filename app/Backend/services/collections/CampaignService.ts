@@ -49,8 +49,6 @@ export class CampaignService extends BaseService<CampaignCore> {
       const docRef = await this.collection.add(campaignData);
       const firestoreId = docRef.id;
       
-      console.log('✅ Campagne créée avec ID Firestore:', firestoreId);
-      
       // Envoyer notification de succès
       if (userId) {
         try {
@@ -129,9 +127,8 @@ export class CampaignService extends BaseService<CampaignCore> {
     try {
       console.log('📚 Récupération de toutes les campagnes');
       
-      const snapshot = await this.collection
-        .orderBy('createdAt', 'desc')
-        .get();
+      // Requête simple sans orderBy pour éviter l'erreur d'index
+      const snapshot = await this.collection.get();
       
       if (snapshot.empty) {
         console.log('📭 Aucune campagne trouvée');
@@ -148,6 +145,13 @@ export class CampaignService extends BaseService<CampaignCore> {
         } as CampaignCore;
       });
       
+      // Tri côté client par date de création (plus récent en premier)
+      campaigns.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
       console.log(`📋 ${campaigns.length} campagnes récupérées`);
       return campaigns;
       
@@ -161,8 +165,7 @@ export class CampaignService extends BaseService<CampaignCore> {
     try {
       console.log('📚 Récupération campagnes par utilisateur:', userId);
       
-      // Requête temporaire sans orderBy en attendant la création de l'index composite
-      // TODO: Remettre .orderBy('createdAt', 'desc') une fois l'index créé
+      // Requête simple sans orderBy pour éviter l'erreur d'index composite
       const snapshot = await this.collection
         .where('createdBy', '==', userId)
         .get();
@@ -182,7 +185,7 @@ export class CampaignService extends BaseService<CampaignCore> {
         } as CampaignCore;
       });
       
-      // Tri côté client en attendant l'index composite Firestore
+      // Tri côté client par date de création (plus récent en premier)
       campaigns.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -200,8 +203,6 @@ export class CampaignService extends BaseService<CampaignCore> {
 
   async update(id: string, data: Partial<CampaignCore>, userId?: string): Promise<void> {
     try {
-      console.log('✏️ Mise à jour campagne:', id, data);
-      
       // Récupérer la campagne existante pour le nom
       const existingCampaign = await this.getById(id);
       const campaignName = existingCampaign?.name || data.name || 'Sans nom';
@@ -215,8 +216,6 @@ export class CampaignService extends BaseService<CampaignCore> {
       delete (updateData as any).id;
       
       await this.collection.doc(id).update(updateData);
-      
-      console.log('✅ Campagne mise à jour avec succès');
       
       // Envoyer notification de succès
       if (userId) {
@@ -261,15 +260,11 @@ export class CampaignService extends BaseService<CampaignCore> {
 
   async delete(id: string, userId?: string): Promise<void> {
     try {
-      console.log('🗑️ Suppression campagne:', id);
-      
       // Récupérer la campagne avant suppression pour le nom
       const existingCampaign = await this.getById(id);
       const campaignName = existingCampaign?.name || 'Sans nom';
       
       await this.collection.doc(id).delete();
-      
-      console.log('✅ Campagne supprimée avec succès');
       
       // Envoyer notification de succès
       if (userId) {

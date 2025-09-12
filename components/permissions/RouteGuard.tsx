@@ -46,19 +46,13 @@ export function RouteGuard({ children }: RouteGuardProps) {
 
   useEffect(() => {
     if (loading || !pathname) {
-      console.log('🔍 RouteGuard: Still loading or no pathname');
       return; // Attendre le chargement des permissions
     }
 
-    console.log('🔍 RouteGuard: Checking path:', pathname);
-    console.log('🔍 Permissions state:', { permissions, check });
-
     // Vérifier si la route actuelle nécessite des permissions
     const requiredPermission = getRequiredPermission(pathname);
-    console.log('🔍 Required permission for', pathname, ':', requiredPermission);
     
     if (!requiredPermission || requiredPermission === 'public') {
-      console.log('✅ Public route - access granted');
       return; // Route publique, accès autorisé
     }
 
@@ -68,29 +62,21 @@ export function RouteGuard({ children }: RouteGuardProps) {
     switch (requiredPermission) {
       case 'owner-only':
         hasAccess = check.isOwner;
-        console.log('🔍 Owner-only check:', hasAccess);
         break;
       case 'laalas':
         hasAccess = check.canAccess('laalas');
-        console.log('🔍 Laalas access check:', hasAccess);
         break;
       case 'contenus':
         hasAccess = check.canAccess('contenus');
-        console.log('🔍 Contenus access check:', hasAccess);
         break;
     }
 
     if (!hasAccess) {
-      console.log(`🚫 ACCÈS REFUSÉ à ${pathname} - Permission requise: ${requiredPermission}`);
-      
       // Rediriger vers une page accessible
       const redirectPath = getRedirectPath(permissions);
-      console.log('🔄 Redirecting to:', redirectPath);
       if (redirectPath !== pathname) {
         router.replace(redirectPath);
       }
-    } else {
-      console.log(`✅ ACCÈS AUTORISÉ à ${pathname}`);
     }
   }, [pathname, check, loading, permissions, router]);
 
