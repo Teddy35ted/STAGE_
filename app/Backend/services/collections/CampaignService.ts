@@ -3,6 +3,7 @@ import { CampaignCore, CampaignDashboard, calculateCampaignStats, CAMPAIGN_STATU
 import { COLLECTIONS, dbUtils } from '../../config/database';
 import { ServiceError } from '../../utils/errors';
 import { Timestamp } from 'firebase-admin/firestore';
+import { notificationService } from './NotificationService';
 
 export class CampaignService extends BaseService<CampaignCore> {
   constructor() {
@@ -23,7 +24,7 @@ export class CampaignService extends BaseService<CampaignCore> {
     return Date.now();
   }
 
-  async create(data: Partial<CampaignCore>): Promise<string> {
+  async create(data: Partial<CampaignCore>, userId?: string): Promise<string> {
     try {
       console.log('📝 Création campagne avec données:', data);
       
@@ -50,10 +51,43 @@ export class CampaignService extends BaseService<CampaignCore> {
       
       console.log('✅ Campagne créée avec ID Firestore:', firestoreId);
       
+      // Envoyer notification de succès
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'CREATE',
+            'Campagne',
+            data.name || 'Sans nom',
+            true,
+            firestoreId
+          );
+          console.log('📬 Notification de création campagne envoyée');
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification campagne (non bloquant):', notifError);
+        }
+      }
+      
       return firestoreId;
       
     } catch (error) {
       console.error('❌ Erreur création campagne:', error);
+      
+      // Envoyer notification d'erreur
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'CREATE',
+            'Campagne',
+            data.name || 'Sans nom',
+            false
+          );
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification campagne (non bloquant):', notifError);
+        }
+      }
+      
       throw new ServiceError('Erreur lors de la création de la campagne', error);
     }
   }
@@ -164,9 +198,13 @@ export class CampaignService extends BaseService<CampaignCore> {
     }
   }
 
-  async update(id: string, data: Partial<CampaignCore>): Promise<void> {
+  async update(id: string, data: Partial<CampaignCore>, userId?: string): Promise<void> {
     try {
       console.log('✏️ Mise à jour campagne:', id, data);
+      
+      // Récupérer la campagne existante pour le nom
+      const existingCampaign = await this.getById(id);
+      const campaignName = existingCampaign?.name || data.name || 'Sans nom';
       
       const updateData = {
         ...data,
@@ -180,22 +218,95 @@ export class CampaignService extends BaseService<CampaignCore> {
       
       console.log('✅ Campagne mise à jour avec succès');
       
+      // Envoyer notification de succès
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'UPDATE',
+            'Campagne',
+            campaignName,
+            true,
+            id
+          );
+          console.log('📬 Notification de modification campagne envoyée');
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification campagne (non bloquant):', notifError);
+        }
+      }
+      
     } catch (error) {
       console.error('❌ Erreur mise à jour campagne:', error);
+      
+      // Envoyer notification d'erreur
+      if (userId) {
+        try {
+          const campaignName = data.name || 'Sans nom';
+          await notificationService.notifyCRUD(
+            userId,
+            'UPDATE',
+            'Campagne',
+            campaignName,
+            false,
+            id
+          );
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification campagne (non bloquant):', notifError);
+        }
+      }
+      
       throw new ServiceError('Erreur lors de la mise à jour de la campagne', error);
     }
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, userId?: string): Promise<void> {
     try {
       console.log('🗑️ Suppression campagne:', id);
+      
+      // Récupérer la campagne avant suppression pour le nom
+      const existingCampaign = await this.getById(id);
+      const campaignName = existingCampaign?.name || 'Sans nom';
       
       await this.collection.doc(id).delete();
       
       console.log('✅ Campagne supprimée avec succès');
       
+      // Envoyer notification de succès
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'DELETE',
+            'Campagne',
+            campaignName,
+            true,
+            id
+          );
+          console.log('📬 Notification de suppression campagne envoyée');
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification campagne (non bloquant):', notifError);
+        }
+      }
+      
     } catch (error) {
       console.error('❌ Erreur suppression campagne:', error);
+      
+      // Envoyer notification d'erreur
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'DELETE',
+            'Campagne',
+            'Campagne',
+            false,
+            id
+          );
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification campagne (non bloquant):', notifError);
+        }
+      }
+      
       throw new ServiceError('Erreur lors de la suppression de la campagne', error);
     }
   }

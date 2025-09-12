@@ -2,13 +2,14 @@ import { BaseService } from '../base/BaseService';
 import { ValidationMessageT } from '../../../models/message';
 import { COLLECTIONS, dbUtils } from '../../config/database';
 import { ServiceError } from '../../utils/errors';
+import { notificationService } from './NotificationService';
 
 export class MessageService extends BaseService<ValidationMessageT> {
   constructor() {
     super(COLLECTIONS.MESSAGES || 'messages');
   }
 
-  async create(data: Partial<ValidationMessageT>): Promise<string> {
+  async create(data: Partial<ValidationMessageT>, userId?: string): Promise<string> {
     try {
       console.log('📝 Création message avec données:', data);
       
@@ -29,10 +30,45 @@ export class MessageService extends BaseService<ValidationMessageT> {
       
       console.log('✅ Message créé avec ID Firestore:', firestoreId);
       
+      // Envoyer notification de succès
+      if (userId) {
+        try {
+          const messageTitle = data.nomrec || 'Communication';
+          await notificationService.notifyCRUD(
+            userId,
+            'CREATE',
+            'Communication',
+            messageTitle,
+            true,
+            firestoreId
+          );
+          console.log('📬 Notification de création communication envoyée');
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification communication (non bloquant):', notifError);
+        }
+      }
+      
       return firestoreId;
       
     } catch (error) {
       console.error('❌ Erreur création message:', error);
+      
+      // Envoyer notification d'erreur
+      if (userId) {
+        try {
+          const messageTitle = data.nomrec || 'Communication';
+          await notificationService.notifyCRUD(
+            userId,
+            'CREATE',
+            'Communication',
+            messageTitle,
+            false
+          );
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification communication (non bloquant):', notifError);
+        }
+      }
+      
       throw new ServiceError('Erreur lors de la création du message', error);
     }
   }
@@ -115,7 +151,7 @@ export class MessageService extends BaseService<ValidationMessageT> {
     }
   }
 
-  async update(id: string, data: Partial<ValidationMessageT>): Promise<void> {
+  async update(id: string, data: Partial<ValidationMessageT>, userId?: string): Promise<void> {
     try {
       console.log(`✏️ Mise à jour message ID:`, id);
       console.log(`📝 Données de mise à jour:`, data);
@@ -124,11 +160,14 @@ export class MessageService extends BaseService<ValidationMessageT> {
         throw new ServiceError('ID vide pour mise à jour message');
       }
       
-      // Vérifier que le message existe
+      // Vérifier que le message existe et récupérer les données existantes
       const existingDoc = await this.collection.doc(id).get();
       if (!existingDoc.exists) {
         throw new ServiceError(`Message ${id} non trouvé pour mise à jour`);
       }
+      
+      const existingData = existingDoc.data() as ValidationMessageT;
+      const messageTitle = existingData.nomrec || data.nomrec || 'Communication';
       
       // Nettoyer les données (enlever les champs non modifiables)
       const { id: _, createdAt, ...cleanData } = data as any;
@@ -141,13 +180,48 @@ export class MessageService extends BaseService<ValidationMessageT> {
       await this.collection.doc(id).update(updateData);
       console.log(`✅ Message ${id} mis à jour avec succès`);
       
+      // Envoyer notification de succès
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'UPDATE',
+            'Communication',
+            messageTitle,
+            true,
+            id
+          );
+          console.log('📬 Notification de modification communication envoyée');
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification communication (non bloquant):', notifError);
+        }
+      }
+      
     } catch (error) {
       console.error(`❌ Erreur mise à jour message ${id}:`, error);
+      
+      // Envoyer notification d'erreur
+      if (userId) {
+        try {
+          const messageTitle = data.nomrec || 'Communication';
+          await notificationService.notifyCRUD(
+            userId,
+            'UPDATE',
+            'Communication',
+            messageTitle,
+            false,
+            id
+          );
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification communication (non bloquant):', notifError);
+        }
+      }
+      
       throw new ServiceError(`Erreur lors de la mise à jour du message ${id}`, error);
     }
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, userId?: string): Promise<void> {
     try {
       console.log(`🗑️ Suppression message ID:`, id);
       
@@ -155,15 +229,16 @@ export class MessageService extends BaseService<ValidationMessageT> {
         throw new ServiceError('ID vide pour suppression message');
       }
       
-      // Vérifier que le message existe
+      // Vérifier que le message existe et récupérer les données
       const existingDoc = await this.collection.doc(id).get();
       if (!existingDoc.exists) {
         console.warn(`⚠️ Message ${id} déjà supprimé ou inexistant`);
         return; // Ne pas lever d'erreur si déjà supprimé
       }
       
-      const existingData = existingDoc.data();
-      console.log(`📋 Message à supprimer:`, existingData?.contenu || 'Sans contenu');
+      const existingData = existingDoc.data() as ValidationMessageT;
+      const messageTitle = existingData.nomrec || 'Communication';
+      console.log(`📋 Message à supprimer:`, existingData?.nomrec || 'Sans titre');
       
       await this.collection.doc(id).delete();
       console.log(`✅ Message ${id} supprimé avec succès`);
@@ -174,8 +249,42 @@ export class MessageService extends BaseService<ValidationMessageT> {
         throw new ServiceError(`Échec de la suppression du message ${id}`);
       }
       
+      // Envoyer notification de succès
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'DELETE',
+            'Communication',
+            messageTitle,
+            true,
+            id
+          );
+          console.log('📬 Notification de suppression communication envoyée');
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification communication (non bloquant):', notifError);
+        }
+      }
+      
     } catch (error) {
       console.error(`❌ Erreur suppression message ${id}:`, error);
+      
+      // Envoyer notification d'erreur
+      if (userId) {
+        try {
+          await notificationService.notifyCRUD(
+            userId,
+            'DELETE',
+            'Communication',
+            'Communication',
+            false,
+            id
+          );
+        } catch (notifError) {
+          console.error('⚠️ Erreur notification communication (non bloquant):', notifError);
+        }
+      }
+      
       throw new ServiceError(`Erreur lors de la suppression du message ${id}`, error);
     }
   }

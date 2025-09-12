@@ -104,7 +104,13 @@ export function createCrudApiHandlers(options: ApiTemplateOptions) {
         // Nettoyer les données (enlever les champs non modifiables)
         const { id, createdAt, updatedAt, ...cleanData } = data;
         
-        await serviceInstance.update(params.id, cleanData);
+        // Passer l'ID utilisateur si la méthode l'accepte
+        const updateMethod = serviceInstance.update;
+        if (updateMethod.length >= 3) {
+          await serviceInstance.update(params.id, cleanData, auth.uid);
+        } else {
+          await serviceInstance.update(params.id, cleanData);
+        }
         
         // Récupérer l'élément mis à jour
         const updatedItem = await serviceInstance.getById(params.id);
@@ -160,7 +166,13 @@ export function createCrudApiHandlers(options: ApiTemplateOptions) {
         // PERMISSIONS PERMISSIVES - Toujours autoriser la suppression
         console.log('🔓 Permissions permissives - Suppression autorisée pour tous les utilisateurs authentifiés');
         
-        await serviceInstance.delete(params.id);
+        // Passer l'ID utilisateur si la méthode l'accepte
+        const deleteMethod = serviceInstance.delete;
+        if (deleteMethod.length >= 2) {
+          await serviceInstance.delete(params.id, auth.uid);
+        } else {
+          await serviceInstance.delete(params.id);
+        }
         
         // Vérifier que la suppression a bien eu lieu
         const deletedCheck = await serviceInstance.getById(params.id);

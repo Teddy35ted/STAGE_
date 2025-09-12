@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
       createdBy: currentUserId
     };
 
-    // Créer la campagne
-    const campaignId = await campaignService.create(dataWithUser);
+    // Créer la campagne avec l'ID utilisateur pour les notifications
+    const campaignId = await campaignService.create(dataWithUser, currentUserId);
 
     console.log('✅ Campagne créée avec ID:', campaignId);
 
@@ -182,8 +182,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Mettre à jour la campagne
-    await campaignService.update(id, dataToUpdate);
+    // Mettre à jour la campagne avec l'ID utilisateur pour les notifications
+    await campaignService.update(id, dataToUpdate, currentUserId);
 
     console.log('✅ Campagne mise à jour:', id);
 
@@ -261,8 +261,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Supprimer la campagne
-    await campaignService.delete(campaignId);
+    // Supprimer la campagne avec l'ID utilisateur pour les notifications
+    await campaignService.delete(campaignId, currentUserId);
 
     console.log('✅ Campagne supprimée:', campaignId);
 

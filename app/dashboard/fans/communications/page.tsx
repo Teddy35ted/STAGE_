@@ -42,6 +42,7 @@ export default function CommunicationsPage() {
   const [communications, setCommunications] = useState<CommunicationExtended[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userNames, setUserNames] = useState<Record<string, string>>({}); // Cache des noms d'utilisateurs
 
   // États pour les modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -65,6 +66,47 @@ export default function CommunicationsPage() {
     nomrec: '',
     nomsend: user?.displayName || user?.email || ''
   });
+
+  // Fonction pour récupérer le nom d'un utilisateur
+  const getUserName = async (userId: string | undefined): Promise<string> => {
+    if (!userId) return 'Utilisateur inconnu';
+    
+    // Vérifier le cache
+    if (userNames[userId]) {
+      return userNames[userId];
+    }
+    
+    try {
+      // Si c'est l'utilisateur connecté, utiliser ses informations
+      if (userId === user?.uid) {
+        const name = user?.displayName || user?.email || 'Vous';
+        setUserNames(prev => ({ ...prev, [userId]: name }));
+        return name;
+      }
+      
+      // Sinon, récupérer depuis l'API
+      const token = await user?.getIdToken();
+      const response = await fetch(`/api/users/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        const name = userData.nom || userData.firstName || userData.displayName || userData.email || userId;
+        setUserNames(prev => ({ ...prev, [userId]: name }));
+        return name;
+      } else {
+        // Fallback en cas d'erreur
+        return userId;
+      }
+    } catch (error) {
+      console.error('Erreur récupération nom utilisateur:', error);
+      return userId;
+    }
+  };
 
   // Récupération des communications
   const fetchCommunications = async () => {
@@ -104,14 +146,22 @@ export default function CommunicationsPage() {
       }
       
       // Transformer les messages pour l'affichage
-      const transformedCommunications: CommunicationExtended[] = data.map((comm: ValidationMessageT) => ({
-        ...comm,
-        displayTitle: comm.nomrec || comm.receiverId || 'Destinataire inconnu',
-        displayContent: comm.message?.text || comm.messages?.[0]?.text || 'Message sans contenu',
-        displayStatus: 'sent', // Par défaut
-        displayType: comm.message?.type || comm.messages?.[0]?.type || 'text',
-        displayDate: comm.date ? new Date(comm.date).toLocaleDateString('fr-FR') : 'Date inconnue'
-      }));
+      const transformedCommunications: CommunicationExtended[] = await Promise.all(
+        data.map(async (comm: ValidationMessageT) => {
+          // Récupérer le nom de l'expéditeur
+          const senderName = await getUserName(comm.idsender);
+          
+          return {
+            ...comm,
+            displayTitle: comm.nomrec || comm.receiverId || 'Destinataire inconnu',
+            displayContent: comm.message?.text || comm.messages?.[0]?.text || 'Message sans contenu',
+            displayStatus: 'sent', // Par défaut
+            displayType: comm.message?.type || comm.messages?.[0]?.type || 'text',
+            displayDate: comm.date ? new Date(comm.date).toLocaleDateString('fr-FR') : 'Date inconnue',
+            nomsend: senderName // Remplacer par le nom récupéré
+          } as CommunicationExtended;
+        })
+      );
       
       setCommunications(transformedCommunications);
       console.log('✅ Communications récupérées:', transformedCommunications.length);
@@ -829,11 +879,6 @@ export default function CommunicationsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">ID Communication</label>
-                    <p className="text-gray-900 font-mono">{selectedCommunication.id}</p>
-                  </div>
-                  
-                  <div>
                     <label className="text-sm font-medium text-gray-500">Expéditeur</label>
                     <p className="text-gray-900">{selectedCommunication.nomsend || 'Vous'}</p>
                   </div>
@@ -879,53 +924,6 @@ export default function CommunicationsPage() {
                   <p className="text-gray-900 whitespace-pre-wrap">{selectedCommunication.displayContent}</p>
                 </div>
               </div>
-              
-              {/* Métadonnées du message */}
-              {selectedCommunication.message && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-3">Métadonnées du message</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    {selectedCommunication.message.name && (
-                      <div>
-                        <span className="font-medium text-blue-700">Nom du fichier:</span>
-                        <span className="ml-2 text-blue-600">{selectedCommunication.message.name}</span>
-                      </div>
-                    )}
-                    {selectedCommunication.message.uri && (
-                      <div>
-                        <span className="font-medium text-blue-700">URL:</span>
-                        <a href={selectedCommunication.message.uri} target="_blank" rel="noopener noreferrer" 
-                           className="ml-2 text-blue-600 hover:underline">
-                          Voir le fichier
-                        </a>
-                      </div>
-                    )}
-                    {selectedCommunication.message.createdAt && (
-                      <div>
-                        <span className="font-medium text-blue-700">Créé le:</span>
-                        <span className="ml-2 text-blue-600">
-                          {new Date(selectedCommunication.message.createdAt).toLocaleString('fr-FR')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Participants du chat */}
-              {selectedCommunication.chateurs && selectedCommunication.chateurs.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500 mb-2 block">Participants du chat</label>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCommunication.chateurs.map((chateurId, index) => (
-                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
-                        <FiUser className="w-3 h-3 mr-1" />
-                        {chateurId === selectedCommunication.idsender ? 'Vous' : chateurId}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
             
             <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">

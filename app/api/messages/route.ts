@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const data = await request.json();
-    const id = await messageService.create({ ...data, idsender: auth.uid });
+    const id = await messageService.create({ ...data, idsender: auth.uid }, auth.uid);
     return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create message' }, { status: 500 });

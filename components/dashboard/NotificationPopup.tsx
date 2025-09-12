@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   FiBell, 
   FiX, 
@@ -8,9 +8,11 @@ import {
   FiInfo,
   FiAlertTriangle,
   FiCheckCircle,
-  FiXCircle
+  FiXCircle,
+  FiRefreshCw
 } from 'react-icons/fi';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useNotificationAPI } from '../../hooks/useNotificationAPI';
 
 interface NotificationPopupProps {
   isOpen: boolean;
@@ -18,7 +20,48 @@ interface NotificationPopupProps {
 }
 
 export function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
-  const { notifications, removeNotification, clearAllNotifications, getUnreadCount } = useNotifications();
+  const { notifications: localNotifications, removeNotification, clearAllNotifications, getUnreadCount } = useNotifications();
+  const { 
+    notifications: apiNotifications, 
+    unreadCount: apiUnreadCount, 
+    loading, 
+    refresh, 
+    markAllAsRead,
+    markAsRead
+  } = useNotificationAPI();
+
+  // Combiner les notifications locales et API (priorité aux locales)
+  const allNotifications = [...localNotifications];
+  
+  // Ajouter les notifications API qui ne sont pas déjà en local
+  if (apiNotifications) {
+    apiNotifications.forEach(apiNotif => {
+      const existsInLocal = localNotifications.some(local => 
+        local.id === apiNotif.id || 
+        (local.title === apiNotif.title && local.message === apiNotif.message)
+      );
+      
+      if (!existsInLocal) {
+        // Convertir la notification API au format local
+        allNotifications.push({
+          id: apiNotif.id,
+          title: apiNotif.title,
+          message: apiNotif.message,
+          type: apiNotif.type,
+          action: apiNotif.action,
+          entity: apiNotif.entity,
+          timestamp: new Date(apiNotif.createdAt)
+        });
+      }
+    });
+  }
+
+  // Rafraîchir les données quand le popup s'ouvre
+  useEffect(() => {
+    if (isOpen) {
+      refresh();
+    }
+  }, [isOpen, refresh]);
 
   if (!isOpen) return null;
 
@@ -63,7 +106,25 @@ export function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
     return `Il y a ${days}j`;
   };
 
-  const unreadCount = getUnreadCount();
+  const unreadCount = getUnreadCount() + (apiUnreadCount || 0);
+
+  // Gérer la suppression d'une notification
+  const handleRemoveNotification = async (id: string) => {
+    // Supprimer de la liste locale
+    removeNotification(id);
+    
+    // Si c'est une notification API, la marquer comme lue
+    const isApiNotification = apiNotifications?.some(n => n.id === id);
+    if (isApiNotification) {
+      await markAsRead([id]);
+    }
+  };
+
+  // Gérer la suppression de toutes les notifications
+  const handleClearAll = async () => {
+    clearAllNotifications();
+    await markAllAsRead();
+  };
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-blue-50/90 via-indigo-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -82,17 +143,20 @@ export function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
               <p className="text-sm text-gray-600">
-                {notifications.length === 0 
+                {allNotifications.length === 0 
                   ? 'Aucune notification' 
-                  : `${notifications.length} notification${notifications.length > 1 ? 's' : ''}`
+                  : `${allNotifications.length} notification${allNotifications.length > 1 ? 's' : ''}`
                 }
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {notifications.length > 0 && (
+            {loading && (
+              <FiRefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+            )}
+            {allNotifications.length > 0 && (
               <button
-                onClick={clearAllNotifications}
+                onClick={handleClearAll}
                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 title="Supprimer toutes les notifications"
               >
@@ -110,7 +174,7 @@ export function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
 
         {/* Content */}
         <div className="max-h-96 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {allNotifications.length === 0 ? (
             <div className="p-8 text-center">
               <FiBell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune notification</h3>
@@ -120,7 +184,7 @@ export function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
             </div>
           ) : (
             <div>
-              {notifications.map((notification) => (
+              {allNotifications.map((notification: any) => (
                 <div
                   key={notification.id}
                   className="flex items-start space-x-3 p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors group"
@@ -152,7 +216,7 @@ export function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
                         )}
                       </div>
                       <button
-                        onClick={() => removeNotification(notification.id)}
+                        onClick={() => handleRemoveNotification(notification.id)}
                         className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 transition-all duration-200"
                         title="Supprimer cette notification"
                       >
@@ -167,10 +231,10 @@ export function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
         </div>
 
         {/* Footer */}
-        {notifications.length > 0 && (
+        {allNotifications.length > 0 && (
           <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl">
             <button
-              onClick={clearAllNotifications}
+              onClick={handleClearAll}
               className="w-full text-center text-sm text-gray-600 hover:text-red-600 transition-colors"
             >
               Supprimer toutes les notifications
