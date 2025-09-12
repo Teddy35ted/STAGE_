@@ -7,6 +7,7 @@ import { Textarea } from '../../../../components/ui/textarea';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useCRUDNotifications } from '../../../../contexts/NotificationContext';
 import { ValidationMessageT } from '../../../models/message';
+import { PublicCommunication, AUDIENCE_TYPES, COMMUNICATION_TYPES, PRIORITY_LEVELS } from '../../../models/communication';
 import { 
   FiMessageSquare,
   FiSend,
@@ -26,12 +27,32 @@ import {
   FiFile
 } from 'react-icons/fi';
 
-interface CommunicationExtended extends ValidationMessageT {
+interface CommunicationExtended {
+  id?: string;
   displayTitle?: string;
   displayContent?: string;
   displayStatus?: 'sent' | 'pending' | 'failed' | 'read';
-  displayType?: 'text' | 'image' | 'file';
+  displayType?: 'text' | 'image' | 'video' | 'mixed' | 'file';
   displayDate?: string;
+  // Compatibility fields
+  idsender?: string;
+  nomsend?: string;
+  nomrec?: string;
+  receiverId?: string;
+  authorId?: string;
+  authorName?: string;
+  title?: string;
+  content?: string;
+  status?: string;
+  format?: string;
+  createdAt?: string | number;
+  // New communication fields
+  targetAudience?: {
+    type: string;
+    description: string;
+  };
+  type?: string;
+  priority?: string;
 }
 
 export default function CommunicationsPage() {
@@ -55,16 +76,15 @@ export default function CommunicationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // États pour le formulaire
-  const [newMessage, setNewMessage] = useState({
-    receiverId: '',
-    message: {
-      type: 'text' as 'text' | 'image' | 'file',
-      text: '',
-      name: '',
-      uri: ''
-    },
-    nomrec: '',
-    nomsend: user?.displayName || user?.email || ''
+  const [newCommunication, setNewCommunication] = useState({
+    title: '',
+    content: '',
+    type: 'announcement' as keyof typeof COMMUNICATION_TYPES,
+    audienceType: 'followers' as keyof typeof AUDIENCE_TYPES,
+    priority: 'medium' as keyof typeof PRIORITY_LEVELS,
+    tags: [] as string[],
+    category: '',
+    publishNow: false
   });
 
   // Fonction pour récupérer le nom d'un utilisateur
@@ -121,23 +141,38 @@ export default function CommunicationsPage() {
       }
       
       console.log('🔍 Récupération des communications pour utilisateur:', user.uid);
+      console.log('🔑 User token disponible:', !!user.getIdToken);
       
       // Obtenir le token d'authentification
       const token = await user.getIdToken();
+      console.log('🔐 Token récupéré, longueur:', token.length);
       
-      const response = await fetch('/api/messages', {
+      const response = await fetch('/api/communications', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
       
+      console.log('📡 Réponse API:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Erreur API:', errorData);
         throw new Error(errorData.error || 'Erreur lors de la récupération des messages');
       }
       
       const data = await response.json();
+      console.log('📄 Données reçues:', {
+        type: typeof data,
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 'N/A',
+        sample: Array.isArray(data) && data.length > 0 ? data[0] : 'Aucune donnée'
+      });
       
       if (!Array.isArray(data)) {
         console.warn('⚠️ Réponse API inattendue:', data);
@@ -145,29 +180,42 @@ export default function CommunicationsPage() {
         return;
       }
       
-      // Transformer les messages pour l'affichage
-      const transformedCommunications: CommunicationExtended[] = await Promise.all(
-        data.map(async (comm: ValidationMessageT) => {
-          // Récupérer le nom de l'expéditeur
-          const senderName = await getUserName(comm.idsender);
-          
-          return {
-            ...comm,
-            displayTitle: comm.nomrec || comm.receiverId || 'Destinataire inconnu',
-            displayContent: comm.message?.text || comm.messages?.[0]?.text || 'Message sans contenu',
-            displayStatus: 'sent', // Par défaut
-            displayType: comm.message?.type || comm.messages?.[0]?.type || 'text',
-            displayDate: comm.date ? new Date(comm.date).toLocaleDateString('fr-FR') : 'Date inconnue',
-            nomsend: senderName // Remplacer par le nom récupéré
-          } as CommunicationExtended;
-        })
-      );
+      // Transformer les communications pour l'affichage
+      const transformedCommunications: CommunicationExtended[] = data.map((comm: PublicCommunication) => {
+        console.log('🔄 Transformation communication:', {
+          id: comm.id,
+          title: comm.title,
+          status: comm.status,
+          authorId: comm.authorId
+        });
+        
+        return {
+          ...comm,
+          displayTitle: comm.title || 'Sans titre',
+          displayContent: comm.content || 'Contenu vide',
+          displayStatus: comm.status === 'published' ? 'sent' : 'pending',
+          displayType: comm.format || 'text',
+          displayDate: comm.createdAt ? new Date(comm.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue',
+          // Compatibility fields for existing interface
+          id: comm.id,
+          idsender: comm.authorId,
+          nomsend: comm.authorName || 'Auteur inconnu',
+          nomrec: comm.targetAudience?.description || `Audience: ${comm.targetAudience?.type}`,
+          receiverId: comm.targetAudience?.type || 'unknown',
+          targetAudience: comm.targetAudience,
+          type: comm.type,
+          priority: comm.priority
+        };
+      });
+      
+      console.log('✅ Communications transformées:', transformedCommunications.length);
+      console.log('📊 Premier élément transformé:', transformedCommunications[0]);
       
       setCommunications(transformedCommunications);
-      console.log('✅ Communications récupérées:', transformedCommunications.length);
       
     } catch (err) {
       console.error('❌ Erreur récupération communications:', err);
+      console.error('📚 Stack trace:', err instanceof Error ? err.stack : 'Pas de stack');
       setError(`Erreur lors du chargement des communications: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
       setCommunications([]);
     } finally {
@@ -181,39 +229,33 @@ export default function CommunicationsPage() {
       setLoading(true);
       setError(null);
       
-      if (!newMessage.receiverId.trim()) {
-        setError('Le destinataire est requis');
-        return;
-      }
-      
-      if (!newMessage.message.text.trim()) {
+      if (!newCommunication.content.trim()) {
         setError('Le contenu du message est requis');
         return;
       }
       
-      const communicationData: Partial<ValidationMessageT> = {
-        idsender: user?.uid || '',
-        receiverId: newMessage.receiverId,
-        idreceiver: newMessage.receiverId,
-        nomrec: newMessage.nomrec,
-        nomsend: newMessage.nomsend,
-        chateurs: [user?.uid || '', newMessage.receiverId],
-        date: new Date().toISOString(),
-        message: {
-          ...newMessage.message,
-          createdAt: Date.now(),
-          author: {
-            id: user?.uid || ''
-          }
+      if (!newCommunication.title.trim()) {
+        setError('Le titre est requis');
+        return;
+      }
+      
+      const communicationData: Partial<PublicCommunication> = {
+        title: newCommunication.title,
+        content: newCommunication.content,
+        type: newCommunication.type as 'announcement' | 'update' | 'promotion' | 'event' | 'newsletter',
+        format: 'text',
+        authorId: user?.uid || '',
+        authorName: user?.displayName || user?.email || '',
+        targetAudience: {
+          type: newCommunication.audienceType as 'all' | 'followers' | 'fans' | 'vip' | 'custom',
+          description: `Ciblage: ${newCommunication.audienceType}`,
+          estimatedReach: 0
         },
-        messages: [{
-          ...newMessage.message,
-          id: Date.now().toString(),
-          createdAt: Date.now(),
-          author: {
-            id: user?.uid || ''
-          }
-        }]
+        priority: newCommunication.priority as 'low' | 'medium' | 'high' | 'urgent',
+        tags: newCommunication.tags,
+        category: newCommunication.category,
+        createdAt: new Date().toISOString(),
+        status: newCommunication.publishNow ? 'published' : 'draft'
       };
       
       // Obtenir le token d'authentification
@@ -222,7 +264,7 @@ export default function CommunicationsPage() {
         throw new Error('Impossible d\'obtenir le token d\'authentification');
       }
       
-      const response = await fetch('/api/messages', {
+      const response = await fetch('/api/communications', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -236,19 +278,18 @@ export default function CommunicationsPage() {
       }
 
       console.log('✅ Communication créée avec succès');
-      notifyCreate('Communication', newMessage.nomrec || newMessage.receiverId, true);
+      notifyCreate('Communication', newCommunication.title, true);
       
       // Réinitialiser le formulaire
-      setNewMessage({
-        receiverId: '',
-        message: {
-          type: 'text',
-          text: '',
-          name: '',
-          uri: ''
-        },
-        nomrec: '',
-        nomsend: user?.displayName || user?.email || ''
+      setNewCommunication({
+        title: '',
+        content: '',
+        type: 'announcement' as keyof typeof COMMUNICATION_TYPES,
+        audienceType: 'followers' as keyof typeof AUDIENCE_TYPES,
+        priority: 'medium' as keyof typeof PRIORITY_LEVELS,
+        tags: [] as string[],
+        category: '',
+        publishNow: false
       });
       
       setShowCreateModal(false);
@@ -256,7 +297,7 @@ export default function CommunicationsPage() {
       
     } catch (err) {
       console.error('❌ Erreur création communication:', err);
-      notifyCreate('Communication', newMessage.nomrec || newMessage.receiverId, false);
+      notifyCreate('Communication', newCommunication.title, false);
       setError('Erreur lors de la création de la communication');
     } finally {
       setLoading(false);
@@ -276,16 +317,15 @@ export default function CommunicationsPage() {
     setSelectedCommunication(communication);
     
     // Pré-remplir le formulaire avec les données de la communication
-    setNewMessage({
-      receiverId: communication.receiverId || '',
-      message: {
-        type: communication.message?.type || communication.displayType || 'text',
-        text: communication.message?.text || communication.displayContent || '',
-        name: communication.message?.name || '',
-        uri: communication.message?.uri || ''
-      },
-      nomrec: communication.nomrec || '',
-      nomsend: communication.nomsend || ''
+    setNewCommunication({
+      title: communication.displayTitle || '',
+      content: communication.displayContent || '',
+      type: 'announcement' as keyof typeof COMMUNICATION_TYPES,
+      audienceType: 'followers' as keyof typeof AUDIENCE_TYPES,
+      priority: 'medium' as keyof typeof PRIORITY_LEVELS,
+      tags: [] as string[],
+      category: '',
+      publishNow: false
     });
     
     setShowEditModal(true);
@@ -299,18 +339,29 @@ export default function CommunicationsPage() {
       setLoading(true);
       setError(null);
       
-      if (!newMessage.message.text.trim()) {
+      if (!newCommunication.content.trim()) {
         setError('Le contenu du message est requis');
         return;
       }
       
-      const updateData = {
-        nomrec: newMessage.nomrec,
-        nomsend: newMessage.nomsend,
-        message: {
-          ...newMessage.message,
-          updatedAt: Date.now()
-        }
+      if (!newCommunication.title.trim()) {
+        setError('Le titre est requis');
+        return;
+      }
+      
+      const updateData: Partial<PublicCommunication> = {
+        title: newCommunication.title,
+        content: newCommunication.content,
+        type: newCommunication.type as 'announcement' | 'update' | 'promotion' | 'event' | 'newsletter',
+        targetAudience: {
+          type: newCommunication.audienceType as 'all' | 'followers' | 'fans' | 'vip' | 'custom',
+          description: `Ciblage: ${newCommunication.audienceType}`,
+          estimatedReach: 0
+        },
+        priority: newCommunication.priority as 'low' | 'medium' | 'high' | 'urgent',
+        tags: newCommunication.tags,
+        category: newCommunication.category,
+        updatedAt: new Date().toISOString()
       };
       
       // Obtenir le token d'authentification
@@ -319,7 +370,7 @@ export default function CommunicationsPage() {
         throw new Error('Impossible d\'obtenir le token d\'authentification');
       }
       
-      const response = await fetch(`/api/messages/${selectedCommunication.id}`, {
+      const response = await fetch(`/api/communications/${selectedCommunication.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -333,30 +384,29 @@ export default function CommunicationsPage() {
       }
 
       console.log('✅ Communication mise à jour avec succès');
-      notifyUpdate('Communication', newMessage.nomrec || selectedCommunication.displayTitle || '', true);
+      notifyUpdate('Communication', newCommunication.title || selectedCommunication.displayTitle || '', true);
       
       // Réinitialiser les états
       setSelectedCommunication(null);
       setShowEditModal(false);
       
       // Réinitialiser le formulaire
-      setNewMessage({
-        receiverId: '',
-        message: {
-          type: 'text',
-          text: '',
-          name: '',
-          uri: ''
-        },
-        nomrec: '',
-        nomsend: user?.displayName || user?.email || ''
+      setNewCommunication({
+        title: '',
+        content: '',
+        type: 'announcement' as keyof typeof COMMUNICATION_TYPES,
+        audienceType: 'followers' as keyof typeof AUDIENCE_TYPES,
+        priority: 'medium' as keyof typeof PRIORITY_LEVELS,
+        tags: [] as string[],
+        category: '',
+        publishNow: false
       });
       
       await fetchCommunications();
       
     } catch (err) {
       console.error('❌ Erreur mise à jour communication:', err);
-      notifyUpdate('Communication', newMessage.nomrec || selectedCommunication?.displayTitle || '', false);
+      notifyUpdate('Communication', newCommunication.title || selectedCommunication?.displayTitle || '', false);
       setError('Erreur lors de la mise à jour de la communication');
     } finally {
       setLoading(false);
@@ -722,108 +772,125 @@ export default function CommunicationsPage() {
             </div>
             
             <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Titre de la communication *
+                </label>
+                <Input
+                  value={newCommunication.title}
+                  onChange={(e) => setNewCommunication({ ...newCommunication, title: e.target.value })}
+                  placeholder="Titre de votre communication"
+                  required
+                  className="bg-white/70 focus:bg-white"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ID Destinataire *
+                    Type de communication *
                   </label>
-                  <Input
-                    value={newMessage.receiverId}
-                    onChange={(e) => setNewMessage({ ...newMessage, receiverId: e.target.value })}
-                    placeholder="ID du destinataire"
-                    required
-                    className="bg-white/70 focus:bg-white"
-                  />
+                  <select
+                    value={newCommunication.type}
+                    onChange={(e) => setNewCommunication({ 
+                      ...newCommunication, 
+                      type: e.target.value as keyof typeof COMMUNICATION_TYPES
+                    })}
+                    className="w-full px-3 py-2 bg-white/70 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:bg-white"
+                  >
+                    <option value="announcement">📢 Annonce</option>
+                    <option value="update">🔄 Mise à jour</option>
+                    <option value="promotion">🎯 Promotion</option>
+                    <option value="event">📅 Événement</option>
+                    <option value="newsletter">📧 Newsletter</option>
+                  </select>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom du destinataire
+                    Audience cible *
                   </label>
-                  <Input
-                    value={newMessage.nomrec}
-                    onChange={(e) => setNewMessage({ ...newMessage, nomrec: e.target.value })}
-                    placeholder="Nom du destinataire"
-                    className="bg-white/70 focus:bg-white"
-                  />
+                  <select
+                    value={newCommunication.audienceType}
+                    onChange={(e) => setNewCommunication({ 
+                      ...newCommunication, 
+                      audienceType: e.target.value as keyof typeof AUDIENCE_TYPES
+                    })}
+                    className="w-full px-3 py-2 bg-white/70 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:bg-white"
+                  >
+                    <option value="all">� Tout le monde</option>
+                    <option value="followers">� Abonnés</option>
+                    <option value="fans">⭐ Fans</option>
+                    <option value="vip">� VIP</option>
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type de message *
-                </label>
-                <select
-                  value={newMessage.message.type}
-                  onChange={(e) => setNewMessage({ 
-                    ...newMessage, 
-                    message: { ...newMessage.message, type: e.target.value as 'text' | 'image' | 'file' }
-                  })}
-                  className="w-full px-3 py-2 bg-white/70 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:bg-white"
-                >
-                  <option value="text">💬 Texte</option>
-                  <option value="image">🖼️ Image</option>
-                  <option value="file">📎 Fichier</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contenu du message *
+                  Contenu de la communication *
                 </label>
                 <Textarea
-                  value={newMessage.message.text}
-                  onChange={(e) => setNewMessage({ 
-                    ...newMessage, 
-                    message: { ...newMessage.message, text: e.target.value }
+                  value={newCommunication.content}
+                  onChange={(e) => setNewCommunication({ 
+                    ...newCommunication, 
+                    content: e.target.value
                   })}
-                  placeholder="Tapez votre message ici..."
+                  placeholder="Rédigez votre communication ici..."
                   rows={5}
                   required
                   className="bg-white/70 focus:bg-white resize-none"
                 />
               </div>
 
-              {(newMessage.message.type === 'image' || newMessage.message.type === 'file') && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-gray-800 mb-3 flex items-center">
-                    <FiFile className="w-4 h-4 mr-2" />
-                    Informations du fichier
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nom du fichier
-                      </label>
-                      <Input
-                        value={newMessage.message.name}
-                        onChange={(e) => setNewMessage({ 
-                          ...newMessage, 
-                          message: { ...newMessage.message, name: e.target.value }
-                        })}
-                        placeholder="Nom du fichier"
-                        className="bg-white/80 focus:bg-white"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        URL du fichier
-                      </label>
-                      <Input
-                        value={newMessage.message.uri}
-                        onChange={(e) => setNewMessage({ 
-                          ...newMessage, 
-                          message: { ...newMessage.message, uri: e.target.value }
-                        })}
-                        placeholder="https://..."
-                        type="url"
-                        className="bg-white/80 focus:bg-white"
-                      />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Priorité
+                  </label>
+                  <select
+                    value={newCommunication.priority}
+                    onChange={(e) => setNewCommunication({ 
+                      ...newCommunication, 
+                      priority: e.target.value as keyof typeof PRIORITY_LEVELS
+                    })}
+                    className="w-full px-3 py-2 bg-white/70 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:bg-white"
+                  >
+                    <option value="low">🟢 Faible</option>
+                    <option value="medium">🟡 Moyenne</option>
+                    <option value="high">🟠 Élevée</option>
+                    <option value="urgent">🔴 Urgente</option>
+                  </select>
                 </div>
-              )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Catégorie
+                  </label>
+                  <Input
+                    value={newCommunication.category}
+                    onChange={(e) => setNewCommunication({ ...newCommunication, category: e.target.value })}
+                    placeholder="Ex: Actualités, Promotions..."
+                    className="bg-white/70 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="publishNow"
+                  checked={newCommunication.publishNow}
+                  onChange={(e) => setNewCommunication({ 
+                    ...newCommunication, 
+                    publishNow: e.target.checked
+                  })}
+                  className="w-4 h-4 text-[#f01919] bg-gray-100 border-gray-300 rounded focus:ring-[#f01919] focus:ring-2"
+                />
+                <label htmlFor="publishNow" className="text-sm font-medium text-gray-700">
+                  Publier immédiatement
+                </label>
+              </div>
             </div>
             
             <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50/50">
@@ -973,96 +1040,109 @@ export default function CommunicationsPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Titre de la communication *
+                </label>
+                <Input
+                  value={newCommunication.title}
+                  onChange={(e) => setNewCommunication({ ...newCommunication, title: e.target.value })}
+                  placeholder="Titre de votre communication"
+                  required
+                  className="bg-white/70 focus:bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom du destinataire
+                    Type de communication *
                   </label>
-                  <Input
-                    value={newMessage.nomrec}
-                    onChange={(e) => setNewMessage({ ...newMessage, nomrec: e.target.value })}
-                    placeholder="Nom du destinataire"
-                  />
+                  <select
+                    value={newCommunication.type}
+                    onChange={(e) => setNewCommunication({ 
+                      ...newCommunication, 
+                      type: e.target.value as keyof typeof COMMUNICATION_TYPES
+                    })}
+                    className="w-full px-3 py-2 bg-white/70 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:bg-white"
+                  >
+                    <option value="announcement">📢 Annonce</option>
+                    <option value="update">🔄 Mise à jour</option>
+                    <option value="promotion">🎯 Promotion</option>
+                    <option value="event">📅 Événement</option>
+                    <option value="newsletter">📧 Newsletter</option>
+                  </select>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom de l'expéditeur
+                    Audience cible *
                   </label>
-                  <Input
-                    value={newMessage.nomsend}
-                    onChange={(e) => setNewMessage({ ...newMessage, nomsend: e.target.value })}
-                    placeholder="Votre nom"
-                  />
+                  <select
+                    value={newCommunication.audienceType}
+                    onChange={(e) => setNewCommunication({ 
+                      ...newCommunication, 
+                      audienceType: e.target.value as keyof typeof AUDIENCE_TYPES
+                    })}
+                    className="w-full px-3 py-2 bg-white/70 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:bg-white"
+                  >
+                    <option value="all">👥 Tout le monde</option>
+                    <option value="followers">👤 Abonnés</option>
+                    <option value="fans">⭐ Fans</option>
+                    <option value="vip">💎 VIP</option>
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type de message
-                </label>
-                <select
-                  value={newMessage.message.type}
-                  onChange={(e) => setNewMessage({ 
-                    ...newMessage, 
-                    message: { ...newMessage.message, type: e.target.value as 'text' | 'image' | 'file' }
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919]"
-                >
-                  <option value="text">Texte</option>
-                  <option value="image">Image</option>
-                  <option value="file">Fichier</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contenu du message *
+                  Contenu de la communication *
                 </label>
                 <Textarea
-                  value={newMessage.message.text}
-                  onChange={(e) => setNewMessage({ 
-                    ...newMessage, 
-                    message: { ...newMessage.message, text: e.target.value }
+                  value={newCommunication.content}
+                  onChange={(e) => setNewCommunication({ 
+                    ...newCommunication, 
+                    content: e.target.value
                   })}
-                  placeholder="Modifiez votre message ici..."
-                  rows={4}
+                  placeholder="Rédigez votre communication ici..."
+                  rows={5}
                   required
+                  className="bg-white/70 focus:bg-white resize-none"
                 />
               </div>
 
-              {(newMessage.message.type === 'image' || newMessage.message.type === 'file') && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom du fichier
-                    </label>
-                    <Input
-                      value={newMessage.message.name}
-                      onChange={(e) => setNewMessage({ 
-                        ...newMessage, 
-                        message: { ...newMessage.message, name: e.target.value }
-                      })}
-                      placeholder="Nom du fichier"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL du fichier
-                    </label>
-                    <Input
-                      value={newMessage.message.uri}
-                      onChange={(e) => setNewMessage({ 
-                        ...newMessage, 
-                        message: { ...newMessage.message, uri: e.target.value }
-                      })}
-                      placeholder="https://..."
-                      type="url"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Priorité
+                  </label>
+                  <select
+                    value={newCommunication.priority}
+                    onChange={(e) => setNewCommunication({ 
+                      ...newCommunication, 
+                      priority: e.target.value as keyof typeof PRIORITY_LEVELS
+                    })}
+                    className="w-full px-3 py-2 bg-white/70 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f01919] focus:bg-white"
+                  >
+                    <option value="low">🟢 Faible</option>
+                    <option value="medium">🟡 Moyenne</option>
+                    <option value="high">🟠 Élevée</option>
+                    <option value="urgent">🔴 Urgente</option>
+                  </select>
                 </div>
-              )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Catégorie
+                  </label>
+                  <Input
+                    value={newCommunication.category}
+                    onChange={(e) => setNewCommunication({ ...newCommunication, category: e.target.value })}
+                    placeholder="Ex: Actualités, Promotions..."
+                    className="bg-white/70 focus:bg-white"
+                  />
+                </div>
+              </div>
             </div>
             
             <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50/50">
